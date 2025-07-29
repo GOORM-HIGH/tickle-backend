@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.profect.tickle.domain.user.entity.User;
 import com.profect.tickle.domain.user.entity.UserRole;
 import lombok.Builder;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponseDTO {
 
     private Long userId;               // 사용자 고유번호
