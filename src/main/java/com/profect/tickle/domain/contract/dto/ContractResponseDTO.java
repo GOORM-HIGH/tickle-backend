@@ -16,12 +16,12 @@ public class ContractResponseDTO {
     private LocalDateTime contractCreatedAt; // 계약 생성일
 
     /** Entity → DTO 변환 */
-    public static ContractResponseDTO fromEntity(Contract contract) {
+    public static ContractResponseDTO fromEntity(Contract contractEntity) {
         return ContractResponseDTO.builder()
-                .contractId(contract.getContractId())
-                .userId(contract.getUserId())
-                .contractCharge(contract.getContractCharge())
-                .contractCreatedAt(contract.getContractCreatedAt())
+                .contractId(contractEntity.getContractId())
+                .userId(contractEntity.getUserId())
+                .contractCharge(contractEntity.getContractCharge())
+                .contractCreatedAt(contractEntity.getContractCreatedAt())
                 .build();
     }
 }
