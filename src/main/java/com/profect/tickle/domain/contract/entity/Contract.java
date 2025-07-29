@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.contract.entity;
 
+import com.profect.tickle.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,7 +9,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "Contract")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -19,8 +19,9 @@ public class Contract {
     @Column(name = "contract_id")
     private Long contractId;  // 계약 고유번호
 
+    @ManyToOne(fetch = FetchType.LAZY)
     @Column(name = "user_id", nullable = false)
-    private Long userId; // 회원 고유번호
+    private User userId; // 회원 고유번호
 
     @Column(name = "contract_charge", nullable = false)
     private Short contractCharge;  // 계약 수수료 (1~10%)

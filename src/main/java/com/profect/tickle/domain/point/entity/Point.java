@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.point.entity;
 
+import com.profect.tickle.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -7,7 +8,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "Point")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -18,8 +18,9 @@ public class Point {
     @Column(name = "point_id")
     private Long pointId;  // 포인트 고유번호
 
+    @ManyToOne(fetch = FetchType.LAZY)
     @Column(name = "user_id", nullable = false)
-    private Long userId;  // 사용자 고유번호
+    private User userId;  // 사용자 고유번호
 
     @Column(name = "point_credit", nullable = false)
     private Integer pointCredit;  // 충전/차감 포인트 (양수: 충전, 음수: 차감)
