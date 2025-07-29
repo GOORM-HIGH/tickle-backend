@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.user.dto;
 
+import com.profect.tickle.domain.user.entity.User;
 import com.profect.tickle.domain.user.entity.UserRole;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,25 +34,25 @@ public class UserResponseDTO {
     private LocalDateTime userUpdatedAt;
 
     /** Entity → DTO 변환 */
-    public static UserResponseDTO fromEntity(com.profect.tickle.domain.user.entity.User user) {
+    public static UserResponseDTO fromEntity(User userEntity) {
         return UserResponseDTO.builder()
-                .userId(user.getUserId())
-                .userEmail(user.getUserEmail())
-                .userNickname(user.getUserNickname())
-                .userBirthday(user.getUserBirthday())
-                .userImg(user.getUserImg())
-                .userPointBalance(user.getUserPointBalance())
-                .userRole(user.getUserRole())
-                .hostBizNumber(user.getHostBizNumber())
-                .hostBizCeo(user.getHostBizCeo())
-                .hostBizName(user.getHostBizName())
-                .hostBizAddress(user.getHostBizAddress())
-                .hostBizEcommerceRegistrationNumber(user.getHostBizEcommerceRegistrationNumber())
-                .hostBizBank(user.getHostBizBank())
-                .hostBizDepositor(user.getHostBizDepositor())
-                .hostBizBankNumber(user.getHostBizBankNumber())
-                .userCreatedAt(user.getUserCreatedAt())
-                .userUpdatedAt(user.getUserUpdatedAt())
+                .userId(userEntity.getUserId())
+                .userEmail(userEntity.getUserEmail())
+                .userNickname(userEntity.getUserNickname())
+                .userBirthday(userEntity.getUserBirthday())
+                .userImg(userEntity.getUserImg())
+                .userPointBalance(userEntity.getUserPointBalance())
+                .userRole(userEntity.getUserRole())
+                .hostBizNumber(userEntity.getHostBizNumber())
+                .hostBizCeo(userEntity.getHostBizCeo())
+                .hostBizName(userEntity.getHostBizName())
+                .hostBizAddress(userEntity.getHostBizAddress())
+                .hostBizEcommerceRegistrationNumber(userEntity.getHostBizEcommerceRegistrationNumber())
+                .hostBizBank(userEntity.getHostBizBank())
+                .hostBizDepositor(userEntity.getHostBizDepositor())
+                .hostBizBankNumber(userEntity.getHostBizBankNumber())
+                .userCreatedAt(userEntity.getUserCreatedAt())
+                .userUpdatedAt(userEntity.getUserUpdatedAt())
                 .build();
     }
 }
