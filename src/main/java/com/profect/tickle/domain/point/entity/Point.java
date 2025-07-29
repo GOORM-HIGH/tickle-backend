@@ -24,8 +24,9 @@ public class Point {
     @Column(name = "point_credit", nullable = false)
     private Integer pointCredit;  // 충전/차감 포인트 (양수: 충전, 음수: 차감)
 
-    @Column(name = "point_target", length = 15)
-    private String pointTarget;  // 포인트 사용 대상 (예: "예약", "이벤트")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "point_target")
+    private PointTarget pointTarget;  // 포인트 사용 대상 (예약, 이벤트)
 
     @Column(name = "point_result", nullable = false)
     private Integer pointResult;  // 포인트 잔액 결과
