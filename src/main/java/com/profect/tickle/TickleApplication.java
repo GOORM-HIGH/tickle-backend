@@ -1,4 +1,4 @@
-package com.example.tickle;
+package com.profect.tickle;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
