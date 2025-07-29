@@ -20,8 +20,8 @@ public class Contract {
     private Long contractId;  // 계약 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @Column(name = "user_id", nullable = false)
-    private User userId; // 회원 고유번호
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "contract_charge", nullable = false)
     private Short contractCharge;  // 계약 수수료 (1~10%)

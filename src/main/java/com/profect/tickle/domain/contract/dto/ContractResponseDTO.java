@@ -19,7 +19,7 @@ public class ContractResponseDTO {
     public static ContractResponseDTO fromEntity(Contract contractEntity) {
         return ContractResponseDTO.builder()
                 .contractId(contractEntity.getContractId())
-                .userId(contractEntity.getUserId().getUserId())
+                .userId(contractEntity.getUser().getUserId())
                 .contractCharge(contractEntity.getContractCharge())
                 .contractCreatedAt(contractEntity.getContractCreatedAt())
                 .build();

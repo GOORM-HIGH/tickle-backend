@@ -19,8 +19,8 @@ public class Point {
     private Long pointId;  // 포인트 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @Column(name = "user_id", nullable = false)
-    private User userId;  // 사용자 고유번호
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "point_credit", nullable = false)
     private Integer pointCredit;  // 충전/차감 포인트 (양수: 충전, 음수: 차감)
