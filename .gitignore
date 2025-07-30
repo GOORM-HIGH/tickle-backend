@@ -62,6 +62,6 @@ out/
 .vscode/
 
 ### yml파일 ###
-/src/main/resources/**
+/src/main/resources/application.yml
 /src/test/resources/**
 .DS_Store
