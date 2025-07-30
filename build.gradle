@@ -6,7 +6,7 @@ plugins {
     id 'org.graalvm.buildtools.native' version '0.10.6'
 }
 
-group = 'com.example'
+group = 'com.profect'  // 프로젝트에 맞게 수정
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -26,23 +26,32 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-batch'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    // ===== Core Spring Boot =====
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
-    runtimeOnly 'org.postgresql:postgresql'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.batch:spring-batch-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
 
-    // Swagger (SpringDoc)
+    // ===== Database =====
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // ===== MyBatis=====
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+    implementation 'org.mybatis:mybatis:3.5.19'
+
+    // ===== API Documentation (Swagger-ui) =====
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
+
+    // ===== Development Tools =====
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // ===== Annotation Processing =====
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // ===== Test Dependencies =====
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 hibernate {
