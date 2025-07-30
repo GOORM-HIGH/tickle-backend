@@ -1,6 +1,6 @@
 package com.profect.tickle.global.config;
 
-import com.profect.tickle.domain.notification.dto.response.NotificationResponseDTO;
+import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
 import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.global.properties.DatasourceHikariProperties;
 import com.zaxxer.hikari.HikariDataSource;
@@ -8,16 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
-@MapperScan("com.profect.tickle.domain.**.mapper")
 @RequiredArgsConstructor
-public class MybatisConfiguration {
+public class MybatisConfig {
 
     // DB설정 프로퍼티
     private final DataSourceProperties dataSourceProperties;
@@ -57,16 +55,20 @@ public class MybatisConfiguration {
         org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
         configuration.addMapper(NotificationMapper.class); // 알림 매퍼 등록
 //        configuration.setMapUnderscoreToCamelCase(true);
-        configuration.getTypeAliasRegistry().registerAlias("NotificationDTO", NotificationResponseDTO.class);
 
         // SqlSessionFactoryBean 설정
         SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
         sqlSessionFactoryBean.setDataSource(hikariDataSource()); // DataSource 주입
         sqlSessionFactoryBean.setConfiguration(configuration);   // MyBatis 전역 설정 주입
 
-        // **매퍼 XML 경로 추가**
+        // **패키지 단위로 별칭 등록 (클래스 이름을 별칭으로 사용)**
+        sqlSessionFactoryBean.setTypeAliasesPackage(
+                "com.profect.tickle.domain.**.dto.response"
+        );
+
+        // 매퍼 XML 경로 추가
         sqlSessionFactoryBean.setMapperLocations(
-                new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/**/*.xml")
+                new PathMatchingResourcePatternResolver().getResources("classpath:mapper/**/*.xml")
         );
 
         return sqlSessionFactoryBean.getObject(); // SqlSessionFactory 객체 반환
