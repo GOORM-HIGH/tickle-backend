@@ -32,7 +32,7 @@ public class ChatRoomResponseDto {
     public static ChatRoomResponseDto fromEntity(ChatRoom chatRoom) {
         return ChatRoomResponseDto.builder()
                 .chatRoomId(chatRoom.getId())
-                .performanceId(chatRoom.getPerformance().getId())
+                .performanceId(chatRoom.getPerformanceId())
                 .name(chatRoom.getName())
                 .status(chatRoom.getStatus())
                 .maxParticipants(chatRoom.getMaxParticipants())
@@ -51,7 +51,7 @@ public class ChatRoomResponseDto {
 
         return ChatRoomResponseDto.builder()
                 .chatRoomId(chatRoom.getId())
-                .performanceId(chatRoom.getPerformance().getId())
+                .performanceId(chatRoom.getPerformanceId())
                 .name(chatRoom.getName())
                 .status(chatRoom.getStatus())
                 .maxParticipants(chatRoom.getMaxParticipants())
