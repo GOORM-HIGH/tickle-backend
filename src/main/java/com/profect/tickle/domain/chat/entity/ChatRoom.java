@@ -6,7 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Entity
@@ -33,8 +33,20 @@ public class ChatRoom {
     private Short maxParticipants; // default 100, 최대 200명 예상
 
     @Column(name = "chat_room_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "chat_room_updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = Instant.now();  // UTC로 저장
+        updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();  // UTC로 저장
+    }
+
 }
