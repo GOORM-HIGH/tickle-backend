@@ -5,8 +5,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -31,5 +31,17 @@ public class Coupon {
     private LocalDate valid;
 
     @Column(name = "coupon_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
+
+    private Coupon(String name, Short count, Short rate, LocalDate valid, Instant createdAt) {
+        this.name = name;
+        this.count = count;
+        this.rate = rate;
+        this.valid = valid;
+        this.createdAt = createdAt;
+    }
+
+    public static Coupon create(String name, Short count, Short rate, LocalDate valid) {
+        return new Coupon(name, count, rate, valid, Instant.now());
+    }
 }
