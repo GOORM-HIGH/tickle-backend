@@ -17,41 +17,41 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Long userId;  // 사용자 고유번호
+    private Long id;  // 사용자 고유번호
 
     @Column(name = "user_email", nullable = false, unique = true, length = 30)
-    private String userEmail;  // 이메일
+    private String email;  // 이메일
 
     @Column(name = "user_pw", nullable = false, length = 255)
-    private String userPw;  // 비밀번호
+    private String password;  // 비밀번호
 
     @Column(name = "user_nickname", nullable = false, length = 10)
-    private String userNickname;  // 닉네임
+    private String nickname;  // 닉네임
 
     @Column(name = "user_birthday", nullable = false)
-    private LocalDate userBirthday;  // 생년월일
+    private LocalDate birthday;  // 생년월일
 
     @Column(name = "user_img", nullable = false, length = 255)
-    private String userImg;  // 프로필 이미지 URL (외부 저장소)
+    private String img;  // 프로필 이미지 URL (외부 저장소)
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role", nullable = false)
     private UserRole userRole;  // 0 = 사용자, 1 = 주최자, 2 = 관리자
 
     @Column(name = "user_number", nullable = false, length = 10)
-    private String userNumber;  // 전화번호
+    private String phoneNumber;  // 전화번호
 
     @Column(name = "user_point_balance", nullable = false)
-    private Integer userPointBalance = 0;  // 포인트 잔액
+    private Integer pointBalance = 0;  // 포인트 잔액
 
     @Column(name = "user_created_at", nullable = false, updatable = false)
-    private LocalDateTime userCreatedAt;  // 생성일시
+    private LocalDateTime createdAt;  // 생성일시
 
     @Column(name = "user_updated_at", nullable = false)
-    private LocalDateTime userUpdatedAt;  // 수정일시
+    private LocalDateTime updatedAt;  // 수정일시
 
     @Column(name = "user_deleted_at")
-    private LocalDateTime userDeletedAt;  // 삭제일시 (논리 삭제)
+    private LocalDateTime deletedAt;  // 삭제일시 (논리 삭제)
 
     // 주최자(Host) 전용 필드
     @Column(name = "host_biz_number", length = 15)
@@ -80,8 +80,8 @@ public class User {
 
     @PrePersist
     public void prePersist() {
-        this.userCreatedAt = LocalDateTime.now();
-        this.userUpdatedAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         if (this.userRole == null) {
             this.userRole = UserRole.USER;
         }
@@ -89,6 +89,6 @@ public class User {
 
     @PreUpdate
     public void preUpdate() {
-        this.userUpdatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

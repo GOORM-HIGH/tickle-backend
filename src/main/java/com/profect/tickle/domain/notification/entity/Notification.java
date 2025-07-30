@@ -1,5 +1,6 @@
-package com.profect.tickle.domain.notice.entity;
+package com.profect.tickle.domain.notification.entity;
 
+import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,13 +22,13 @@ public class Notification {
     @Column(name = "notification_title", length = 20, nullable = false)
     private String title;
 
-    @Column(name = "notification_is_read", nullable = false)
-    private boolean isRead;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "notification_is_read", nullable = false)
+    private Status status;
 
     @Column(name = "notification_content", length = 100, nullable = false)
     private String content;
 
     @Column(name = "notification_created_at", nullable = false)
     private LocalDateTime createdAt;
-
 }
