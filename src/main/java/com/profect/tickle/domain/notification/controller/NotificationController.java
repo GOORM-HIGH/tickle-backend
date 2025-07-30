@@ -1,0 +1,31 @@
+package com.profect.tickle.domain.notification.controller;
+
+import com.profect.tickle.domain.notification.dto.response.NotificationResponseDTO;
+import com.profect.tickle.domain.notification.service.NotificationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(value = "/notifications")
+@RequiredArgsConstructor
+@Tag(name = "알림", description = "알림 API")
+public class NotificationController {
+
+    private final NotificationService notificationService;
+
+    @GetMapping
+    @Operation(summary = "", description = "")
+    public ResponseEntity<?> getNotificationList() {
+        List<NotificationResponseDTO> data = notificationService.getNotificationList();
+
+        return new ResponseEntity<>(data, HttpStatus.OK);
+    }
+}
