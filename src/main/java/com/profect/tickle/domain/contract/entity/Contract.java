@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.contract.entity;
 
-import com.profect.tickle.domain.user.entity.User;
+import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,8 +20,8 @@ public class Contract {
     private Long contractId;  // 계약 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(name = "contract_charge", nullable = false)
     private Short contractCharge;  // 계약 수수료 (1~10%)

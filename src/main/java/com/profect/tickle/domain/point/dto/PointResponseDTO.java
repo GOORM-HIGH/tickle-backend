@@ -22,7 +22,7 @@ public class PointResponseDTO {
     public static PointResponseDTO fromEntity(Point pointEntity) {
         return PointResponseDTO.builder()
                 .pointId(pointEntity.getPointId())
-                .userId(pointEntity.getUser().getUserId())
+                .userId(pointEntity.getMember().getId())
                 .pointCredit(pointEntity.getPointCredit())
                 .pointTarget(pointEntity.getPointTarget())
                 .pointResult(pointEntity.getPointResult())
