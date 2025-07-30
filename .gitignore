@@ -63,5 +63,4 @@ out/
 
 ### yml파일 ###
 /src/main/resources/**
-/src/test/resources/**
 .DS_Store
