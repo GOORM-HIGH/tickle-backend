@@ -50,7 +50,7 @@ public class MybatisConfig {
         org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
 
         // ✅ 모든 Mapper 등록
-        configuration.addMapper(NotificationMapper.class);
+//        configuration.addMapper(NotificationMapper.class);
         configuration.addMapper(ChatMessageMapper.class);
         configuration.addMapper(ChatParticipantsMapper.class);
         configuration.addMapper(ChatRoomMapper.class);
@@ -59,7 +59,7 @@ public class MybatisConfig {
         configuration.setMapUnderscoreToCamelCase(true);
 
         // ✅ DTO 별칭 등록
-        configuration.getTypeAliasRegistry().registerAlias("NotificationDTO", NotificationResponseDTO.class);
+//        configuration.getTypeAliasRegistry().registerAlias("NotificationDTO", NotificationResponseDTO.class);
         configuration.getTypeAliasRegistry().registerAlias("ChatMessageResponseDto", ChatMessageResponseDto.class);
         configuration.getTypeAliasRegistry().registerAlias("ChatParticipantsResponseDto", ChatParticipantsResponseDto.class);
         configuration.getTypeAliasRegistry().registerAlias("ChatRoomResponseDto", ChatRoomResponseDto.class);
@@ -72,7 +72,7 @@ public class MybatisConfig {
         // ✅ XML 파일 위치 설정 (핵심!)
         sqlSessionFactoryBean.setMapperLocations(
                 new PathMatchingResourcePatternResolver()
-                        .getResources("classpath:mappers/**/*.xml")
+                        .getResources("classpath:mapper/**/*.xml")
         );
 
         return sqlSessionFactoryBean.getObject();

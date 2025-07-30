@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.notification.mapper.NotificationMapper">
+
+    <!-- 특정 사용자(memberId)의 최신 10건 알림 조회 -->
+    <select id="getRecentNotificationListByMemberId"
+            parameterType="long"
+            resultType="com.profect.tickle.domain.notification.dto.response.NotificationResponseDTO">
+        SELECT
+            n.notification_id AS id,
+            nt.notification_template_title AS title,
+            nt.notification_template_content AS content,
+            n.notification_created_at AS createdAt
+        FROM notification AS n
+                 JOIN notification_template AS nt
+                      ON n.noti_template_id = nt.notification_template_id
+                 JOIN member AS m
+                      ON n.notification_received_member_id = m.member_id
+        WHERE m.member_id = #{memberId}
+        ORDER BY n.notification_created_at DESC
+            LIMIT 10
+    </select>
+</mapper>
