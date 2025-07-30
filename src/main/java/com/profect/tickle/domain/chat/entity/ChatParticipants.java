@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.chat.entity;
 
-import com.profect.tickle.domain.user.entity.User;
+import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,8 +24,8 @@ public class ChatParticipants {
     private ChatRoom chatRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(name = "chat_participants_joined_at", nullable = false)
     private Instant joinedAt;  // ✅ UTC 시간 적용
