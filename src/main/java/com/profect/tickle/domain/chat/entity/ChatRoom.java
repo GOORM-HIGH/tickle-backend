@@ -27,7 +27,7 @@ public class ChatRoom {
     private String name;
 
     @Column(name = "chat_room_status", nullable = false)
-    private Boolean isActive;  // true: 열림, false: 종료
+    private Boolean status;  // true: 열림, false: 종료
 
     @Column(name = "chat_room_max_participants", nullable = false)
     private Short maxParticipants; // default 100, 최대 200명 예상
