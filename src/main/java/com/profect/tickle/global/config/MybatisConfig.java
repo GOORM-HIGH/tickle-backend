@@ -8,11 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
+@MapperScan("com.profect.tickle.domain.**.mapper")
 @RequiredArgsConstructor
 public class MybatisConfiguration {
 
@@ -60,6 +63,11 @@ public class MybatisConfiguration {
         SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
         sqlSessionFactoryBean.setDataSource(hikariDataSource()); // DataSource 주입
         sqlSessionFactoryBean.setConfiguration(configuration);   // MyBatis 전역 설정 주입
+
+        // **매퍼 XML 경로 추가**
+        sqlSessionFactoryBean.setMapperLocations(
+                new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/**/*.xml")
+        );
 
         return sqlSessionFactoryBean.getObject(); // SqlSessionFactory 객체 반환
     }
