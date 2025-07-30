@@ -6,7 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Entity
@@ -20,7 +20,7 @@ public class Chat {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "member_id")
     private Member member;
 
     @Column(name = "chat_room_id", nullable = false)
@@ -52,11 +52,25 @@ public class Chat {
     private Boolean isEdited;
 
     @Column(name = "chat_edited_at")
-    private LocalDateTime editedAt;
+    private Instant editedAt;
 
     @Column(name = "chat_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "chat_sender_status", nullable = false)
     private Boolean senderStatus; // true: 받음, false: 안 받음
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = Instant.now();  // 항상 UTC로 저장
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        // 수정 시에만 editedAt 업데이트
+        if (isEdited != null && isEdited) {
+            editedAt = Instant.now();
+        }
+    }
+
 }

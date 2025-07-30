@@ -19,7 +19,7 @@ public class Point {
     private Long pointId;  // 포인트 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
     @Column(name = "point_credit", nullable = false)

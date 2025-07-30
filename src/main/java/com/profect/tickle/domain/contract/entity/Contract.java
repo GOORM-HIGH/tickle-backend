@@ -20,7 +20,7 @@ public class Contract {
     private Long contractId;  // 계약 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
     @Column(name = "contract_charge", nullable = false)
