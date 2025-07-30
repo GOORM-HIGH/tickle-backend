@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.performance.entity;
 
-import com.profect.tickle.domain.user.entity.User;
+import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -22,8 +22,8 @@ public class Performance {
 
     // 연관 관계
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hall_id", nullable = false)
