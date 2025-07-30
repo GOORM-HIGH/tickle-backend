@@ -1,7 +1,10 @@
 package com.profect.tickle.domain.member.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
@@ -86,7 +89,7 @@ public class Member {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         if (this.memberRole == null) {
-            this.memberRole = MemberRole.USER;
+            this.memberRole = MemberRole.MEMBER;
         }
     }
 

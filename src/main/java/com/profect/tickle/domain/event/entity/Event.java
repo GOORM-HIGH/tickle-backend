@@ -40,4 +40,8 @@ public class Event {
 
     @Column(name = "event_updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Convert(converter = EventTypeConverter.class)
+    @Column(name = "event_type", nullable = false)
+    private EventType type;
 }

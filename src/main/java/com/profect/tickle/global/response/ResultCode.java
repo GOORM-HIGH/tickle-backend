@@ -7,7 +7,11 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum ResultCode {
-    RESPONSE_TEST(HttpStatus.OK, "응답 테스트 성공");
+    RESPONSE_TEST(HttpStatus.OK, "응답 테스트 성공"),
+
+    //EVENT
+    EVENT_LIST_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
+    EVENT_CREATE_SUCCESS(HttpStatus.CREATED, "이벤트 생성 성공");
 
     private final HttpStatus status;
     private final String message;
