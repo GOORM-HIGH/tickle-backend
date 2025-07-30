@@ -102,4 +102,15 @@
             cr.chat_room_updated_at DESC
     </select>
 
+    <!-- 참여 여부 확인 -->
+    <select id="isParticipant" resultType="boolean">
+        SELECT
+            CASE WHEN COUNT(*) > 0 THEN true ELSE false END
+        FROM chat_participants cp
+        WHERE cp.chat_room_id = #{chatRoomId}
+          AND cp.member_id = #{memberId}
+          AND cp.chat_participants_status = true
+    </select>
+
+
 </mapper>
