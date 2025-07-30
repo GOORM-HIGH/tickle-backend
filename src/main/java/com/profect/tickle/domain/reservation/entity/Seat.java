@@ -2,7 +2,7 @@ package com.profect.tickle.domain.reservation.entity;
 
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.performance.entity.Performance;
-import com.profect.tickle.domain.user.entity.User;
+import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,7 +23,7 @@ public class Seat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;
+    private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "performance_id", nullable = false)

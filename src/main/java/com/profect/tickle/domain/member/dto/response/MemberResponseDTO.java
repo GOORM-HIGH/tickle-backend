@@ -1,8 +1,8 @@
-package com.profect.tickle.domain.user.dto.response;
+package com.profect.tickle.domain.member.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.profect.tickle.domain.user.entity.User;
-import com.profect.tickle.domain.user.entity.UserRole;
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.entity.MemberRole;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class UserResponseDTO {
+public class MemberResponseDTO {
 
     private Long id;                     // 사용자 고유번호
     private String email;                // 이메일
@@ -20,7 +20,7 @@ public class UserResponseDTO {
     private LocalDate birthday;          // 생년월일
     private String img;                  // 프로필 이미지 URL
     private Integer pointBalance;        // 포인트 잔액
-    private UserRole userRole;           // 사용자 역할 (USER, HOST, ADMIN)
+    private MemberRole memberRole;           // 사용자 역할 (USER, HOST, ADMIN)
 
     // 주최자(Host) 정보
     private String hostBizNumber;                       // 사업자 등록번호
@@ -37,26 +37,26 @@ public class UserResponseDTO {
     private LocalDateTime deletedAt;  // 계정 삭제일(논리 삭제)
 
     /** Entity → DTO 변환 */
-    public static UserResponseDTO fromEntity(User userEntity) {
-        return UserResponseDTO.builder()
-                .id(userEntity.getId())
-                .email(userEntity.getEmail())
-                .nickname(userEntity.getNickname())
-                .birthday(userEntity.getBirthday())
-                .img(userEntity.getImg())
-                .pointBalance(userEntity.getPointBalance())
-                .userRole(userEntity.getUserRole())
-                .hostBizNumber(userEntity.getHostBizNumber())
-                .hostBizCeo(userEntity.getHostBizCeo())
-                .hostBizName(userEntity.getHostBizName())
-                .hostBizAddress(userEntity.getHostBizAddress())
-                .hostBizEcommerceRegistrationNumber(userEntity.getHostBizEcommerceRegistrationNumber())
-                .hostBizBank(userEntity.getHostBizBank())
-                .hostBizDepositor(userEntity.getHostBizDepositor())
-                .hostBizBankNumber(userEntity.getHostBizBankNumber())
-                .createdAt(userEntity.getCreatedAt())
-                .updatedAt(userEntity.getUpdatedAt())
-                .deletedAt(userEntity.getDeletedAt())
+    public static MemberResponseDTO fromEntity(Member memberEntity) {
+        return MemberResponseDTO.builder()
+                .id(memberEntity.getId())
+                .email(memberEntity.getEmail())
+                .nickname(memberEntity.getNickname())
+                .birthday(memberEntity.getBirthday())
+                .img(memberEntity.getImg())
+                .pointBalance(memberEntity.getPointBalance())
+                .memberRole(memberEntity.getMemberRole())
+                .hostBizNumber(memberEntity.getHostBizNumber())
+                .hostBizCeo(memberEntity.getHostBizCeo())
+                .hostBizName(memberEntity.getHostBizName())
+                .hostBizAddress(memberEntity.getHostBizAddress())
+                .hostBizEcommerceRegistrationNumber(memberEntity.getHostBizEcommerceRegistrationNumber())
+                .hostBizBank(memberEntity.getHostBizBank())
+                .hostBizDepositor(memberEntity.getHostBizDepositor())
+                .hostBizBankNumber(memberEntity.getHostBizBankNumber())
+                .createdAt(memberEntity.getCreatedAt())
+                .updatedAt(memberEntity.getUpdatedAt())
+                .deletedAt(memberEntity.getDeletedAt())
                 .build();
     }
 }

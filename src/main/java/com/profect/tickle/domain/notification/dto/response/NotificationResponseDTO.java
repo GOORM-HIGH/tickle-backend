@@ -14,16 +14,14 @@ public class NotificationResponseDTO {
     private Long id;
     private String title;
     private String content;
-    private Status status;
+    private boolean isRead;
     private LocalDateTime createdAt;
 
     /** Entity → DTO 변환 */
     public static NotificationResponseDTO fromEntity(Notification entity) {
         return NotificationResponseDTO.builder()
                 .id(entity.getId())
-                .title(entity.getTitle())
-                .content(entity.getContent())
-                .status(entity.getStatus())
+                .isRead(entity.getStatus().getName().equals("read"))
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

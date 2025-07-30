@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.chat.entity;
 
-import com.profect.tickle.domain.user.entity.User;
+import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,7 +21,7 @@ public class Chat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;
+    private Member member;
 
     @Column(name = "chat_room_id", nullable = false)
     private Long chatRoomId;

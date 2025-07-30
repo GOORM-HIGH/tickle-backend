@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.notification.entity;
 
-import com.profect.tickle.domain.user.entity.User;
+import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,16 +14,16 @@ public class NotificationTemplate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "noti_template_id")
+    @Column(name = "notification_template_id")
     private Long id;  // 알림 양식 고유번호
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;  // 알림 양식 작성자
+    @JoinColumn(name = "notification_template_maker_id", nullable = false)
+    private Member maker;  // 알림 양식 작성자
 
-    @Column(name = "noti_template_title", length = 20, nullable = false)
+    @Column(name = "notification_template_title", length = 20, nullable = false)
     private String title;  // 알림 제목
 
-    @Column(name = "noti_template_content", length = 100, nullable = false)
+    @Column(name = "notification_template_content", length = 100, nullable = false)
     private String content;  // 알림 내용
 }

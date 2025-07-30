@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.point.entity;
 
-import com.profect.tickle.domain.user.entity.User;
+import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -20,7 +20,7 @@ public class Point {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Member member;
 
     @Column(name = "point_credit", nullable = false)
     private Integer pointCredit;  // 충전/차감 포인트 (양수: 충전, 음수: 차감)

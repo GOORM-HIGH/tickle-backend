@@ -1,17 +1,19 @@
 package com.profect.tickle.domain.notification.entity;
 
+import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Getter
 @Entity
 @Table(name = "notification")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Notification {
 
     @Id
@@ -19,15 +21,17 @@ public class Notification {
     @Column(name = "notification_id")
     private Long id;
 
-    @Column(name = "notification_title", length = 20, nullable = false)
-    private String title;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "notification_received_member_id", nullable = false)
+    private Member receivedMember;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "notification_is_read", nullable = false)
-    private Status status;
+    @JoinColumn(name = "notification_template_id", nullable = false)
+    private NotificationTemplate template;
 
-    @Column(name = "notification_content", length = 100, nullable = false)
-    private String content;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private Status status;
 
     @Column(name = "notification_created_at", nullable = false)
     private LocalDateTime createdAt;

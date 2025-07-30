@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(value = "/notifications")
+@RequestMapping(value = "/api/v1/notifications")
 @RequiredArgsConstructor
 @Tag(name = "알림", description = "알림 API")
 public class NotificationController {
@@ -22,9 +22,9 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    @Operation(summary = "", description = "")
+    @Operation(summary = "최신 알림 조회", description = "로그인 사용자의 최신 10건의 알림을 조회합니다.")
     public ResponseEntity<?> getNotificationList() {
-        List<NotificationResponseDTO> data = notificationService.getNotificationList();
+        List<NotificationResponseDTO> data = notificationService.getNotificationList(1L);
 
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
