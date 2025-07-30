@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 public class ReadMessageRequestDto {
 
     @NotNull(message = "읽은 메시지 ID는 필수입니다")
-    private Long chatParticipantsLastReadMessageId;
+    private Long lastReadMessageId;
 }

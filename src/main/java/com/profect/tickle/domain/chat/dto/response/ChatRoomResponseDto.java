@@ -16,11 +16,11 @@ public class ChatRoomResponseDto {
 
     private Long chatRoomId;
     private Long performanceId;
-    private String chatRoomName;
-    private Boolean chatRoomStatus;
-    private Short chatRoomMaxParticipants;
-    private Instant chatRoomCreatedAt;
-    private Instant chatRoomUpdatedAt;
+    private String name;
+    private Boolean status;
+    private Short maxParticipants;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     // 추가 정보 (복잡한 쿼리로 가져올 데이터)
     private Integer participantCount;
@@ -33,11 +33,11 @@ public class ChatRoomResponseDto {
         return ChatRoomResponseDto.builder()
                 .chatRoomId(chatRoom.getId())
                 .performanceId(chatRoom.getPerformance().getId())
-                .chatRoomName(chatRoom.getName())
-                .chatRoomStatus(chatRoom.getStatus())
-                .chatRoomMaxParticipants(chatRoom.getMaxParticipants())
-                .chatRoomCreatedAt(chatRoom.getCreatedAt())
-                .chatRoomUpdatedAt(chatRoom.getUpdatedAt())
+                .name(chatRoom.getName())
+                .status(chatRoom.getStatus())
+                .maxParticipants(chatRoom.getMaxParticipants())
+                .createdAt(chatRoom.getCreatedAt())
+                .updatedAt(chatRoom.getUpdatedAt())
                 .build();
     }
 
@@ -52,11 +52,11 @@ public class ChatRoomResponseDto {
         return ChatRoomResponseDto.builder()
                 .chatRoomId(chatRoom.getId())
                 .performanceId(chatRoom.getPerformance().getId())
-                .chatRoomName(chatRoom.getName())
-                .chatRoomStatus(chatRoom.getStatus())
-                .chatRoomMaxParticipants(chatRoom.getMaxParticipants())
-                .chatRoomCreatedAt(chatRoom.getCreatedAt())
-                .chatRoomUpdatedAt(chatRoom.getUpdatedAt())
+                .name(chatRoom.getName())
+                .status(chatRoom.getStatus())
+                .maxParticipants(chatRoom.getMaxParticipants())
+                .createdAt(chatRoom.getCreatedAt())
+                .updatedAt(chatRoom.getUpdatedAt())
                 .participantCount(participantCount)
                 .isParticipant(isParticipant)
                 .unreadCount(unreadCount)
