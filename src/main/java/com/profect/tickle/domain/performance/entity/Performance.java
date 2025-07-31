@@ -41,7 +41,7 @@ public class Performance {
     private String title;
 
     @Column(name = "performance_price", nullable = false)
-    private Short price;
+    private Integer price;
 
     @Column(name = "performance_date", nullable = false)
     private LocalDateTime date;
