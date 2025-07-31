@@ -20,7 +20,7 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @PostMapping(value = "/signup")
+    @PostMapping(value = "/signUp")
     @Operation(summary = "회원가입", description = "회원가입")
     public ResponseEntity<?> signup(@RequestBody CreateMemberRequestDto createUserRequest) {
         memberService.createMember(createUserRequest);
