@@ -8,8 +8,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-용uestMatcher;
-
 @Configuration
 @EnableWebSecurity // 해당 클래스에서 시큐리티에 관한 설정을 할 것이다.
 public class SecurityConfig { // 주의: 클래스를 상속받아 시큐리티를 구현하는 방식은 구버전의 방식이다.
