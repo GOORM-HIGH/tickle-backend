@@ -120,4 +120,26 @@
         WHERE p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
     </select>
 
+    <!--  관련공연 조회  -->
+    <select id="findRelatedPerformances" resultType="com.profect.tickle.domain.performance.dto.response.PerformanceDto">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+            p.performance_img AS img
+        FROM performance p
+            JOIN status s ON p.status_id = s.status_id
+        WHERE p.genre_id = #{genreId}
+          AND p.performance_id != #{performanceId}
+          AND s.status_code != 102
+        ORDER BY p.performance_look_count DESC, p.performance_date ASC
+            LIMIT 5
+    </select>
+
+    <select id="findGenreIdByPerformanceId" resultType="long">
+        SELECT genre_id
+        FROM performance
+        WHERE performance_id = #{performanceId}
+    </select>
+
 </mapper>

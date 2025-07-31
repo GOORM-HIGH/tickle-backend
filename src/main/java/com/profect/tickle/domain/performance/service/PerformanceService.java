@@ -84,4 +84,14 @@ public class PerformanceService {
         );
     }
 
+    public List<PerformanceDto> getRelatedPerformances(Long performanceId) {
+        Long genreId = performanceMapper.findGenreIdByPerformanceId(performanceId);
+        if (genreId == null) {
+            throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
+        }
+
+        return performanceMapper.findRelatedPerformances(genreId, performanceId);
+    }
+
+
 }

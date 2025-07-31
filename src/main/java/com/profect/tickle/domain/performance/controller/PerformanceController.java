@@ -72,5 +72,12 @@ public class PerformanceController {
         return ResultResponse.of(ResultCode.PERFORMANCE_SEARCH_SUCCESS, response);
     }
 
+    @GetMapping("/{performanceId}/recommend")
+    public ResultResponse<List<PerformanceDto>> getRelatedPerformances(
+            @PathVariable Long performanceId
+    ) {
+        List<PerformanceDto> recommend = performanceService.getRelatedPerformances(performanceId);
+        return ResultResponse.of(ResultCode.PERFORMANCE_RECOMMEND_LIST_SUCCESS, recommend);
+    }
 
 }

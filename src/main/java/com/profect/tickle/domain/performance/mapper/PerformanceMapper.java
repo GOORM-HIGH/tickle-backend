@@ -34,8 +34,14 @@ public interface PerformanceMapper {
             @Param("limit") int limit,
             @Param("offset") int offset
     );
+
     long countPerformancesByKeyword(@Param("keyword") String keyword);
 
+    List<PerformanceDto> findRelatedPerformances(
+            @Param("genreId") Long genreId,
+            @Param("performanceId") Long performanceId
+    );
 
+    Long findGenreIdByPerformanceId(@Param("performanceId") Long performanceId);
 
 }
