@@ -170,7 +170,7 @@ public class ChatMessageController {
     }
 
     /**
-     * 채팅방의 마지막 메시지 조회
+     * 채팅방의 마지막 메시지 조회 (수정 버전)
      */
     @Operation(
             summary = "마지막 메시지 조회",
@@ -185,11 +185,13 @@ public class ChatMessageController {
     @GetMapping("/last")
     public ResponseEntity<ApiResponseDto<ChatMessageResponseDto>> getLastMessage(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
-            @PathVariable Long chatRoomId) {
+            @PathVariable Long chatRoomId,
+            @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
+            @RequestHeader("X-Member-Id") Long currentMemberId) { // ✅ 추가
 
-        log.info("마지막 메시지 조회 API 호출: chatRoomId={}", chatRoomId);
+        log.info("마지막 메시지 조회 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
-        ChatMessageResponseDto response = chatMessageService.getLastMessage(chatRoomId);
+        ChatMessageResponseDto response = chatMessageService.getLastMessage(chatRoomId, currentMemberId); // ✅ 파라미터 추가
 
         if (response == null) {
             return ResponseEntity.ok(ApiResponseDto.success("메시지가 없습니다.", null));
@@ -197,6 +199,7 @@ public class ChatMessageController {
 
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
+
 
     /**
      * 읽지않은 메시지 개수 조회

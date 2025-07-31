@@ -59,27 +59,33 @@
           AND c.chat_id > COALESCE(#{lastReadMessageId}, 0)
     </select>
 
-    <!-- 채팅방의 마지막 메시지 조회 (수정 버전) -->
+    <!-- 채팅방의 마지막 메시지 조회 (완전 수정 버전) -->
     <select id="findLastMessageByRoomId" resultType="ChatMessageResponseDto">
         SELECT
-            c.chat_id as id,                        -- ✅ alias 추가
-            c.chat_room_id as chatRoomId,           -- ✅ alias 추가
-            c.member_id as memberId,                -- ✅ alias 추가
-            c.chat_message_type as messageType,     -- ✅ alias 추가
-            c.chat_content as content,              -- ✅ alias 추가
-            c.chat_created_at as createdAt,         -- ✅ alias 추가
-            c.chat_sender_status as senderStatus,   -- ✅ alias 추가
-            c.chat_file_path as filePath,           -- ✅ alias 추가
-            c.chat_file_name as fileName,           -- ✅ alias 추가
-            c.chat_file_size as fileSize,           -- ✅ alias 추가
-            c.chat_file_type as fileType,           -- ✅ alias 추가
+            c.chat_id as id,
+            c.chat_room_id as chatRoomId,
+            c.member_id as memberId,
+            c.chat_message_type as messageType,
+            c.chat_content as content,
+            c.chat_created_at as createdAt,
+            c.chat_sender_status as senderStatus,
+            c.chat_file_path as filePath,
+            c.chat_file_name as fileName,
+            c.chat_file_size as fileSize,
+            c.chat_file_type as fileType,
 
             -- 발신자 닉네임
             CASE
                 WHEN c.chat_sender_status = false THEN '탈퇴한 회원입니다'
                 WHEN m.member_id IS NULL THEN '탈퇴한 회원입니다'
                 ELSE m.member_nickname
-                END as senderNickname
+                END as senderNickname,
+
+            -- ✅ isMyMessage 계산 추가
+            CASE
+                WHEN c.member_id = #{currentMemberId} THEN true
+                ELSE false
+                END as isMyMessage
 
         FROM chat c
                  LEFT JOIN member m ON c.member_id = m.member_id
@@ -88,6 +94,5 @@
         ORDER BY c.chat_created_at DESC
             LIMIT 1
     </select>
-
 
 </mapper>

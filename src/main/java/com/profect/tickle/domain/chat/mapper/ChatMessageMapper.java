@@ -38,7 +38,11 @@ public interface ChatMessageMapper {
     );
 
     /**
-     * 채팅방의 마지막 메시지 조회
+     * 채팅방의 마지막 메시지 조회 (수정 버전)
      */
-    ChatMessageResponseDto findLastMessageByRoomId(@Param("roomId") Long roomId);
+    ChatMessageResponseDto findLastMessageByRoomId(
+            @Param("roomId") Long roomId,
+            @Param("currentMemberId") Long currentMemberId  // ✅ 파라미터 추가
+    );
+
 }

@@ -201,17 +201,20 @@ public class ChatMessageService {
     /**
      * 채팅방의 마지막 메시지 조회 (MyBatis 사용)
      */
-    public ChatMessageResponseDto getLastMessage(Long chatRoomId) {
-        log.info("마지막 메시지 조회: chatRoomId={}", chatRoomId);
+    // ChatMessageService에서 getLastMessage 메서드 수정
+    public ChatMessageResponseDto getLastMessage(Long chatRoomId, Long currentMemberId) { // ✅ 파라미터 추가
+        log.info("마지막 메시지 조회: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
-        ChatMessageResponseDto lastMessage = chatMessageMapper.findLastMessageByRoomId(chatRoomId);
+        // 채팅방 존재 여부 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
 
-        if (lastMessage == null) {
-            return null;
-        }
+        // MyBatis 매퍼 호출 (currentMemberId 추가)
+        ChatMessageResponseDto response = chatMessageMapper.findLastMessageByRoomId(chatRoomId, currentMemberId); // ✅ 파라미터 추가
 
-        return lastMessage;
+        return response;
     }
+
 
     /**
      * 읽지않은 메시지 개수 조회 (MyBatis 사용)
