@@ -16,6 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 @RestController
 @RequestMapping("/api/v1/chat/rooms")
 @RequiredArgsConstructor
@@ -156,5 +161,26 @@ public class ChatRoomController {
         boolean isParticipant = chatRoomService.isParticipant(chatRoomId, currentMemberId);
 
         return ResponseEntity.ok(ApiResponseDto.success(isParticipant));
+    }
+
+    /**
+     * 채팅방 온라인 사용자 조회
+     */
+    @Operation(
+            summary = "채팅방 온라인 사용자 조회",
+            description = "채팅방에 현재 접속 중인 사용자들의 목록과 수를 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/{chatRoomId}/online")
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> getOnlineUsers(
+            @Parameter(description = "채팅방 ID", required = true, example = "123")
+            @PathVariable Long chatRoomId) {
+
+        log.info("채팅방 온라인 사용자 조회 API 호출: chatRoomId={}", chatRoomId);
+
+        // ✅ Service에서 처리
+        Map<String, Object> result = chatRoomService.getOnlineUserInfo(chatRoomId);
+
+        return ResponseEntity.ok(ApiResponseDto.success(result));
     }
 }

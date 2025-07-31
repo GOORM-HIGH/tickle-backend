@@ -52,6 +52,10 @@ dependencies {
 
     // ===== Test Dependencies =====
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // ===== WebSocket =====
+    implementation 'org.springframework:spring-websocket'
+    implementation 'org.springframework:spring-messaging'
 }
 
 hibernate {

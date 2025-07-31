@@ -14,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final PerformanceRepository performanceRepository; // 팀원이 만든 Repository
     private final ChatRoomMapper chatRoomMapper; // MyBatis Mapper
+    private final OnlineUserService onlineUserService;
 
     /**
      * 채팅방 생성 (JPA 사용)
@@ -110,4 +114,28 @@ public class ChatRoomService {
         // Entity의 상태 변경 (더티 체킹으로 자동 업데이트)
         chatRoom.updateStatus(status); // Entity에 이 메서드를 추가해야 함
     }
+
+    /**
+     * 채팅방 온라인 사용자 정보 조회
+     */
+    public Map<String, Object> getOnlineUserInfo(Long chatRoomId) {
+        log.info("채팅방 온라인 사용자 정보 조회: chatRoomId={}", chatRoomId);
+
+        // 채팅방 존재 확인
+        chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+
+        // 온라인 사용자 정보 수집
+        int onlineCount = onlineUserService.getOnlineCount(chatRoomId);
+        Set<Long> onlineUserIds = onlineUserService.getOnlineUsers(chatRoomId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("chatRoomId", chatRoomId);
+        result.put("onlineCount", onlineCount);
+        result.put("onlineUserIds", onlineUserIds);
+        result.put("timestamp", Instant.now());
+
+        return result;
+    }
+
 }
