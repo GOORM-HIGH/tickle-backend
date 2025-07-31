@@ -1,11 +1,16 @@
 package com.profect.tickle.global.status;
 
+import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
+import com.profect.tickle.domain.event.entity.Event;
+import com.profect.tickle.domain.reservation.entity.Seat;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+
 
 @Getter
 @Entity
@@ -28,5 +33,20 @@ public class Status {
     private String description;
 
     @Column(name = "status_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
+
+    private Status(String type, Short code, String name) {
+        this.type = type;
+        this.code = code;
+        this.name = name;
+        this.createdAt = Instant.now();
+    }
+
+    public static Status create(String type, Short code, String name) {
+        return new Status(
+                type,
+                code,
+                name);
+    }
 }
+
