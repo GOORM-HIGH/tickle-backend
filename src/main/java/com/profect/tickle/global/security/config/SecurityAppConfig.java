@@ -1,12 +1,12 @@
-package com.profect.tickle.global.config;
+package com.profect.tickle.global.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/* bean 등록을 위한 클래스 */
+/* 시큐리티 관련 bean 등록을 위한 클래스 */
 @Component
-public class AppConfig {
+public class SecurityAppConfig {
 
     @Bean
     BCryptPasswordEncoder passwordEncoder() {
