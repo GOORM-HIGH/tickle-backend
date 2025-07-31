@@ -50,6 +50,18 @@ public class Seat {
     @Column(name = "seat_created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "preempted_by")
+    private Long preemptUserId;
+
+    @Column(name = "preempted_at")
+    private LocalDateTime preemptedAt;
+
+    @Column(name = "preempted_until")
+    private LocalDateTime preemptedUntil;
+
+    @Column(name = "preemption_token")
+    private String preemptionToken;
+
     public void assignTo(Member member) {
         this.member = member;
     }
