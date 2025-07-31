@@ -27,4 +27,6 @@ public interface PerformanceMapper {
 
     List<PerformanceDto> findTop100ByClickCount();
 
+    List<PerformanceDto> findTop4UpcomingPerformances();
+
 }

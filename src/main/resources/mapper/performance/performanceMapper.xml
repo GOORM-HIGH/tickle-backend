@@ -88,5 +88,17 @@
         WHERE p.performance_id = #{performanceId}
     </select>
 
+    <!-- 오픈예정 TOP4 -->
+    <select id="findTop4UpcomingPerformances" resultType="PerformanceDto">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+        p.performance_img AS img
+        FROM performance p
+        WHERE p.performance_start_date > NOW()
+        ORDER BY p.performance_start_date ASC, p.performance_date ASC
+            LIMIT 4
+    </select>
 
 </mapper>

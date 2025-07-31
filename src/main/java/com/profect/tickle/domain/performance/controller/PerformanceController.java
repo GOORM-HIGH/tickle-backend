@@ -29,7 +29,7 @@ public class PerformanceController {
     }
 
     @GetMapping("/genre/{genreId}")
-    public ResultResponse<?> getPerformancesByGenre(
+    public ResultResponse<PagingResponse<PerformanceDto>> getPerformancesByGenre(
             @PathVariable Long genreId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size
@@ -51,9 +51,15 @@ public class PerformanceController {
     }
 
     @GetMapping("/{performanceId}")
-    public ResultResponse<?> getPerformanceDetail(@PathVariable Long performanceId) {
+    public ResultResponse<PerformanceDetailDto> getPerformanceDetail(@PathVariable Long performanceId) {
         PerformanceDetailDto detail = performanceService.getPerformanceDetail(performanceId);
         return ResultResponse.of(ResultCode.PERFORMANCE_DETAIL_SUCCESS,detail);
+    }
+
+    @GetMapping("/open")
+    public ResultResponse<List<PerformanceDto>> getOpenPerformances() {
+        List<PerformanceDto> popular = performanceService.getTop4UpcomingPerformances();
+        return ResultResponse.of(ResultCode.PERFORMANCE_POPULAR_SUCCESS,popular);
     }
 
 }

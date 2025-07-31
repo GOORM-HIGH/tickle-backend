@@ -61,5 +61,9 @@ public class PerformanceService {
         return result;
     }
 
+    public List<PerformanceDto> getTop4UpcomingPerformances() {
+        return performanceMapper.findTop4UpcomingPerformances();
+    }
+
 
 }
