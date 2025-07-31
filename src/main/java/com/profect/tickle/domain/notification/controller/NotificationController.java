@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.notification.controller;
 
-import com.profect.tickle.domain.notification.dto.response.NotificationResponseDTO;
+import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
 import com.profect.tickle.domain.notification.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +24,7 @@ public class NotificationController {
     @GetMapping
     @Operation(summary = "최신 알림 조회", description = "로그인 사용자의 최신 10건의 알림을 조회합니다.")
     public ResponseEntity<?> getNotificationList() {
-        List<NotificationResponseDTO> data = notificationService.getNotificationList(1L);
+        List<NotificationResponseDto> data = notificationService.getNotificationList(2L);
 
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
