@@ -101,4 +101,23 @@
             LIMIT 4
     </select>
 
+    <!--  공연 키워드로 검색  -->
+    <select id="searchPerformancesByKeyword" resultType="PerformanceDto">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+        p.performance_img AS img
+        FROM performance p
+        WHERE p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY p.performance_date ASC
+            LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countPerformancesByKeyword" resultType="long">
+        SELECT COUNT(*)
+        FROM performance p
+        WHERE p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
 </mapper>

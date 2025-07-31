@@ -29,4 +29,13 @@ public interface PerformanceMapper {
 
     List<PerformanceDto> findTop4UpcomingPerformances();
 
+    List<PerformanceDto> searchPerformancesByKeyword(
+            @Param("keyword") String keyword,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+    long countPerformancesByKeyword(@Param("keyword") String keyword);
+
+
+
 }

@@ -65,5 +65,23 @@ public class PerformanceService {
         return performanceMapper.findTop4UpcomingPerformances();
     }
 
+    public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
+        int offset = page * size;
+
+        List<PerformanceDto> searchResult = performanceMapper.searchPerformancesByKeyword(keyword, size, offset);
+        long totalCount = performanceMapper.countPerformancesByKeyword(keyword);
+
+        int totalPages = (int) Math.ceil((double) totalCount / size);
+        boolean isLast = page + 1 >= totalPages;
+
+        return new PagingResponse<>(
+                searchResult,
+                page,
+                size,
+                totalCount,
+                totalPages,
+                isLast
+        );
+    }
 
 }

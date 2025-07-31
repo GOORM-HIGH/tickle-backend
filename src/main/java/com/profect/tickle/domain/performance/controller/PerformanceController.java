@@ -62,4 +62,15 @@ public class PerformanceController {
         return ResultResponse.of(ResultCode.PERFORMANCE_POPULAR_SUCCESS,popular);
     }
 
+    @GetMapping("/search/{keyword}")
+    public ResultResponse<PagingResponse<PerformanceDto>> searchPerformances(
+            @PathVariable String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size
+    ) {
+        PagingResponse<PerformanceDto> response = performanceService.searchPerformances(keyword, page, size);
+        return ResultResponse.of(ResultCode.PERFORMANCE_SEARCH_SUCCESS, response);
+    }
+
+
 }
