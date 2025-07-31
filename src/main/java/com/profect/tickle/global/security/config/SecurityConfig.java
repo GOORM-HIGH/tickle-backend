@@ -1,12 +1,20 @@
 package com.profect.tickle.global.security.config;
 
+import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.service.MemberService;
-import com.profect.tickle.global.security.CustomAuthenticationFilter;
+import com.profect.tickle.global.security.filter.CustomAuthenticationFilter;
+import com.profect.tickle.global.security.filter.JwtFilter;
+import com.profect.tickle.global.security.handler.JwtAccessDeniedHandler;
+import com.profect.tickle.global.security.handler.JwtAuthenticationEntryPoint;
+import com.profect.tickle.global.security.handler.SignInFailureHandler;
 import com.profect.tickle.global.security.handler.SignInSuccessHandler;
+import com.profect.tickle.global.security.util.JwtUtil;
+import com.profect.tickle.global.security.util.properties.TokenProperties;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,7 +25,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity // 해당 클래스에서 시큐리티에 관한 설정을 할 것이다.
@@ -26,18 +33,57 @@ public class SecurityConfig { // 주의: 클래스를 상속받아 시큐리티�
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final MemberService memberService;
+    private final TokenProperties tokenProperties;
+    private final JwtUtil jwtUtil;
 
     @Bean
     protected SecurityFilterChain configure(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // CSRF 토큰 발행 시 클라이언트에서 매번 해당 토큰도 함께 요청에 넘겨 주어야 하므로 기능 비활성화
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers(new AntPathRequestMatcher("/api/v1/**")).permitAll().anyRequest().authenticated(); // 모든 요청 허
-                })
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // session 로그인 방식을 사용하지 않음(Jwt 토큰 방식을 사용)
+                // CSRF 토큰 발급 비활성화
+                .csrf(AbstractHttpConfigurer::disable)
 
-        // 커스텀 로그인 필터 추가: 기존 인증필터 이전에 작동
-        http.addFilterBefore(getAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                // 요청별 접근 권한 설정
+                .authorizeHttpRequests(auth ->
+                        auth
+                                // Swagger 문서: 인증 없이 접근 허용
+                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                                // 회원가입, 인증 관련 API: 인증 없이 접근 허용
+                                .requestMatchers(HttpMethod.POST, "/api/v1/signUp", "/api/v1/auth/**").permitAll()
+
+                                // 로그인 API: 인증 없이 접근 허용
+                                .requestMatchers(HttpMethod.POST, "/api/v1/signIn").permitAll()
+
+                                // 공연 조회: 인증 없이 접근 허용
+                                .requestMatchers(HttpMethod.GET, "/api/v1/performance/**").permitAll()
+
+                                // 이벤트 조회: 인증 없이 접근 허용
+                                .requestMatchers(HttpMethod.GET, "/api/v1/event/**").permitAll()
+
+                                // 이벤트(할인쿠폰 발급): 관리자 권한 필요
+                                .requestMatchers(HttpMethod.POST, "/api/v1/event/coupon").hasRole(MemberRole.ADMIN.name())
+
+                                // 나머지 모든 요청: 인증 필요
+                                .anyRequest().authenticated()
+                )
+
+                // 세션 사용 안함 (STATELESS → JWT 방식)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // JWT 필터 추가: UsernamePasswordAuthenticationFilter 실행 전에 수행
+                .addFilterBefore(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+
+                // 커스텀 로그인 필터 추가: 기존 UsernamePasswordAuthenticationFilter 실행 전에 수행
+                .addFilterBefore(getAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+
+                // 인증, 인가 실패 시 핸들러 설정
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling
+                                .accessDeniedHandler(new JwtAccessDeniedHandler())            // 권한 부족(403) 처리
+                                .authenticationEntryPoint(new JwtAuthenticationEntryPoint()) // 인증 실패(401) 처리
+                );
 
         return http.build();
     }
@@ -45,7 +91,8 @@ public class SecurityConfig { // 주의: 클래스를 상속받아 시큐리티�
     private Filter getAuthenticationFilter() {
         CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter();
         customAuthenticationFilter.setAuthenticationManager(getAuthenticationManager());
-        customAuthenticationFilter.setAuthenticationSuccessHandler(new SignInSuccessHandler());
+        customAuthenticationFilter.setAuthenticationSuccessHandler(new SignInSuccessHandler(tokenProperties));
+        customAuthenticationFilter.setAuthenticationFailureHandler(new SignInFailureHandler());
 
         return customAuthenticationFilter;
     }

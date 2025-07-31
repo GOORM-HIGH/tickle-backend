@@ -35,7 +35,6 @@ public class MemberService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String inputEmail) throws UsernameNotFoundException {
         // 인증 토큰에 담긴 email이 메서드로 넘어오므로 해당 값을 기준으로 DB에서 조회한다.
-
         Member signInMember = memberRepository.findByEmail(inputEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 계정입니다."));
 

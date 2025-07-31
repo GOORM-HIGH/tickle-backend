@@ -1,25 +1,55 @@
 package com.profect.tickle.global.security.handler;
 
+import com.profect.tickle.global.security.util.properties.TokenProperties;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
+import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
 
 @Slf4j
+@RequiredArgsConstructor
 public class SignInSuccessHandler implements AuthenticationSuccessHandler {
+
+    private final TokenProperties tokenProperties;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        log.info("{}님 로그인 성공하였습니다.",authentication.getName() );
+        log.info("{}님 로그인 성공하였습니다.", authentication.getName());
 
-//        String token = Jwts.builder()
-//                .setClaims() // 바디
-//                .setExpiration() // 만료시간
-//                .signWith() // 서명
-//                .compact();
+        // 권한을 꺼내 List<String>으로 반환
+        List<String> authorities = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        // Token에 들어갈 Claim 생성
+        Claims claims = Jwts.claims().setSubject(authentication.getName());
+        claims.put("authorities", authorities);
+
+        // Base64 인코딩된 키를 디코딩하여 SecretKey 생성
+        SecretKey key = Keys.hmacShaKeyFor(Base64.getDecoder().decode(tokenProperties.getSecretKey()));
+
+        // JWT 토큰 생성
+        String token = Jwts.builder()
+                .setClaims(claims) // 바디
+                .setExpiration(new Date(System.currentTimeMillis() + tokenProperties.getExpirationTime())) // 만료시간
+                .signWith(key, SignatureAlgorithm.HS512) // 서명
+                .compact();
+
+        // 여기서 토큰을 response에 넣거나 헤더로 전달하는 로직 추가
+        response.setHeader("Authorization", "Bearer " + token);
     }
 }
