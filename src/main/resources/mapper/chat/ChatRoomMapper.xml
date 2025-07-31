@@ -4,29 +4,29 @@
 
 <mapper namespace="com.profect.tickle.domain.chat.mapper.ChatRoomMapper">
 
-    <!-- 채팅방 상세 정보 조회 (참여자 수, 읽지않은 메시지 등 포함) -->
+    <!-- 채팅방 상세 정보 조회 (수정 버전) -->
     <select id="findRoomDetailsByPerformanceId" resultType="ChatRoomResponseDto">
         SELECT
-            cr.chat_room_id,
-            cr.performance_id,
-            cr.chat_room_name,
-            cr.chat_room_status,
-            cr.chat_room_max_participants,
-            cr.chat_room_created_at,
-            cr.chat_room_updated_at,
+            cr.chat_room_id as chatRoomId,                          -- ✅ alias 추가
+            cr.performance_id as performanceId,                     -- ✅ alias 추가
+            cr.chat_room_name as name,                              -- ✅ alias 추가
+            cr.chat_room_status as status,                          -- ✅ alias 추가
+            cr.chat_room_max_participants as maxParticipants,       -- ✅ alias 추가
+            cr.chat_room_created_at as createdAt,                   -- ✅ alias 추가
+            cr.chat_room_updated_at as updatedAt,                   -- ✅ alias 추가
 
             -- 현재 참여자 수
             (SELECT COUNT(*)
              FROM chat_participants cp
              WHERE cp.chat_room_id = cr.chat_room_id
-               AND cp.chat_participants_status = true) as participant_count,
+               AND cp.chat_participants_status = true) as participantCount,
 
             -- 현재 사용자 참여 여부
             (SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END
              FROM chat_participants cp
              WHERE cp.chat_room_id = cr.chat_room_id
                AND cp.member_id = #{currentMemberId}
-               AND cp.chat_participants_status = true) as is_participant,
+               AND cp.chat_participants_status = true) as isParticipant,
 
             -- 읽지않은 메시지 개수 (참여 중인 경우에만)
             COALESCE(
@@ -38,7 +38,7 @@
                        AND cp.chat_participants_status = true
                        AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
                        AND c.chat_is_deleted = false), 0
-            ) as unread_count
+            ) as unreadCount
 
         FROM chat_room cr
         WHERE cr.performance_id = #{performanceId}

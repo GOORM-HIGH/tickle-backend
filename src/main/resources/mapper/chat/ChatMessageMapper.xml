@@ -59,23 +59,27 @@
           AND c.chat_id > COALESCE(#{lastReadMessageId}, 0)
     </select>
 
-    <!-- 채팅방의 마지막 메시지 조회 -->
+    <!-- 채팅방의 마지막 메시지 조회 (수정 버전) -->
     <select id="findLastMessageByRoomId" resultType="ChatMessageResponseDto">
         SELECT
-            c.chat_id,
-            c.chat_room_id,
-            c.member_id,
-            c.chat_message_type,
-            c.chat_content,
-            c.chat_created_at,
-            c.chat_sender_status,
+            c.chat_id as id,                        -- ✅ alias 추가
+            c.chat_room_id as chatRoomId,           -- ✅ alias 추가
+            c.member_id as memberId,                -- ✅ alias 추가
+            c.chat_message_type as messageType,     -- ✅ alias 추가
+            c.chat_content as content,              -- ✅ alias 추가
+            c.chat_created_at as createdAt,         -- ✅ alias 추가
+            c.chat_sender_status as senderStatus,   -- ✅ alias 추가
+            c.chat_file_path as filePath,           -- ✅ alias 추가
+            c.chat_file_name as fileName,           -- ✅ alias 추가
+            c.chat_file_size as fileSize,           -- ✅ alias 추가
+            c.chat_file_type as fileType,           -- ✅ alias 추가
 
             -- 발신자 닉네임
             CASE
                 WHEN c.chat_sender_status = false THEN '탈퇴한 회원입니다'
                 WHEN m.member_id IS NULL THEN '탈퇴한 회원입니다'
                 ELSE m.member_nickname
-                END as sender_nickname
+                END as senderNickname
 
         FROM chat c
                  LEFT JOIN member m ON c.member_id = m.member_id
@@ -84,5 +88,6 @@
         ORDER BY c.chat_created_at DESC
             LIMIT 1
     </select>
+
 
 </mapper>
