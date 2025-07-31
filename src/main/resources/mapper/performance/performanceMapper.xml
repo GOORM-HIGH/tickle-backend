@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.performance.mapper.PerformanceMapper">
+
+    <!-- 장르 목록 조회 -->
+    <select id="findAllGenres" resultType="GenreDto">
+        SELECT
+            genre_id AS genreId,
+            genre_title AS title
+        FROM genre
+    </select>
+
+    <!-- 장르별 공연 조회  -->
+    <select id="findPerformancesByGenre" resultType="PerformanceDto">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+        p.performance_img AS img
+        FROM performance p
+            JOIN status s ON p.status_id = s.status_id
+        WHERE p.genre_id = #{genreId}
+          AND s.status_code != 102
+        ORDER BY p.performance_date ASC
+            LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countPerformancesByGenre" resultType="int">
+        SELECT COUNT(*)
+        FROM performance p
+                 JOIN status s ON p.status_id = s.status_id
+        WHERE p.genre_id = #{genreId}
+          AND s.status_code != 102
+    </select>
+
+    <!--  장르별 인기랭킹 top10  -->
+    <select id="findTop10ByGenre" resultType="PerformanceDto">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.genre_id AS genreId,
+            p.performance_date AS date,
+            p.performance_img AS img
+        FROM performance p
+        JOIN status s ON p.status_id = s.status_id
+        WHERE p.genre_id = #{genreId}
+          AND s.status_code != 102
+        ORDER BY p.performance_look_count DESC, p.performance_start_date ASC
+            LIMIT 10
+    </select>
+
+    <!-- 모든 카테고리별 인기랭킹 top10   -->
+    <select id="findTop100ByClickCount" resultType="PerformanceDto">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+        p.performance_img AS img
+        FROM performance p
+            JOIN status s ON p.status_id = s.status_id
+        WHERE s.status_code != 102
+        ORDER BY p.performance_look_count DESC, p.performance_start_date ASC
+            LIMIT 10
+    </select>
+
+    <!--  공연별 정보 상세조회  -->
+    <select id="findDetailById" parameterType="long"
+            resultType="PerformanceDetailDto">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_img AS img,
+            p.performance_date AS date,
+        s.status_description AS statusDescription,
+        p.performance_runtime AS runtime,
+        p.performance_price AS price,
+        h.hall_address AS hallAddress,
+        m.host_biz_name AS hostBizName,
+        p.performance_start_date AS startDate,
+        p.performance_end_date AS endDate
+        FROM performance p
+            JOIN status s ON p.status_id = s.status_id
+            JOIN hall h ON p.hall_id = h.hall_id
+            JOIN member m ON p.member_id = m.member_id
+        WHERE p.performance_id = #{performanceId}
+    </select>
+
+
+</mapper>
