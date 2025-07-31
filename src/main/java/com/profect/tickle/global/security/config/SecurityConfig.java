@@ -1,7 +1,8 @@
-package com.profect.tickle.global.config;
+package com.profect.tickle.global.security.config;
 
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.global.security.CustomAuthenticationFilter;
+import com.profect.tickle.global.security.handler.SignInSuccessHandler;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
