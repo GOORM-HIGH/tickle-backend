@@ -17,7 +17,7 @@ public class ChatRoomCreateRequestDto {
 
     @NotBlank(message = "채팅방 이름은 필수입니다")
     @Size(max = 20, message = "채팅방 이름은 20자 이하여야 합니다")
-    private String chatRoomName;
+    private String roomName;
 
     private Short maxParticipants = 100; // 기본값 100명
 }

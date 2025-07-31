@@ -1,5 +1,13 @@
 package com.profect.tickle.global.config;
 
+import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
+import com.profect.tickle.domain.chat.dto.response.ChatParticipantsResponseDto;
+import com.profect.tickle.domain.chat.dto.response.ChatRoomResponseDto;
+import com.profect.tickle.domain.chat.dto.response.UnreadCountResponseDto;
+import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
+import com.profect.tickle.domain.chat.mapper.ChatParticipantsMapper;
+import com.profect.tickle.domain.chat.mapper.ChatRoomMapper;
+import com.profect.tickle.domain.notification.dto.response.NotificationResponseDTO;
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
 import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.global.properties.DatasourceHikariProperties;
@@ -34,7 +42,6 @@ public class MybatisConfig {
         hikariDataSource.setUsername(dataSourceProperties.getUsername());
         hikariDataSource.setPassword(dataSourceProperties.getPassword());
 
-        // HikariCP 커넥션 풀 옵션 설정
         hikariDataSource.setMaximumPoolSize(datasourceHikariProperties.getMaximumPoolSize());
         hikariDataSource.setMinimumIdle(datasourceHikariProperties.getMinimumIdle());
         hikariDataSource.setConnectionTimeout(datasourceHikariProperties.getConnectionTimeOut());

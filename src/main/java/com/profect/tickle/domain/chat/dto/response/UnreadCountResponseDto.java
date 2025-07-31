@@ -14,8 +14,8 @@ import java.time.Instant;
 public class UnreadCountResponseDto {
 
     private Integer unreadCount;
-    private Long chatParticipantsLastReadMessageId;
-    private Instant chatParticipantsLastReadAt;
+    private Long lastReadMessageId;
+    private Instant lastReadAt;
 
     public static UnreadCountResponseDto of(
             Integer unreadCount,
@@ -24,8 +24,8 @@ public class UnreadCountResponseDto {
 
         return UnreadCountResponseDto.builder()
                 .unreadCount(unreadCount)
-                .chatParticipantsLastReadMessageId(lastReadMessageId)
-                .chatParticipantsLastReadAt(lastReadAt)
+                .lastReadMessageId(lastReadMessageId)
+                .lastReadAt(lastReadAt)
                 .build();
     }
 }
