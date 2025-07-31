@@ -71,4 +71,9 @@ public class ChatParticipants {
         this.lastReadAt = Instant.now();
     }
 
+    public void reactivate() {
+        this.status = true;
+        this.joinedAt = Instant.now(); // 재참여 시간 업데이트
+    }
+
 }

@@ -39,47 +39,84 @@ public class ChatParticipantsService {
     public ChatParticipantsResponseDto joinChatRoom(Long chatRoomId, Long memberId, ChatRoomJoinRequestDto requestDto) {
         log.info("채팅방 참여 요청: chatRoomId={}, memberId={}", chatRoomId, memberId);
 
-        // 1. 채팅방과 회원 존재 확인
+        // 1. 채팅방 존재 확인
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
 
+        // 2. 회원 존재 확인
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId));
 
-        // 2. 이미 참여 중인지 확인
-        Optional<ChatParticipants> existingParticipant =
-                chatParticipantsRepository.findByChatRoomAndMember(chatRoom, member);
-
-        ChatParticipants participant;
+        // 3. 기존 참여 여부 확인
+        Optional<ChatParticipants> existingParticipant = chatParticipantsRepository
+                .findByChatRoomAndMember(chatRoom, member);
 
         if (existingParticipant.isPresent()) {
-            // 이미 참여했던 경우 → 상태만 활성화
-            participant = existingParticipant.get();
-            if (participant.getStatus()) {
-                throw ChatExceptions.chatAlreadyParticipant(chatRoomId); // ✅ 수정
-            }
-            participant.rejoin();
-        } else {
-            // 3. 참여자 수 확인
-            int currentParticipants = chatParticipantsRepository.countByChatRoomAndStatusTrue(chatRoom);
-            if (!chatRoom.canJoin(currentParticipants)) {
-                throw ChatExceptions.chatRoomCapacityExceeded(); // ✅ 수정
-            }
+            ChatParticipants participant = existingParticipant.get();
 
-            // 4. 새 참여자 생성
-            participant = ChatParticipants.builder()
-                    .chatRoom(chatRoom)
-                    .member(member)
-                    .joinedAt(Instant.now())
-                    .status(true)
-                    .build();
+            if (participant.getStatus()) {
+                // ✅ 올바른 메시지 + 기존 방식으로 DTO 변환
+                log.info("사용자가 이미 채팅방에 참여 중: participantId={}", participant.getId());
+
+                // ✅ 기존 방식: 엔티티에서 직접 DTO 생성
+                return ChatParticipantsResponseDto.builder()
+                        .id(participant.getId())
+                        .chatRoomId(participant.getChatRoom().getId())
+                        .memberId(participant.getMember().getId())
+                        .joinedAt(participant.getJoinedAt())
+                        .status(participant.getStatus())
+                        .lastReadAt(participant.getLastReadAt())
+                        .lastReadMessageId(participant.getLastReadMessageId())
+                        .build();
+
+            } else {
+                // 비활성 상태였다면 재활성화
+                participant.reactivate(); // 이 메서드가 없다면 participant.setStatus(true) 사용
+                ChatParticipants saved = chatParticipantsRepository.save(participant);
+                log.info("채팅방 재참여 완료: participantId={}", saved.getId());
+
+                // ✅ 재활성화된 참여자 DTO 반환
+                return ChatParticipantsResponseDto.builder()
+                        .id(saved.getId())
+                        .chatRoomId(saved.getChatRoom().getId())
+                        .memberId(saved.getMember().getId())
+                        .joinedAt(saved.getJoinedAt())
+                        .status(saved.getStatus())
+                        .lastReadAt(saved.getLastReadAt())
+                        .lastReadMessageId(saved.getLastReadMessageId())
+                        .build();
+            }
         }
 
-        ChatParticipants savedParticipant = chatParticipantsRepository.save(participant);
-        log.info("채팅방 참여 완료: participantId={}", savedParticipant.getId());
+        // 4. 채팅방 정원 확인
+        int currentParticipants = chatParticipantsRepository.countByChatRoomAndStatusTrue(chatRoom);
+        if (currentParticipants >= chatRoom.getMaxParticipants()) {
+            throw new IllegalStateException("채팅방 정원이 가득 찼습니다.");
+        }
 
-        return ChatParticipantsResponseDto.fromEntity(savedParticipant);
+        // 5. 새로운 참여자 생성 (기존 코드 유지)
+        ChatParticipants newParticipant = ChatParticipants.builder()
+                .chatRoom(chatRoom)
+                .member(member)
+                .status(true)
+                .joinedAt(Instant.now())
+                .build();
+
+        ChatParticipants saved = chatParticipantsRepository.save(newParticipant);
+        log.info("채팅방 참여 완료: participantId={}", saved.getId());
+
+        // ✅ 기존 방식: 새 참여자 DTO 반환
+        return ChatParticipantsResponseDto.builder()
+                .id(saved.getId())
+                .chatRoomId(saved.getChatRoom().getId())
+                .memberId(saved.getMember().getId())
+                .joinedAt(saved.getJoinedAt())
+                .status(saved.getStatus())
+                .lastReadAt(saved.getLastReadAt())
+                .lastReadMessageId(saved.getLastReadMessageId())
+                .build();
     }
+
 
     /**
      * 채팅방 나가기 (JPA 사용)
