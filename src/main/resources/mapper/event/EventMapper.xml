@@ -66,4 +66,28 @@
                  JOIN status st ON e.status_id = st.status_id
         WHERE e.event_id = #{eventId}
     </select>
+
+    <select id="searchTicketEvents" resultType="com.profect.tickle.domain.event.dto.response.TicketListResponseDto">
+        SELECT
+            e.event_id AS eventId,
+            e.event_name AS name,
+            e.event_created_at AS createdAt
+        FROM event e
+                 JOIN status s ON e.status_id = s.status_id
+        WHERE e.event_type = 1
+          AND s.status_code IN (100, 101)
+          AND e.event_name LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY e.event_created_at DESC
+            LIMIT #{size}
+        OFFSET #{offset}
+    </select>
+
+    <select id="countSearchTicketEvents" resultType="int">
+        SELECT COUNT(*)
+        FROM event e
+                 JOIN status s ON e.status_id = s.status_id
+        WHERE e.event_type = 1
+          AND s.status_code IN (100, 101)
+          AND e.event_name LIKE CONCAT('%', #{keyword}, '%')
+    </select>
 </mapper>

@@ -66,4 +66,15 @@ public class EventController {
         return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, detail);
     }
 
+    @GetMapping("/ticket/search")
+    @Operation(summary = "티켓 이벤트 키워드 검색")
+    public ResultResponse<PagingResponse<TicketListResponseDto>> searchTicketEvents(
+            @RequestParam String keyword,
+            @RequestParam int page,
+            @RequestParam int size
+    ) {
+        PagingResponse<TicketListResponseDto> response = eventService.searchTicketEvents(keyword, page, size);
+        return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, response);
+    }
+
 }

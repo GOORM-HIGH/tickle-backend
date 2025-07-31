@@ -18,4 +18,6 @@ public interface EventService {
     TicketEventDetailResponseDto getTicketEventDetail(Long eventId);
 
     void issueCoupon(Long eventId);
+
+    PagingResponse<TicketListResponseDto> searchTicketEvents(String keyword, int page, int size);
 }

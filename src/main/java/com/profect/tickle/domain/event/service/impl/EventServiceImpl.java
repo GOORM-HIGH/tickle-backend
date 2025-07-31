@@ -178,6 +178,11 @@ public class EventServiceImpl implements EventService {
         couponReceivedRepository.save(CouponReceived.create(member, coupon));
     }
 
+    @Override
+    public PagingResponse<TicketListResponseDto> searchTicketEvents(String keyword, int page, int size) {
+        return null;
+    }
+
     private Event getEventOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
