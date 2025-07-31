@@ -16,6 +16,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/event")
 @RequiredArgsConstructor
@@ -55,7 +57,6 @@ public class EventController {
                                                                                        @RequestParam("page") int page,
                                                                                        @RequestParam("size") int size) {
         PagingResponse<EventListResponseDto> response = eventService.getEventList(eventType, page, size);
-
         return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, response);
     }
 
@@ -68,13 +69,18 @@ public class EventController {
 
     @GetMapping("/ticket/search")
     @Operation(summary = "티켓 이벤트 키워드 검색")
-    public ResultResponse<PagingResponse<TicketListResponseDto>> searchTicketEvents(
-            @RequestParam String keyword,
-            @RequestParam int page,
-            @RequestParam int size
-    ) {
+    public ResultResponse<PagingResponse<TicketListResponseDto>> searchTicketEvents(@RequestParam String keyword,
+                                                                                    @RequestParam int page,
+                                                                                    @RequestParam int size) {
         PagingResponse<TicketListResponseDto> response = eventService.searchTicketEvents(keyword, page, size);
         return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, response);
+    }
+
+    @GetMapping("/random")
+    @Operation(summary = "랜덤 이벤트 5개 조회")
+    public ResultResponse<List<EventListResponseDto>> getRandomEvents() {
+        List<EventListResponseDto> events = eventService.getRandomOngoingEvents();
+        return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, events);
     }
 
 }

@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 @Service
@@ -180,7 +181,17 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public PagingResponse<TicketListResponseDto> searchTicketEvents(String keyword, int page, int size) {
-        return null;
+        int offset = page * size;
+        List<TicketListResponseDto> list = eventMapper.searchTicketEvents(keyword, size, offset);
+        int total = eventMapper.countSearchTicketEvents(keyword);
+
+        return PagingResponse.from(list, page, size, total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventListResponseDto> getRandomOngoingEvents() {
+        return new ArrayList<>(eventMapper.findRandomOngoingEvents());
     }
 
     private Event getEventOrThrow(Long eventId) {
