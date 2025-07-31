@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MemberResponseDTO {
+public class MemberResponseDto {
 
     private Long id;                     // 사용자 고유번호
     private String email;                // 이메일
@@ -37,8 +37,8 @@ public class MemberResponseDTO {
     private LocalDateTime deletedAt;  // 계정 삭제일(논리 삭제)
 
     /** Entity → DTO 변환 */
-    public static MemberResponseDTO fromEntity(Member memberEntity) {
-        return MemberResponseDTO.builder()
+    public static MemberResponseDto fromEntity(Member memberEntity) {
+        return MemberResponseDto.builder()
                 .id(memberEntity.getId())
                 .email(memberEntity.getEmail())
                 .nickname(memberEntity.getNickname())
