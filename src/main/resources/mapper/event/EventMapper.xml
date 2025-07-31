@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.event.mapper.EventMapper">
+
+    <select id="findCouponEventList" resultType="com.profect.tickle.domain.event.dto.response.CouponListResponseDto">
+        SELECT
+            c.coupon_id AS couponId,
+            c.coupon_name AS name,
+            c.coupon_valid AS validDate
+        FROM coupon c
+        ORDER BY c.coupon_created_at DESC
+            LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="findTicketEventList" resultType="com.profect.tickle.domain.event.dto.response.TicketListResponseDto">
+        SELECT
+            e.event_id AS eventId,
+            e.event_name AS name,
+            e.event_created_at AS createdAt
+        FROM event e
+        WHERE e.event_type = 1
+        ORDER BY e.event_created_at DESC
+            LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countCouponEvents" resultType="int">
+        SELECT COUNT(*)
+        FROM coupon c
+        WHERE EXISTS (
+            SELECT 1
+            FROM event e
+                     JOIN status s ON e.status_id = s.status_id
+            WHERE e.coupon_id = c.coupon_id
+              AND s.status_code IN (100, 101)
+        )
+    </select>
+
+    <select id="countTicketEvents" resultType="int">
+        SELECT COUNT(*)
+        FROM event e
+                 JOIN status s ON e.status_id = s.status_id
+        WHERE e.event_type = 1
+          AND s.status_code IN (100, 101)
+    </select>
+
+</mapper>
