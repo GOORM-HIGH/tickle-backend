@@ -119,4 +119,7 @@ public class Member {
                 .build();
     }
 
+    public void encryptPassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }
