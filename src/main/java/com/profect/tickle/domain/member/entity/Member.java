@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.member.entity;
 
+import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,7 +43,7 @@ public class Member {
     @Column(name = "member_role", nullable = false)
     private MemberRole memberRole;  // 0 = 사용자, 1 = 주최자, 2 = 관리자
 
-    @Column(name = "member_number", nullable = false, length = 10)
+    @Column(name = "member_number", nullable = false, length = 11)
     private String phoneNumber;  // 전화번호
 
     @Builder.Default
@@ -97,4 +98,25 @@ public class Member {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    public static Member createMember(CreateMemberRequestDto dto) {
+        return Member.builder()
+                .email(dto.getEmail())
+                .password(dto.getPassword())  // 서비스에서 BCrypt로 암호화
+                .nickname(dto.getNickname())
+                .birthday(dto.getBirthday())
+                .img(dto.getImg())
+                .phoneNumber(dto.getPhoneNumber())
+                .memberRole(dto.getRole() != null ? dto.getRole() : MemberRole.MEMBER) // 기본값 MEMBER
+                .hostBizNumber(dto.getHostBizNumber())
+                .hostBizCeo(dto.getHostBizCeoName())
+                .hostBizName(dto.getHostBizName())
+                .hostBizAddress(dto.getHostBizAddress())
+                .hostBizEcommerceRegistrationNumber(dto.getHostBizEcommerceRegistrationNumber())
+                .hostBizBank(dto.getHostBizBank())
+                .hostBizDepositor(dto.getHostBizDepositor())
+                .hostBizBankNumber(dto.getHostBizBankNumber())
+                .build();
+    }
+
 }
