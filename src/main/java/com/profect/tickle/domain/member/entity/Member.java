@@ -92,6 +92,9 @@ public class Member {
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Point> points = new ArrayList<>();
 
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CouponReceived> receivedCoupons = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         this.createdAt = Instant.now();

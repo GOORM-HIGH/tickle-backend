@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.event.entity;
 
+import com.profect.tickle.domain.member.entity.CouponReceived;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -7,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -38,6 +41,9 @@ public class Coupon {
 
     @Column(name = "coupon_created_at", nullable = false)
     private Instant createdAt;
+
+    @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CouponReceived> receivedCoupons = new ArrayList<>();
 
     private Coupon(String name, String content, Short count, Short rate, LocalDate valid, Instant createdAt) {
         this.name = name;
