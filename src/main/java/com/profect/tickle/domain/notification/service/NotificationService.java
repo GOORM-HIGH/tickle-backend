@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.notification.service;
 
-import com.profect.tickle.domain.notification.dto.response.NotificationResponseDTO;
+import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
 import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,17 +13,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationService {
 
-    //    private final SqlSession sqlSession;
     private final NotificationMapper notificationMapper;
     private final NotificationRepository notificationRepository;
 
     @Transactional(readOnly = true)
-    public List<NotificationResponseDTO> getNotificationList(Long memberId) {
+    public List<NotificationResponseDto> getNotificationList(Long memberId) {
 
-        List<NotificationResponseDTO> notificationList = notificationMapper.getRecentNotificationListByMemberId(memberId);
+        List<NotificationResponseDto> notificationList = notificationMapper.getRecentNotificationListByMemberId(memberId);
 
-
-        // Entity → DTO 변환
         return notificationList;
     }
 }

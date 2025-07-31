@@ -8,17 +8,20 @@
     <!-- 특정 사용자(memberId)의 최신 10건 알림 조회 -->
     <select id="getRecentNotificationListByMemberId"
             parameterType="long"
-            resultType="com.profect.tickle.domain.notification.dto.response.NotificationResponseDTO">
+            resultType="NotificationResponseDto">
         SELECT
             n.notification_id AS id,
             nt.notification_template_title AS title,
             nt.notification_template_content AS content,
+            CASE WHEN s.status_name = 'read' THEN TRUE ELSE FALSE END AS isRead,
             n.notification_created_at AS createdAt
         FROM notification AS n
                  JOIN notification_template AS nt
-                      ON n.noti_template_id = nt.notification_template_id
+                      ON n.notification_template_id = nt.notification_template_id
                  JOIN member AS m
                       ON n.notification_received_member_id = m.member_id
+                 JOIN status AS s
+                      ON n.status_id = s.status_id
         WHERE m.member_id = #{memberId}
         ORDER BY n.notification_created_at DESC
             LIMIT 10
