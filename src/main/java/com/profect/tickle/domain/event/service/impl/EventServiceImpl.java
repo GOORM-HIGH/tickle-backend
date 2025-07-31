@@ -26,7 +26,7 @@ import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -34,10 +34,10 @@ import java.util.ArrayList;
 
 
 @Service
+@RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
 
     private final SeatRepository seatRepository;
-    private final PointRepository pointRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
     private final StatusRepository statusRepository;
@@ -45,26 +45,14 @@ public class EventServiceImpl implements EventService {
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
     private final CouponReceivedRepository couponReceivedRepository;
+    private final PointRepository pointRepository;
 
     private final PointTarget eventTarget = PointTarget.EVENT;
 
     Member member = new Member();  //[임의 값] 유저 개발 완료 시 삭제 코드
 
-    public EventServiceImpl(SeatRepository seatRepository, PointRepository pointRepository, CouponRepository couponRepository, EventRepository eventRepository, StatusRepository statusRepository, EventMapper eventMapper, MemberRepository memberRepository, ReservationRepository reservationRepository, CouponReceivedRepository couponReceivedRepository) {
-        this.seatRepository = seatRepository;
-        this.pointRepository = pointRepository;
-        this.couponRepository = couponRepository;
-        this.eventRepository = eventRepository;
-        this.statusRepository = statusRepository;
-        this.eventMapper = eventMapper;
-        this.memberRepository = memberRepository;
-        this.reservationRepository = reservationRepository;
-        this.couponReceivedRepository = couponReceivedRepository;
-    }
-
     @Override
     @Transactional
-
     public CouponResponseDto createCouponEvent(CouponCreateRequestDto request) {
         if (couponRepository.existsByName(request.name()))
             throw new BusinessException(ErrorCode.DUPLICATE_COUPON_NAME);
@@ -88,6 +76,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request) {
         Status status = getStatusOrThrow("EVENT", (short) 100);
         Seat seat = getSeatOrThrow(request.seatId());
@@ -102,6 +91,7 @@ public class EventServiceImpl implements EventService {
     @Transactional
     public TicketApplyResponseDto applyTicketEvent(Long eventId) {
         Event event = getEventOrThrow(eventId);
+        isEventProgress(event);
 
         // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제
         /*member = memberRepository.findById()
@@ -133,6 +123,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PagingResponse<EventListResponseDto> getEventList(EventType type, int page, int size) {
         int offset = page * size;
 
@@ -161,6 +152,8 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));*/
 
         Event event = getEventOrThrow(eventId);
+        isEventProgress(event);
+
         Coupon coupon = event.getCoupon();
         if (coupon == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
 
@@ -178,9 +171,8 @@ public class EventServiceImpl implements EventService {
     }
 
     private Event getEventOrThrow(Long eventId) {
-        Event event = eventRepository.findById(eventId)
+        return eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
-        return event;
     }
 
     private Status getStatusOrThrow(String type, short code) {
@@ -202,5 +194,11 @@ public class EventServiceImpl implements EventService {
 
         Point point = Point.create(member, event.getPerPrice(), target, member.getPointBalance());
         pointRepository.save(point);
+    }
+
+    private static void isEventProgress(Event event) {
+        if (event.getStatus().getCode() != 101) {
+            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
+        }
     }
 }
