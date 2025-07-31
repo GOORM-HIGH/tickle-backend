@@ -145,6 +145,14 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public TicketEventDetailResponseDto getTicketEventDetail(Long eventId) {
+        TicketEventDetailResponseDto dto = eventMapper.findTicketEventDetail(eventId);
+        if (dto == null) throw new BusinessException(ErrorCode.EVENT_NOT_FOUND);
+        return dto;
+    }
+
+    @Override
     @Transactional
     public void issueCoupon(Long eventId) {
         // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제

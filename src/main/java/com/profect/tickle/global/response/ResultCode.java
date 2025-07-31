@@ -10,7 +10,7 @@ public enum ResultCode {
     RESPONSE_TEST(HttpStatus.OK, "응답 테스트 성공"),
 
     //EVENT
-    EVENT_LIST_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
+    EVENT_INFO_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
     EVENT_CREATE_SUCCESS(HttpStatus.CREATED, "이벤트 생성 성공"),
     COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰을 성공적으로 지급하였습니다."),
 

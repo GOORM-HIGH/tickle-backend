@@ -46,4 +46,24 @@
           AND s.status_code IN (100, 101)
     </select>
 
+    <select id="findTicketEventDetail"
+            resultType="com.profect.tickle.domain.event.dto.response.TicketEventDetailResponseDto">
+        SELECT
+            e.event_id AS eventId,
+            p.performance_title AS performanceTitle,
+            p.performance_place AS performancePlace,
+            p.performance_date AS performanceDate,
+            p.performance_time AS performanceRuntime,
+            s.seat_code AS seatCode,
+            sc.seat_class_grade AS seatClassGrade,
+            e.event_per_price AS perPrice,
+            p.performance_img AS performanceImg,
+            st.status_name AS eventStatusName
+        FROM event e
+                 JOIN seat s ON e.seat_id = s.seat_id
+                 JOIN seat_class sc ON s.seat_class_id = sc.seat_class_id
+                 JOIN performance p ON s.performance_id = p.performance_id
+                 JOIN status st ON e.status_id = st.status_id
+        WHERE e.event_id = #{eventId}
+    </select>
 </mapper>

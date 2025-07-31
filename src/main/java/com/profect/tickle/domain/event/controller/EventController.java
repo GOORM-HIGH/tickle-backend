@@ -1,11 +1,8 @@
 package com.profect.tickle.domain.event.controller;
 
-import com.profect.tickle.domain.event.dto.response.EventListResponseDto;
-import com.profect.tickle.domain.event.dto.response.TicketApplyResponseDto;
-import com.profect.tickle.domain.event.dto.response.TicketEventResponseDto;
+import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
-import com.profect.tickle.domain.event.dto.response.CouponResponseDto;
 import com.profect.tickle.domain.event.entity.EventType;
 import com.profect.tickle.domain.event.service.EventService;
 import com.profect.tickle.global.paging.PagingResponse;
@@ -57,11 +54,16 @@ public class EventController {
     public ResultResponse<PagingResponse<EventListResponseDto>> getEventList(@RequestParam("type") EventType eventType,
                                                                                        @RequestParam("page") int page,
                                                                                        @RequestParam("size") int size) {
-
         PagingResponse<EventListResponseDto> response = eventService.getEventList(eventType, page, size);
 
+        return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, response);
+    }
 
-        return ResultResponse.of(ResultCode.EVENT_LIST_SUCCESS, response);
+    @GetMapping("/ticket/{eventId}")
+    @Operation(summary = "티켓 이벤트 상세 조회")
+    public ResultResponse<TicketEventDetailResponseDto> getTicketEventDetail(@PathVariable Long eventId) {
+        TicketEventDetailResponseDto detail = eventService.getTicketEventDetail(eventId);
+        return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, detail);
     }
 
 }
