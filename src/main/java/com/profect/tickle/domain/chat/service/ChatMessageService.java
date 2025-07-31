@@ -1,15 +1,18 @@
 package com.profect.tickle.domain.chat.service;
 
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
 import com.profect.tickle.domain.chat.dto.common.PaginationDto;
 import com.profect.tickle.domain.chat.entity.Chat;
+import com.profect.tickle.domain.chat.entity.ChatMessageType;
 import com.profect.tickle.domain.chat.entity.ChatRoom;
 import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
 import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
 import com.profect.tickle.domain.chat.repository.ChatRepository;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
+import com.profect.tickle.domain.file.service.FileService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.global.exception.ChatExceptions;
@@ -32,6 +35,7 @@ public class ChatMessageService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
     private final ChatMessageMapper chatMessageMapper; // MyBatis
+    private final FileService fileService;
 
     // ✅ ChatParticipantsService 의존성 제거
     // private final ChatParticipantsService chatParticipantsService;
@@ -256,4 +260,48 @@ public class ChatMessageService {
     private void updateChatRoomTimestamp(ChatRoom chatRoom) {
         chatRoom.updateTimestamp();
     }
+
+
+    /**
+     * 메시지 첨부 파일 다운로드용 정보 조회
+     */
+    public ChatMessageFileDownloadDto getMessageFileForDownload(Long chatRoomId, Long messageId, Long currentMemberId) {
+        log.info("메시지 파일 다운로드 정보 조회: messageId={}, memberId={}", messageId, currentMemberId);
+
+        // 1. 채팅방 존재 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+
+        // 2. 회원 확인
+        Member member = memberRepository.findById(currentMemberId)
+                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(currentMemberId));
+
+        // 3. 참여 여부 확인
+        boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
+        if (!isParticipant) {
+            throw ChatExceptions.chatNotParticipant();
+        }
+
+        // 4. 메시지 존재 확인
+        Chat message = chatRepository.findById(messageId)
+                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId));
+
+        // 5. 파일 메시지인지 확인
+        if (message.getMessageType() != ChatMessageType.FILE && message.getMessageType() != ChatMessageType.IMAGE) {
+            throw new IllegalArgumentException("파일이 첨부되지 않은 메시지입니다");
+        }
+
+        if (message.getFilePath() == null) {
+            throw new IllegalArgumentException("파일 경로가 존재하지 않습니다");
+        }
+
+        // 6. 파일 다운로드 정보 반환
+        return ChatMessageFileDownloadDto.builder()
+                .filePath(message.getFilePath())
+                .fileName(message.getFileName())
+                .fileType(message.getFileType())
+                .fileSize(message.getFileSize())
+                .build();
+    }
+
 }
