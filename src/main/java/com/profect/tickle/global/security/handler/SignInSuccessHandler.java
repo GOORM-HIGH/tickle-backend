@@ -1,5 +1,6 @@
 package com.profect.tickle.global.security.handler;
 
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,6 +14,12 @@ import java.io.IOException;
 public class SignInSuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        log.info("로그인 성공 후 시큐리티가 관리하는 principal 객체 : {}",authentication);
+        log.info("{}님 로그인 성공하였습니다.",authentication.getName() );
+
+//        String token = Jwts.builder()
+//                .setClaims() // 바디
+//                .setExpiration() // 만료시간
+//                .signWith() // 서명
+//                .compact();
     }
 }
