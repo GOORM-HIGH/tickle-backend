@@ -1,4 +1,4 @@
-package com.profect.tickle.global.properties;
+package com.profect.tickle.global.util.properties;
 
 import lombok.Getter;
 import lombok.Setter;
