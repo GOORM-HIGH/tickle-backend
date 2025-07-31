@@ -9,18 +9,17 @@ public record PagingResponse<T>(
         List<T> content,
         int page,
         int size,
-        long totalElements,
-        int totalPages,
-        boolean isLast
+        long totalElements
 ) {
     public static <T> PagingResponse<T> from(Page<T> page) {
         return new PagingResponse<>(
                 page.getContent(),
                 page.getNumber(),
                 page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isLast()
+                page.getTotalElements()
         );
+    }
+    public static <T> PagingResponse<T> from(List<T> content, int page, int size, long totalElements) {
+        return new PagingResponse<>(content, page, size, totalElements);
     }
 }

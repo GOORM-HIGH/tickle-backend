@@ -2,11 +2,11 @@ package com.profect.tickle.domain.event.service.impl;
 
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
-import com.profect.tickle.domain.event.dto.response.CouponResponseDto;
-import com.profect.tickle.domain.event.dto.response.TicketApplyResponseDto;
-import com.profect.tickle.domain.event.dto.response.TicketEventResponseDto;
+import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.entity.Event;
+import com.profect.tickle.domain.event.entity.EventType;
+import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.event.service.EventService;
@@ -23,15 +23,17 @@ import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+
 
 @Service
-@RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
 
     private final SeatRepository seatRepository;
@@ -39,6 +41,7 @@ public class EventServiceImpl implements EventService {
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
     private final StatusRepository statusRepository;
+    private final EventMapper eventMapper;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
     private final CouponReceivedRepository couponReceivedRepository;
@@ -46,6 +49,18 @@ public class EventServiceImpl implements EventService {
     private final PointTarget eventTarget = PointTarget.EVENT;
 
     Member member = new Member();  //[임의 값] 유저 개발 완료 시 삭제 코드
+
+    public EventServiceImpl(SeatRepository seatRepository, PointRepository pointRepository, CouponRepository couponRepository, EventRepository eventRepository, StatusRepository statusRepository, EventMapper eventMapper, MemberRepository memberRepository, ReservationRepository reservationRepository, CouponReceivedRepository couponReceivedRepository) {
+        this.seatRepository = seatRepository;
+        this.pointRepository = pointRepository;
+        this.couponRepository = couponRepository;
+        this.eventRepository = eventRepository;
+        this.statusRepository = statusRepository;
+        this.eventMapper = eventMapper;
+        this.memberRepository = memberRepository;
+        this.reservationRepository = reservationRepository;
+        this.couponReceivedRepository = couponReceivedRepository;
+    }
 
     @Override
     @Transactional
@@ -118,6 +133,27 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public PagingResponse<EventListResponseDto> getEventList(EventType type, int page, int size) {
+        int offset = page * size;
+
+        return switch (type) {
+            case COUPON -> PagingResponse.from(
+                    new ArrayList<>(eventMapper.findCouponEventList(size, offset)),
+                    page,
+                    size,
+                    eventMapper.countCouponEvents()
+            );
+            case TICKET -> PagingResponse.from(
+                    new ArrayList<>(eventMapper.findTicketEventList(size, offset)),
+                    page,
+                    size,
+                    eventMapper.countTicketEvents()
+            );
+            default -> throw new BusinessException(ErrorCode.INVALID_TYPE_VALUE);
+        };
+    }
+
+    @Override
     @Transactional
     public void issueCoupon(Long eventId) {
         // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제
@@ -132,7 +168,10 @@ public class EventServiceImpl implements EventService {
             throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
         }
 
-        if (coupon.getCount() <= 0) throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
+        if (coupon.getCount() <= 0) {
+            event.getStatus().complete();
+            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
+        }
 
         coupon.decreaseCount();
         couponReceivedRepository.save(CouponReceived.create(member, coupon));

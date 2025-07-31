@@ -1,13 +1,20 @@
 package com.profect.tickle.domain.event.controller;
 
+import com.profect.tickle.domain.event.dto.response.EventListResponseDto;
 import com.profect.tickle.domain.event.dto.response.TicketApplyResponseDto;
 import com.profect.tickle.domain.event.dto.response.TicketEventResponseDto;
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.dto.response.CouponResponseDto;
+import com.profect.tickle.domain.event.entity.EventType;
 import com.profect.tickle.domain.event.service.EventService;
+import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -42,4 +49,19 @@ public class EventController {
         eventService.issueCoupon(eventId);
         return ResultResponse.of(ResultCode.COUPON_ISSUE_SUCCESS, "[이벤트 쿠폰 지급 완료]: eventId = " + eventId);
     }
+
+    @GetMapping
+    @Operation(summary = "이벤트 목록 조회", description = "쿠폰 또는 티켓 이벤트를 페이징으로 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공",
+            content = @Content(schema = @Schema(implementation = PagingResponse.class)))
+    public ResultResponse<PagingResponse<EventListResponseDto>> getEventList(@RequestParam("type") EventType eventType,
+                                                                                       @RequestParam("page") int page,
+                                                                                       @RequestParam("size") int size) {
+
+        PagingResponse<EventListResponseDto> response = eventService.getEventList(eventType, page, size);
+
+
+        return ResultResponse.of(ResultCode.EVENT_LIST_SUCCESS, response);
+    }
+
 }

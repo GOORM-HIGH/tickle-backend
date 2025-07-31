@@ -4,8 +4,8 @@ import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.entity.Event;
 
 public record TicketListResponseDto(
-        Long eventId,
-        String eventName,
+        Long id,
+        String name,
         Integer goalPrice,
         Short perPrice
 ) implements EventListResponseDto {
@@ -16,5 +16,15 @@ public record TicketListResponseDto(
                 event.getGoalPrice(),
                 event.getPerPrice()
         );
+    }
+
+    @Override
+    public Long getEventId() {
+        return id;
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 }
