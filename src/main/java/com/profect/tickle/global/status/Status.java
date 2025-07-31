@@ -48,5 +48,21 @@ public class Status {
                 code,
                 name);
     }
+
+    public void scheduled() {
+        this.code = 100;
+    }
+
+    public void process() {
+        this.code = 101;
+    }
+
+    public void complete() {
+        this.code = 102;
+    }
+
+    public void cancel() {
+        this.code = 103;
+    }
 }
 
