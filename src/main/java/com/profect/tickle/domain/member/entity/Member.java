@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.member.entity;
 
+import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,8 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "member")
@@ -86,6 +89,9 @@ public class Member {
     @Column(name = "host_biz_bank_number", length = 25)
     private String hostBizBankNumber;  // 계좌번호
 
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Point> points = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         this.createdAt = Instant.now();
@@ -122,5 +128,9 @@ public class Member {
 
     public void encryptPassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void usePoint(Short perPrice) {
+        pointBalance -= perPrice;
     }
 }
