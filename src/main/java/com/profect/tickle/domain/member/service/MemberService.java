@@ -3,10 +3,10 @@ package com.profect.tickle.domain.member.service;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -42,6 +42,11 @@ public class MemberService implements UserDetailsService {
         grantedAuthorityList.add(new SimpleGrantedAuthority(signInMember.getMemberRole().name()));
 
         // 내부적으로 비밀번호가 일치하는 확인도 한다.
-        return new User(signInMember.getEmail(), signInMember.getPassword(), grantedAuthorityList);
+        return new CustomUserDetails(
+                signInMember.getId(),
+                signInMember.getEmail(),
+                signInMember.getNickname(),
+                grantedAuthorityList
+        );
     }
 }

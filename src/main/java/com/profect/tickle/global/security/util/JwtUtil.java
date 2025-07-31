@@ -48,27 +48,8 @@ public class JwtUtil {
 
     /* 넘어온 AccessToken으로 인증 객체 추출 */
     public Authentication getAuthentication(String token) {
-
         /* 토큰을 들고 왔던 들고 오지 않았던(로그인 시) 동일하게 security가 관리 할 UserDetails 타입을 정의 */
         UserDetails userDetails = memberService.loadUserByUsername(this.getUserId(token));
-
-        /* 토큰에서 claim들 추출 */
-/*        Claims claims = parseClaims(token);
-        log.info("넘어온 AccessToken claims 확인: {}", claims);
-
-        Collection<? extends GrantedAuthority> authorities = null;
-        if(claims.get("authorities") == null) {
-            throw new RuntimeException("권한 정보가 없는 토큰입니다.");
-        } else {
-            *//* 클레임에서 권한 정보 가져오기 *//*
-             authorities =
-                     Arrays.stream(claims.get("authorities").toString()
-                                     .replace("[", "")
-                                     .replace("]", "")
-                                     .split(", "))
-                             .map(SimpleGrantedAuthority::new)
-                             .collect(Collectors.toList());
-        }*/
 
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }

@@ -46,7 +46,12 @@ public class SecurityConfig { // 주의: 클래스를 상속받아 시큐리티�
                 .authorizeHttpRequests(auth ->
                         auth
                                 // Swagger 문서: 인증 없이 접근 허용
-                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                                .requestMatchers("/swagger-ui/**",
+                                        "/swagger-resources/**",
+                                        "/swagger-resources",
+                                        "/v3/api-docs/**",
+                                        "/webjars/**",
+                                        "/api-docs/**").permitAll()
 
                                 // 회원가입, 인증 관련 API: 인증 없이 접근 허용
                                 .requestMatchers(HttpMethod.POST, "/api/v1/signUp", "/api/v1/auth/**").permitAll()
