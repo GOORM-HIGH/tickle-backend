@@ -16,11 +16,11 @@ public enum ErrorCode {
     //EVENT
     INVALID_COUPON_VALUE(HttpStatus.BAD_REQUEST, "쿠폰 수량과 할인율은 0 이상이어야 합니다."),
     INVALID_DATE(HttpStatus.BAD_REQUEST, "이미 지난 날짜로 쿠폰을 설정할 수 없습니다."),
-    DUPLICATE_COUPON_NAME(HttpStatus.CONFLICT, "이미 존재하는 쿠폰 이름입니다."),
+
+    //POINT
     INSUFFICIENT_POINT(HttpStatus.NOT_FOUND, "보유 포인트가 부족합니다."),
 
-    STATUS_NOT_FOUND(HttpStatus.NOT_FOUND, "상태 정보를 찾을 수 없습니다."),
-    PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "공연 정보를 찾을 수 없습니다."),
+    //SEAT
     SEAT_CLASS_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 등급 정보를 찾을 수 없습니다."),
     SEAT_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 정보를 찾을 수 없습니다."),
     EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "이벤트 정보를 찾을 수 없습니다."),

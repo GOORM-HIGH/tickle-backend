@@ -1,6 +1,8 @@
 package com.profect.tickle.domain.event.entity;
 
 import com.profect.tickle.domain.member.entity.CouponReceived;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -42,23 +44,41 @@ public class Coupon {
     @Column(name = "coupon_created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "coupon_updated_at", nullable = false)
+    private Instant updatedAt;
+
     @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CouponReceived> receivedCoupons = new ArrayList<>();
 
-    private Coupon(String name, String content, Short count, Short rate, LocalDate valid, Instant createdAt) {
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = Instant.now();
+    }
+
+    private Coupon(String name, String content, Short count, Short rate, LocalDate valid) {
         this.name = name;
         this.content = content;
         this.count = count;
         this.rate = rate;
         this.valid = valid;
-        this.createdAt = createdAt;
     }
 
     public static Coupon create(String name, String content, Short count, Short rate, LocalDate valid) {
-        return new Coupon(name, content, count, rate, valid, Instant.now());
+        return new Coupon(name, content, count, rate, valid);
     }
 
     public void updateEvent(Event event) {
         this.event = event;
+    }
+
+    public void decreaseCount() {
+        if (this.count <= 0) {throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);}
+        this.count--;
     }
 }

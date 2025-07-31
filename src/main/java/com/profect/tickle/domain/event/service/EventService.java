@@ -12,4 +12,6 @@ public interface EventService {
     TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request);
 
     TicketApplyResponseDto applyTicketEvent(Long eventId);
+
+    void issueCoupon(Long eventId);
 }

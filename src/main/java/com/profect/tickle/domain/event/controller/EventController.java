@@ -20,13 +20,13 @@ public class EventController {
     private final EventService eventService;
 
     @PostMapping("/coupon")
-    public ResultResponse<?> createCoupon(@Valid @RequestBody CouponCreateRequestDto request) {
+    public ResultResponse<CouponResponseDto> createCoupon(@Valid @RequestBody CouponCreateRequestDto request) {
         CouponResponseDto response = eventService.createCouponEvent(request);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
     }
 
     @PostMapping("/ticket")
-    public ResultResponse<?> createTicketEvent(@Valid @RequestBody TicketEventCreateRequestDto request) {
+    public ResultResponse<TicketEventResponseDto> createTicketEvent(@Valid @RequestBody TicketEventCreateRequestDto request) {
         TicketEventResponseDto response = eventService.createTicketEvent(request);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
     }
@@ -35,5 +35,11 @@ public class EventController {
     public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
         TicketApplyResponseDto response = eventService.applyTicketEvent(eventId);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
+    }
+
+    @PostMapping("/coupon/{eventId}")
+    public ResultResponse<String> issueCoupon(@PathVariable Long eventId) {
+        eventService.issueCoupon(eventId);
+        return ResultResponse.of(ResultCode.COUPON_ISSUE_SUCCESS, "[이벤트 쿠폰 지급 완료]: eventId = " + eventId);
     }
 }

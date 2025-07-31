@@ -10,7 +10,9 @@ import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.event.service.EventService;
+import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
@@ -39,10 +41,11 @@ public class EventServiceImpl implements EventService {
     private final StatusRepository statusRepository;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
+    private final CouponReceivedRepository couponReceivedRepository;
 
     private final PointTarget eventTarget = PointTarget.EVENT;
 
-
+    Member member = new Member();  //[임의 값] 유저 개발 완료 시 삭제 코드
 
     @Override
     @Transactional
@@ -83,10 +86,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public TicketApplyResponseDto applyTicketEvent(Long eventId) {
-
-        Member member = new Member();  //[임의 값] 유저 개발 완료 시 삭제 코드
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
+        Event event = getEventOrThrow(eventId);
 
         // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제
         /*member = memberRepository.findById()
@@ -117,6 +117,33 @@ public class EventServiceImpl implements EventService {
         return TicketApplyResponseDto.from(eventId, member.getId(), isWinner);
     }
 
+    @Override
+    @Transactional
+    public void issueCoupon(Long eventId) {
+        // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제
+        /*member = memberRepository.findById()
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));*/
+
+        Event event = getEventOrThrow(eventId);
+        Coupon coupon = event.getCoupon();
+        if (coupon == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
+
+        if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
+            throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
+        }
+
+        if (coupon.getCount() <= 0) throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
+
+        coupon.decreaseCount();
+        couponReceivedRepository.save(CouponReceived.create(member, coupon));
+    }
+
+    private Event getEventOrThrow(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
+        return event;
+    }
+
     private Status getStatusOrThrow(String type, short code) {
         return statusRepository.findByTypeAndCode(type, code)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
@@ -131,6 +158,7 @@ public class EventServiceImpl implements EventService {
         if (member.getPointBalance() < event.getPerPrice()) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
         }
+
         member.usePoint(event.getPerPrice());
 
         Point point = Point.create(member, event.getPerPrice(), target, member.getPointBalance());

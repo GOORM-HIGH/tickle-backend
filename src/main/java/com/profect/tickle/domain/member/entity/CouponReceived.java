@@ -28,9 +28,6 @@ public class CouponReceived {
     @JoinColumn(name = "coupon_id", nullable = false)
     private Coupon coupon;
 
-    @Column(name = "coupon_received_discount", nullable = false)
-    private Short discount; // 10, 20, 30 등
-
     @Column(name = "coupon_received_created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -48,11 +45,12 @@ public class CouponReceived {
         this.updatedAt = Instant.now();
     }
 
-    public static CouponReceived create(Member member, Coupon coupon, Short discount) {
-        return CouponReceived.builder()
-                .member(member)
-                .coupon(coupon)
-                .discount(discount)
-                .build();
+    private CouponReceived(Member member, Coupon coupon) {
+        this.member = member;
+        this.coupon = coupon;
+    }
+
+    public static CouponReceived create(Member member, Coupon coupon) {
+        return new CouponReceived (member, coupon);
     }
 }
