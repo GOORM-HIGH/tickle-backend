@@ -2,9 +2,7 @@ package com.profect.tickle.domain.chat.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -12,6 +10,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "chat")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor  // ✅ 추가!
+@Builder             // ✅ 추가!
 public class Chat {
 
     @Id
@@ -71,6 +71,25 @@ public class Chat {
         if (isEdited != null && isEdited) {
             editedAt = Instant.now();
         }
+    }
+
+    public void editContent(String newContent) {
+        this.content = newContent;
+        this.isEdited = true;
+        this.editedAt = Instant.now();
+    }
+
+    public void markAsDeleted() {
+        this.isDeleted = true;
+        this.content = "삭제된 메시지입니다"; // 내용 마스킹
+    }
+
+    public boolean canEdit() {
+        return !isDeleted && senderStatus;
+    }
+
+    public boolean canDelete() {
+        return !isDeleted;
     }
 
 }

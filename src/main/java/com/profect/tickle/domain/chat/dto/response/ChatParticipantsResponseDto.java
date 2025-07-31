@@ -14,13 +14,13 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ChatParticipantsResponseDto {
 
-    private Long chatParticipantsId;
+    private Long id;
     private Long chatRoomId;
     private Long memberId;
-    private Instant chatParticipantsJoinedAt;
-    private Boolean chatParticipantsStatus;
-    private Instant chatParticipantsLastReadAt;
-    private Long chatParticipantsLastReadMessageId;
+    private Instant joinedAt;
+    private Boolean status;
+    private Instant lastReadAt;
+    private Long lastReadMessageId;
 
     // 추가 정보 (복잡한 쿼리로 가져올 데이터)
     private String memberNickname;
@@ -30,13 +30,13 @@ public class ChatParticipantsResponseDto {
     // Entity → DTO 변환 (기본)
     public static ChatParticipantsResponseDto fromEntity(ChatParticipants participant) {
         return ChatParticipantsResponseDto.builder()
-                .chatParticipantsId(participant.getId())
+                .id(participant.getId())
                 .chatRoomId(participant.getChatRoom().getId())
                 .memberId(participant.getMember().getId())
-                .chatParticipantsJoinedAt(participant.getJoinedAt())
-                .chatParticipantsStatus(participant.getStatus())
-                .chatParticipantsLastReadAt(participant.getLastReadAt())
-                .chatParticipantsLastReadMessageId(participant.getLastReadMessageId())
+                .joinedAt(participant.getJoinedAt())
+                .status(participant.getStatus())
+                .lastReadAt(participant.getLastReadAt())
+                .lastReadMessageId(participant.getLastReadMessageId())
                 .build();
     }
 
@@ -48,13 +48,13 @@ public class ChatParticipantsResponseDto {
             Boolean isOnline) {
 
         return ChatParticipantsResponseDto.builder()
-                .chatParticipantsId(participant.getId())
+                .id(participant.getId())
                 .chatRoomId(participant.getChatRoom().getId())
                 .memberId(participant.getMember().getId())
-                .chatParticipantsJoinedAt(participant.getJoinedAt())
-                .chatParticipantsStatus(participant.getStatus())
-                .chatParticipantsLastReadAt(participant.getLastReadAt())
-                .chatParticipantsLastReadMessageId(participant.getLastReadMessageId())
+                .joinedAt(participant.getJoinedAt())
+                .status(participant.getStatus())
+                .lastReadAt(participant.getLastReadAt())
+                .lastReadMessageId(participant.getLastReadMessageId())
                 .memberNickname(memberNickname)
                 .unreadMessageCount(unreadMessageCount)
                 .isOnline(isOnline)
