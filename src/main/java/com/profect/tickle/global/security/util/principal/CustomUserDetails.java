@@ -11,13 +11,15 @@ public class CustomUserDetails implements UserDetails {
 
     private final Long id;    // DB PK
     private final String email;  // 로그인용 이메일
+    private final String password; // DB에 저장된 암호화된 비밀번호
     private final String nickname; // 사용자 닉네임
     private final Collection<? extends GrantedAuthority> authorities; // 권한 리스트
 
-    public CustomUserDetails(Long id, String email, String nickname,
+    public CustomUserDetails(Long id, String email, String password, String nickname,
                              Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.email = email;
+        this.password = password;
         this.nickname = nickname;
         this.authorities = authorities;
     }
@@ -28,11 +30,12 @@ public class CustomUserDetails implements UserDetails {
     }
 
     /**
-     * 비밀번호는 JWT 기반 인증에서는 사용하지 않으므로 null 처리
+     * DB에 저장된 암호화된 비밀번호를 반환
+     * (로그인 시 DaoAuthenticationProvider에서 비밀번호 검증에 사용)
      */
     @Override
     public String getPassword() {
-        return null;
+        return this.password;
     }
 
     /**
