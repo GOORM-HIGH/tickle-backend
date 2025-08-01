@@ -45,6 +45,7 @@ public class MemberService implements UserDetailsService {
         return new CustomUserDetails(
                 signInMember.getId(),
                 signInMember.getEmail(),
+                signInMember.getPassword(),
                 signInMember.getNickname(),
                 grantedAuthorityList
         );
