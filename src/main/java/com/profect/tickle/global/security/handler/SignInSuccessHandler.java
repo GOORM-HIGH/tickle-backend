@@ -51,5 +51,15 @@ public class SignInSuccessHandler implements AuthenticationSuccessHandler {
 
         // 여기서 토큰을 response에 넣거나 헤더로 전달하는 로직 추가
         response.setHeader("Authorization", "Bearer " + token);
+
+        // 2) 바디에도 JSON으로 내려주기
+        response.setContentType("application/json;charset=UTF-8");
+        String responseBody = String.format(
+                "{ \"accessToken\": \"%s\", \"tokenType\": \"Bearer\", \"expiresIn\": %d }",
+                token,
+                tokenProperties.getExpirationTime()
+        );
+        response.getWriter().write(responseBody);
+        response.getWriter().flush();
     }
 }
