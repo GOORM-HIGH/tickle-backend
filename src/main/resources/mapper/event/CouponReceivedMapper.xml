@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.event.mapper.CouponReceivedMapper">
+    <select id="findMyCoupons" resultType="com.profect.tickle.domain.event.dto.response.CouponResponseDto">
+        SELECT
+            c.coupon_id AS couponId,
+            c.coupon_name AS couponName,
+            c.coupon_rate AS couponRate,
+            c.coupon_valid AS couponValid
+        FROM coupon_received cr
+                 JOIN coupon c ON cr.coupon_id = c.coupon_id
+        WHERE cr.member_id = #{memberId}
+          AND c.coupon_valid > CURRENT_DATE
+        ORDER BY cr.coupon_received_created_at DESC
+            LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countMyCoupons" resultType="int">
+        SELECT COUNT(*)
+        FROM coupon_received cr
+                 JOIN coupon c ON cr.coupon_id = c.coupon_id
+        WHERE cr.member_id = #{memberId}
+          AND c.coupon_valid > CURRENT_DATE
+    </select>
+</mapper>

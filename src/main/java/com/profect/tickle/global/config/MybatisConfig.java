@@ -1,7 +1,5 @@
 package com.profect.tickle.global.config;
 
-import com.profect.tickle.domain.event.mapper.EventMapper;
-import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.global.util.properties.DatasourceHikariProperties;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
+@MapperScan(basePackages = "com.profect.tickle.domain", annotationClass = Mapper.class)
 @RequiredArgsConstructor
 public class MybatisConfig {
 
@@ -57,7 +56,6 @@ public class MybatisConfig {
         org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
 //        configuration.addMapper(NotificationMapper.class); // 알림 매퍼 등록
 //        configuration.setMapUnderscoreToCamelCase(true);
-        configuration.addMapper(EventMapper.class); // 이벤트 매퍼 등록
 
         // SqlSessionFactoryBean 설정
         SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();

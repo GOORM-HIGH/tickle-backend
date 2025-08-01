@@ -1,9 +1,6 @@
 package com.profect.tickle.domain.event.mapper;
 
-import com.profect.tickle.domain.event.dto.response.CouponListResponseDto;
-import com.profect.tickle.domain.event.dto.response.EventListResponseDto;
-import com.profect.tickle.domain.event.dto.response.TicketEventDetailResponseDto;
-import com.profect.tickle.domain.event.dto.response.TicketListResponseDto;
+import com.profect.tickle.domain.event.dto.response.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

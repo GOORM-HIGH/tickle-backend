@@ -6,6 +6,7 @@ import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.entity.EventType;
+import com.profect.tickle.domain.event.mapper.CouponReceivedMapper;
 import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
@@ -24,11 +25,12 @@ import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
+import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,27 +39,25 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
-
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
     private final StatusRepository statusRepository;
-    private final EventMapper eventMapper;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
     private final CouponReceivedRepository couponReceivedRepository;
     private final PointRepository pointRepository;
 
-    private final PointTarget eventTarget = PointTarget.EVENT;
+    private final EventMapper eventMapper;
+    private final CouponReceivedMapper couponReceivedMapper;
 
-    Member member = new Member();  //[임의 값] 유저 개발 완료 시 삭제 코드
+    private final PointTarget eventTarget = PointTarget.EVENT;
 
     @Override
     @Transactional
     public CouponResponseDto createCouponEvent(CouponCreateRequestDto request) {
         if (couponRepository.existsByName(request.name()))
             throw new BusinessException(ErrorCode.DUPLICATE_COUPON_NAME);
-
         Coupon coupon = Coupon.create(
                 request.name(),
                 request.content(),
@@ -92,14 +92,11 @@ public class EventServiceImpl implements EventService {
     @Transactional
     public TicketApplyResponseDto applyTicketEvent(Long eventId) {
         Event event = getEventOrThrow(eventId);
-        // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제
-        /*member = memberRepository.findById()
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));*/
+        Member member = getMemberOrThrow();
 
         deductPoint(member, event, eventTarget);
         event.accumulate(event.getPerPrice());
 
-        // 목표 도달 시 당첨 처리
         boolean isWinner = (event.getAccrued().equals(event.getGoalPrice()));
         if (isWinner) {
             Seat seat = getSeatOrThrow(event.getSeat().getId());
@@ -154,12 +151,9 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public void issueCoupon(Long eventId) {
-        // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제
-        /*member = memberRepository.findById()
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));*/
-
         Event event = getEventOrThrow(eventId);
         Coupon coupon = event.getCoupon();
+        Member member = getMemberOrThrow();
 
         if (coupon == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
 
@@ -191,6 +185,18 @@ public class EventServiceImpl implements EventService {
         return new ArrayList<>(eventMapper.findRandomOngoingEvents());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PagingResponse<CouponResponseDto> getMyCoupons(int page, int size) {
+        int offset = page * size;
+
+        Long memberId = SecurityUtil.getSignInMemberId();
+        List<CouponResponseDto> list = couponReceivedMapper.findMyCoupons(memberId, size, offset);
+        int total = couponReceivedMapper.countMyCoupons(memberId);
+
+        return PagingResponse.from(list, page, size, total);
+    }
+
     private Event getEventOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
@@ -204,6 +210,12 @@ public class EventServiceImpl implements EventService {
     private Seat getSeatOrThrow(Long eventSeatId) {
         return seatRepository.findById(eventSeatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
+    }
+
+    private Member getMemberOrThrow() {
+        Long memberId = SecurityUtil.getSignInMemberId();
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 
     private void deductPoint(Member member, Event event, PointTarget target) {

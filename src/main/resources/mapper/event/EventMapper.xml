@@ -106,5 +106,4 @@
         ORDER BY RAND()
             LIMIT 5
     </select>
-
 </mapper>

@@ -30,7 +30,7 @@ public enum ErrorCode {
     INSUFFICIENT_POINT(HttpStatus.NOT_FOUND, "보유 포인트가 부족합니다."),
 
     //PERFORMANCE
-    PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "공연 정보를 찾을 수 없습니다."),
+    PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 공연을 찾을 수 없습니다."),
 
     //SEAT
     SEAT_CLASS_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 등급 정보를 찾을 수 없습니다."),
