@@ -1,5 +1,5 @@
 package com.profect.tickle.domain.reservation.entity;
 
-public enum Grade {
+public enum SeatGrade {
     VIP, R, S
 }

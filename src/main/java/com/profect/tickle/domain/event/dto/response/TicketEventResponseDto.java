@@ -19,8 +19,12 @@ public record TicketEventResponseDto(
         String ticketSeat
 ) {
     public static TicketEventResponseDto from(Event event, Long performanceId) {
-        String ticketSeat = event.getSeat().getSeatClass().getGrade() + "열 "
-                + event.getSeat().getSeatNumber() + "번";     // "A열 45번"
+        String seatNumber = event.getSeat().getSeatNumber(); // ex: "A45"
+
+        String row = seatNumber.replaceAll("[0-9]", "");     // "A"
+        String number = seatNumber.replaceAll("[^0-9]", ""); // "45"
+
+        String ticketSeat = row + "열 " + number + "번";
 
         return new TicketEventResponseDto(
                 event.getId(),
