@@ -24,8 +24,8 @@ public class Status {
     @Column(name = "status_code", nullable = false)
     private Short code; // 도메인별 상태 코드
 
-    @Column(name = "status_name", length = 15, nullable = false)
-    private String name;
+    @Column(name = "status_description", length = 20, nullable = false)
+    private String description;
 
     @Column(name = "status_created_at", nullable = false)
     private LocalDateTime createdAt;

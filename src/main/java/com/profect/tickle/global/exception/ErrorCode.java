@@ -18,6 +18,9 @@ public enum ErrorCode {
     INVALID_DATE(HttpStatus.BAD_REQUEST, "이미 지난 날짜로 쿠폰을 설정할 수 없습니다."),
     DUPLICATE_COUPON_NAME(HttpStatus.CONFLICT, "이미 존재하는 쿠폰 이름입니다."),
 
+    //PERFORMANCE
+    PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 공연을 찾을 수 없습니다."),
+
     // 채팅방 관련
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
     CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 공연의 채팅방이 이미 존재합니다."),
