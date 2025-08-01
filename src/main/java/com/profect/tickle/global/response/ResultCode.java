@@ -25,7 +25,6 @@ public enum ResultCode {
     PERFORMANCE_SEARCH_SUCCESS(HttpStatus.OK,"검색 성공"),
     PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공")
 
-
     ;
 
     private final HttpStatus status;
