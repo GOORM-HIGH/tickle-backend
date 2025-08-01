@@ -5,12 +5,12 @@ import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notification")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -34,5 +34,9 @@ public class Notification {
     private Status status;
 
     @Column(name = "notification_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
+
+    public void markAsRead(@NonNull Status isReadStatus) {
+        this.status = isReadStatus;
+    }
 }

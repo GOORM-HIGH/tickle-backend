@@ -6,6 +6,7 @@ import com.profect.tickle.domain.member.entity.MemberRole;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -32,9 +33,9 @@ public class MemberResponseDto {
     private String hostBizDepositor;                    // 정산 계좌 예금주
     private String hostBizBankNumber;                   // 정산 계좌 번호
 
-    private LocalDateTime createdAt;  // 계정 생성일
-    private LocalDateTime updatedAt;  // 계정 정보 수정일
-    private LocalDateTime deletedAt;  // 계정 삭제일(논리 삭제)
+    private Instant createdAt;  // 계정 생성일
+    private Instant updatedAt;  // 계정 정보 수정일
+    private Instant deletedAt;  // 계정 삭제일(논리 삭제)
 
     /** Entity → DTO 변환 */
     public static MemberResponseDto fromEntity(Member memberEntity) {

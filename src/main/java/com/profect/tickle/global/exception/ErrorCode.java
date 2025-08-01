@@ -19,7 +19,7 @@ public enum ErrorCode {
     DUPLICATE_COUPON_NAME(HttpStatus.CONFLICT, "이미 존재하는 쿠폰 이름입니다."),
 
     //PERFORMANCE
-    PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 공연을 찾을 수 없습니다."),
+    PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 공연을 찾을 수 없습니다."),
 
     // 채팅방 관련
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
@@ -41,7 +41,14 @@ public enum ErrorCode {
     CHAT_NOT_MESSAGE_OWNER(HttpStatus.FORBIDDEN, "메시지 작성자만 수정/삭제할 수 있습니다."),
 
     // 참여자 관련
-    CHAT_PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅방 참여 정보를 찾을 수 없습니다.");
+    CHAT_PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅방 참여 정보를 찾을 수 없습니다."),
+
+    // 알림 관련
+//    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다."),
+    NOTIFICATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 알림에 접근할 권한이 없습니다."),
+
+    // 상태 관련
+    STATUS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "상태를 찾을 수 없습니다."); // 전적인 개발자 잘못: 500 에러
 
     private final HttpStatus status;
     private final String message;
