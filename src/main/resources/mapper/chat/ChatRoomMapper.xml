@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.chat.mapper.ChatRoomMapper">
+
+    <!-- 채팅방 상세 정보 조회 (수정 버전) -->
+    <select id="findRoomDetailsByPerformanceId" resultType="ChatRoomResponseDto">
+        SELECT
+            cr.chat_room_id as chatRoomId,                          -- ✅ alias 추가
+            cr.performance_id as performanceId,                     -- ✅ alias 추가
+            cr.chat_room_name as name,                              -- ✅ alias 추가
+            cr.chat_room_status as status,                          -- ✅ alias 추가
+            cr.chat_room_max_participants as maxParticipants,       -- ✅ alias 추가
+            cr.chat_room_created_at as createdAt,                   -- ✅ alias 추가
+            cr.chat_room_updated_at as updatedAt,                   -- ✅ alias 추가
+
+            -- 현재 참여자 수
+            (SELECT COUNT(*)
+             FROM chat_participants cp
+             WHERE cp.chat_room_id = cr.chat_room_id
+               AND cp.chat_participants_status = true) as participantCount,
+
+            -- 현재 사용자 참여 여부
+            (SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END
+             FROM chat_participants cp
+             WHERE cp.chat_room_id = cr.chat_room_id
+               AND cp.member_id = #{currentMemberId}
+               AND cp.chat_participants_status = true) as isParticipant,
+
+            -- 읽지않은 메시지 개수 (참여 중인 경우에만)
+            COALESCE(
+                    (SELECT COUNT(*)
+                     FROM chat c
+                              INNER JOIN chat_participants cp ON cp.chat_room_id = c.chat_room_id
+                     WHERE c.chat_room_id = cr.chat_room_id
+                       AND cp.member_id = #{currentMemberId}
+                       AND cp.chat_participants_status = true
+                       AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
+                       AND c.chat_is_deleted = false), 0
+            ) as unreadCount
+
+        FROM chat_room cr
+        WHERE cr.performance_id = #{performanceId}
+          AND cr.chat_room_status = true
+    </select>
+
+    <!-- 사용자가 해당 채팅방에 참여 중인지 확인 -->
+    <select id="isParticipant" resultType="boolean">
+        SELECT
+            CASE WHEN COUNT(*) > 0 THEN true ELSE false END
+        FROM chat_participants cp
+        WHERE cp.chat_room_id = #{roomId}
+          AND cp.member_id = #{memberId}
+          AND cp.chat_participants_status = true
+    </select>
+
+</mapper>

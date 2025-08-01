@@ -2,9 +2,7 @@ package com.profect.tickle.domain.chat.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -12,6 +10,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "chat_participants")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor  // ✅ 추가!
+@Builder             // ✅ 추가!
 public class ChatParticipants {
 
     @Id
@@ -51,4 +51,29 @@ public class ChatParticipants {
             lastReadAt = Instant.now();
         }
     }
+
+    public void rejoin() {
+        this.status = true;
+        // joinedAt은 최초 참여 시간을 유지
+    }
+
+    public void leave() {
+        this.status = false;
+        // 나간 시간을 추적하려면 leftAt 필드 추가 가능
+    }
+
+    public boolean isActive() {
+        return this.status == true;
+    }
+
+    public void updateLastReadMessage(Long messageId) {
+        this.lastReadMessageId = messageId;
+        this.lastReadAt = Instant.now();
+    }
+
+    public void reactivate() {
+        this.status = true;
+        this.joinedAt = Instant.now(); // 재참여 시간 업데이트
+    }
+
 }

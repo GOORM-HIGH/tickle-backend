@@ -1,19 +1,20 @@
 package com.profect.tickle.global.config;
 
-import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
-import com.profect.tickle.domain.notification.mapper.NotificationMapper;
-import com.profect.tickle.global.properties.DatasourceHikariProperties;
+import com.profect.tickle.global.util.properties.DatasourceHikariProperties;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
+@MapperScan(basePackages = "com.profect.tickle.domain", annotationClass = Mapper.class)
 @RequiredArgsConstructor
 public class MybatisConfig {
 
@@ -53,7 +54,7 @@ public class MybatisConfig {
     public SqlSessionFactory sqlSessionFactory() throws Exception {
         // MyBatis 전역 설정 객체 생성
         org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
-        configuration.addMapper(NotificationMapper.class); // 알림 매퍼 등록
+//        configuration.addMapper(NotificationMapper.class); // 알림 매퍼 등록
 //        configuration.setMapUnderscoreToCamelCase(true);
 
         // SqlSessionFactoryBean 설정
