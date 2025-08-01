@@ -46,9 +46,11 @@ public enum ErrorCode {
     // 알림 관련
 //    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다."),
     NOTIFICATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 알림에 접근할 권한이 없습니다."),
+    NOTIFICATION_TEMPLATE_NOT_FOUND(HttpStatus.BAD_REQUEST, "알림 템플릿을 찾을 수 없습니다."),
 
     // 상태 관련
-    STATUS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "상태를 찾을 수 없습니다."); // 전적인 개발자 잘못: 500 에러
+    STATUS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "상태를 찾을 수 없습니다.") // 전적인 개발자 잘못: 500 에러
+    ;
 
     private final HttpStatus status;
     private final String message;
