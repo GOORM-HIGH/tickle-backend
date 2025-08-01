@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -52,13 +53,13 @@ public class Member {
     private Integer pointBalance = 0;  // 포인트 잔액
 
     @Column(name = "member_created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;  // 생성일시
+    private Instant createdAt;  // 생성일시
 
     @Column(name = "member_updated_at", nullable = false)
-    private LocalDateTime updatedAt;  // 수정일시
+    private Instant updatedAt;  // 수정일시
 
     @Column(name = "member_deleted_at")
-    private LocalDateTime deletedAt;  // 삭제일시 (논리 삭제)
+    private Instant deletedAt;  // 삭제일시 (논리 삭제)
 
     // 주최자(Host) 전용 필드
     @Column(name = "host_biz_number", length = 15)
@@ -87,8 +88,8 @@ public class Member {
 
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
         if (this.memberRole == null) {
             this.memberRole = MemberRole.MEMBER;
         }
@@ -96,7 +97,7 @@ public class Member {
 
     @PreUpdate
     public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = Instant.now();
     }
 
     public static Member createMember(CreateMemberRequestDto dto) {
