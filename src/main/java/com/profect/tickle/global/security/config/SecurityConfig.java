@@ -48,16 +48,15 @@ public class SecurityConfig { // 주의: 클래스를 상속받아 시큐리티�
                                 // Swagger 문서: 인증 없이 접근 허용
                                 .requestMatchers("/swagger-ui/**",
                                         "/swagger-resources/**",
-                                        "/swagger-resources",
                                         "/v3/api-docs/**",
                                         "/webjars/**",
                                         "/api-docs/**").permitAll()
 
                                 // 회원가입, 인증 관련 API: 인증 없이 접근 허용
-                                .requestMatchers(HttpMethod.POST, "/api/v1/signUp", "/api/v1/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/sign-up", "/api/v1/auth/**").permitAll()
 
                                 // 로그인 API: 인증 없이 접근 허용
-                                .requestMatchers(HttpMethod.POST, "/api/v1/signIn").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/sign-in").permitAll()
 
                                 // 공연 조회: 인증 없이 접근 허용
                                 .requestMatchers(HttpMethod.GET, "/api/v1/performance/**").permitAll()
