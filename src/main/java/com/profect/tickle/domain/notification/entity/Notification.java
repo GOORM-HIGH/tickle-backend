@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "notification")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -35,4 +34,8 @@ public class Notification {
 
     @Column(name = "notification_created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    public void markAsRead(@NonNull Status isReadStatus) {
+        this.status = isReadStatus;
+    }
 }

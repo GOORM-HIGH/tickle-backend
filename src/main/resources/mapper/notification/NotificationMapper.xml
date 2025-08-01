@@ -13,7 +13,11 @@
             n.notification_id AS id,
             nt.notification_template_title AS title,
             nt.notification_template_content AS content,
-            CASE WHEN s.status_name = 'read' THEN TRUE ELSE FALSE END AS isRead,
+            CASE
+                WHEN s.status_name = '알림 읽음' THEN TRUE
+                WHEN s.status_name = '알림 안읽음' THEN FALSE
+                ELSE FALSE
+                END AS isRead,
             n.notification_created_at AS createdAt
         FROM notification AS n
                  JOIN notification_template AS nt
@@ -24,6 +28,4 @@
                       ON n.status_id = s.status_id
         WHERE m.member_id = #{memberId}
         ORDER BY n.notification_created_at DESC
-            LIMIT 10
-    </select>
-</mapper>
+            LIM
