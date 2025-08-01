@@ -18,6 +18,7 @@ public class Hall {
     @Column(name = "hall_id")
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "hall_type", length = 10, nullable = false)
     private HallType type;
 
