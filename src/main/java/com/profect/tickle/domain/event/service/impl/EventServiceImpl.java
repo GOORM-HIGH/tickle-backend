@@ -67,7 +67,7 @@ public class EventServiceImpl implements EventService {
         );
         couponRepository.save(coupon);
 
-        Status status = getStatusOrThrow("EVENT", (short) 100);
+        Status status = getStatusOrThrow(9L);
         Event event = Event.create(status, coupon, request.name());
 
         eventRepository.save(event);
@@ -79,7 +79,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request) {
-        Status status = getStatusOrThrow("EVENT", (short) 100);
+        Status status = getStatusOrThrow(4L);
         Seat seat = getSeatOrThrow(request.seatId());
         Event ticketEvent = Event.create(status, seat, request);
 
@@ -92,8 +92,6 @@ public class EventServiceImpl implements EventService {
     @Transactional
     public TicketApplyResponseDto applyTicketEvent(Long eventId) {
         Event event = getEventOrThrow(eventId);
-        isEventProgress(event);
-
         // [구현 코드] 현재 로그인 시 유저가 존재하는 지 확인 -> 유저 개발 완료 시 주석 삭제
         /*member = memberRepository.findById()
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));*/
@@ -110,7 +108,7 @@ public class EventServiceImpl implements EventService {
             Reservation reservation = Reservation.create(
                     member,
                     seat.getPerformance(),
-                    getStatusOrThrow("RESERVATION", (short) 100),
+                    getStatusOrThrow(9L),
                     "100",  // [임의 값]예매코드 생성 로직 따로 필요 -> 예매코드 로직 생성 시 변경
                     event.getGoalPrice(),
                     true);
@@ -161,9 +159,8 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));*/
 
         Event event = getEventOrThrow(eventId);
-        isEventProgress(event);
-
         Coupon coupon = event.getCoupon();
+
         if (coupon == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
 
         if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
@@ -171,7 +168,7 @@ public class EventServiceImpl implements EventService {
         }
 
         if (coupon.getCount() <= 0) {
-            event.getStatus().complete();
+            event.updateStatus(getStatusOrThrow(6L));
             throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
         }
 
@@ -199,8 +196,8 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
     }
 
-    private Status getStatusOrThrow(String type, short code) {
-        return statusRepository.findByTypeAndCode(type, code)
+    private Status getStatusOrThrow(Long statusId) {
+        return statusRepository.findById(statusId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
 
@@ -213,16 +210,9 @@ public class EventServiceImpl implements EventService {
         if (member.getPointBalance() < event.getPerPrice()) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
         }
-
         member.usePoint(event.getPerPrice());
 
         Point point = Point.create(member, event.getPerPrice(), target, member.getPointBalance());
         pointRepository.save(point);
-    }
-
-    private static void isEventProgress(Event event) {
-        if (event.getStatus().getCode() != 101) {
-            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
-        }
     }
 }

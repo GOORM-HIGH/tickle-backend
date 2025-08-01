@@ -34,35 +34,5 @@ public class Status {
 
     @Column(name = "status_created_at", nullable = false)
     private Instant createdAt;
-
-    private Status(String type, Short code, String name) {
-        this.type = type;
-        this.code = code;
-        this.name = name;
-        this.createdAt = Instant.now();
-    }
-
-    public static Status create(String type, Short code, String name) {
-        return new Status(
-                type,
-                code,
-                name);
-    }
-
-    public void scheduled() {
-        this.code = 100;
-    }
-
-    public void process() {
-        this.code = 101;
-    }
-
-    public void complete() {
-        this.code = 102;
-    }
-
-    public void cancel() {
-        this.code = 103;
-    }
 }
 
