@@ -1,6 +1,6 @@
 package com.profect.tickle.global.config;
 
-import com.profect.tickle.global.properties.DatasourceHikariProperties;
+import com.profect.tickle.global.util.properties.DatasourceHikariProperties;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.annotations.Mapper;

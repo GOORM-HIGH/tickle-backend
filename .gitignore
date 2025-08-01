@@ -65,3 +65,6 @@ out/
 /src/main/resources/application.yml
 /src/test/resources/**
 .DS_Store
+
+### 확인용 파일 ###
+api-test.http
