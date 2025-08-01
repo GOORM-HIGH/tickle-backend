@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.chat.controller;
 
+import com.profect.tickle.domain.chat.annotation.CurrentMember; // ✅ import 추가
 import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
 import com.profect.tickle.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.profect.tickle.domain.chat.dto.response.ChatRoomResponseDto;
@@ -71,7 +72,7 @@ public class ChatRoomController {
             @Parameter(description = "공연 ID", required = true, example = "123")
             @PathVariable Long performanceId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId) {
+            @CurrentMember Long currentMemberId) { // ✅ 변경
 
         log.info("공연별 채팅방 조회 API 호출: performanceId={}, memberId={}", performanceId, currentMemberId);
 
@@ -151,7 +152,7 @@ public class ChatRoomController {
             @Parameter(description = "채팅방 ID", required = true, example = "456")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId) {
+            @CurrentMember Long currentMemberId) { // ✅ 변경
 
         log.info("채팅방 참여 여부 확인 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
@@ -175,7 +176,6 @@ public class ChatRoomController {
 
         log.info("채팅방 온라인 사용자 조회 API 호출: chatRoomId={}", chatRoomId);
 
-        // ✅ Service에서 처리
         Map<String, Object> result = chatRoomService.getOnlineUserInfo(chatRoomId);
 
         return ResponseEntity.ok(ApiResponseDto.success(result));
