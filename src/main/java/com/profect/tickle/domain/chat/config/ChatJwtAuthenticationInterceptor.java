@@ -1,5 +1,7 @@
 package com.profect.tickle.domain.chat.config;
 
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.global.security.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,17 +16,16 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class ChatJwtAuthenticationInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final MemberRepository memberRepository; // ✅ 추가
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
-        // 채팅 관련 API들만 JWT 검증 적용
         String requestURI = request.getRequestURI();
         if (!isChatApiPath(requestURI)) {
-            return true; // 채팅 API가 아니면 통과
+            return true;
         }
 
-        // Authorization 헤더에서 토큰 추출
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("JWT 토큰이 없습니다: {}", requestURI);
@@ -32,40 +33,51 @@ public class ChatJwtAuthenticationInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        String token = authHeader.substring(7); // "Bearer " 제거
-
-        // ✅ 변수를 try 블록 밖에서 선언
-        String userIdStr = null;
+        String token = authHeader.substring(7);
 
         try {
-            // 팀원의 JwtUtil 메서드 사용
             if (!jwtUtil.validateToken(token)) {
                 log.warn("유효하지 않은 JWT 토큰: {}", requestURI);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "유효하지 않은 토큰입니다.");
                 return false;
             }
 
-            // ✅ 사용자 ID 추출 (String → Long 변환)
-            userIdStr = jwtUtil.getUserId(token);
-            Long memberId = Long.parseLong(userIdStr);
+            String userIdStr = jwtUtil.getUserId(token); // 이메일 반환
 
-            // request에 사용자 ID 저장
+            // ✅ 수정: 이메일로 사용자 ID 조회
+            Long memberId = getMemberIdByEmail(userIdStr);
+
+            if (memberId == null) {
+                log.warn("존재하지 않는 사용자: email={}", userIdStr);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "존재하지 않는 사용자입니다.");
+                return false;
+            }
+
             request.setAttribute("currentMemberId", memberId);
 
-            log.debug("JWT 인증 성공: memberId={}, uri={}", memberId, requestURI);
+            log.debug("JWT 인증 성공: email={}, memberId={}, uri={}", userIdStr, memberId, requestURI);
             return true;
 
-        } catch (NumberFormatException e) {
-            // ✅ 이제 userIdStr 변수에 접근 가능
-            log.error("사용자 ID 변환 오류: userIdStr={}, error={}", userIdStr, e.getMessage(), e);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "잘못된 토큰 형식입니다.");
-            return false;
         } catch (Exception e) {
             log.error("JWT 토큰 처리 중 오류: {}", e.getMessage(), e);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "토큰 처리 중 오류가 발생했습니다.");
             return false;
         }
     }
+
+    // ✅ 추가: 이메일로 사용자 ID 조회 메서드
+    private Long getMemberIdByEmail(String email) {
+        try {
+            // MemberRepository를 주입받아서 사용
+            return memberRepository.findByEmail(email)
+                    .map(Member::getId)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("사용자 ID 조회 중 오류: email={}", email, e);
+            return null;
+        }
+    }
+
 
     /**
      * 채팅 관련 API 경로인지 확인
