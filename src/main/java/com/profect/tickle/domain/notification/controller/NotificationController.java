@@ -4,14 +4,14 @@ import com.profect.tickle.domain.notification.dto.response.NotificationResponseD
 import com.profect.tickle.domain.notification.service.NotificationService;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -26,14 +26,33 @@ public class NotificationController {
 
     @GetMapping
     @Operation(summary = "최신 알림 조회", description = "로그인 사용자의 최신 10건의 알림을 조회합니다.")
-    public ResponseEntity<?> getNotificationList() {
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    public ResponseEntity<?> getRecentNotificationList() {
         log.info("{}님의 최신 10건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail());
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
-        log.info("로그인한 회원 번호:: {}", signInMemberId);
-
-        List<NotificationResponseDto> data = notificationService.getNotificationList(signInMemberId);
+        List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId);
 
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
+
+    @PatchMapping("/{notificationId}/read")
+    @Operation(summary = "알림 읽음 처리", description = "특정 알림을 읽음 상태로 변경합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "읽음 성공"),
+            @ApiResponse(responseCode = "403", description = "접근 권한이 없는 알림"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {
+        log.info("{}님이 {}번 알림을 읽음 처리합니다.", SecurityUtil.getSignInMemberEmail(), notificationId);
+
+        Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
+        notificationService.markAsRead(notificationId, signInMemberId);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }

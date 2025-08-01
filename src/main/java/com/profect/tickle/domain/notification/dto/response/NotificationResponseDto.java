@@ -4,6 +4,7 @@ import com.profect.tickle.domain.notification.entity.Notification;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -14,7 +15,7 @@ public class NotificationResponseDto {
     private String title;
     private String content;
     private boolean isRead;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     /** Entity → DTO 변환 */
     public static NotificationResponseDto fromEntity(Notification entity) {

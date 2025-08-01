@@ -50,4 +50,11 @@ public class Seat {
     @Column(name = "seat_created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    public void assignTo(Member member) {
+        this.member = member;
+    }
+
+    public void assignReservation(Reservation reservation) {
+        this.reservation = reservation;
+    }
 }

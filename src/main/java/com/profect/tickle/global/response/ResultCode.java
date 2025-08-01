@@ -10,8 +10,10 @@ public enum ResultCode {
     RESPONSE_TEST(HttpStatus.OK, "응답 테스트 성공"),
 
     //EVENT
-    EVENT_LIST_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
+    EVENT_INFO_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
     EVENT_CREATE_SUCCESS(HttpStatus.CREATED, "이벤트 생성 성공"),
+    COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰을 성공적으로 지급하였습니다."),
+    COUPON_INFO_SUCCESS(HttpStatus.OK, "쿠폰 조회 성공"),
 
     //PERFORMANCE
     GENRE_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
@@ -21,7 +23,7 @@ public enum ResultCode {
     PERFORMANCE_TOP100_SUCCESS(HttpStatus.OK,"모든장르포함 인기랭킹 TOP10 조회 성공"),
     PERFORMANCE_POPULAR_SUCCESS(HttpStatus.OK,"예매예정인 TOP4 조회 성공"),
     PERFORMANCE_SEARCH_SUCCESS(HttpStatus.OK,"검색 성공"),
-    PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
+    PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공")
 
     ;
 

@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.member.entity;
 
+import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,8 +9,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "member")
@@ -52,13 +56,13 @@ public class Member {
     private Integer pointBalance = 0;  // 포인트 잔액
 
     @Column(name = "member_created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;  // 생성일시
+    private Instant createdAt;  // 생성일시
 
     @Column(name = "member_updated_at", nullable = false)
-    private LocalDateTime updatedAt;  // 수정일시
+    private Instant updatedAt;  // 수정일시
 
     @Column(name = "member_deleted_at")
-    private LocalDateTime deletedAt;  // 삭제일시 (논리 삭제)
+    private Instant deletedAt;  // 삭제일시 (논리 삭제)
 
     // 주최자(Host) 전용 필드
     @Column(name = "host_biz_number", length = 15)
@@ -85,10 +89,16 @@ public class Member {
     @Column(name = "host_biz_bank_number", length = 25)
     private String hostBizBankNumber;  // 계좌번호
 
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Point> points = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CouponReceived> receivedCoupons = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
         if (this.memberRole == null) {
             this.memberRole = MemberRole.MEMBER;
         }
@@ -96,7 +106,7 @@ public class Member {
 
     @PreUpdate
     public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = Instant.now();
     }
 
     public static Member createMember(CreateMemberRequestDto dto) {
@@ -121,5 +131,9 @@ public class Member {
 
     public void encryptPassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void usePoint(Short perPrice) {
+        pointBalance -= perPrice;
     }
 }
