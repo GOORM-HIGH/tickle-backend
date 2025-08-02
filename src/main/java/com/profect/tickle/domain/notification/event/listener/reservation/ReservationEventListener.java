@@ -2,7 +2,6 @@ package com.profect.tickle.domain.notification.event.listener.reservation;
 
 import com.profect.tickle.domain.notification.event.event.reservation.ReservationSuccessEvent;
 import com.profect.tickle.domain.notification.service.NotificationService;
-import com.profect.tickle.global.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -25,8 +24,8 @@ public class ReservationEventListener {
     @EventListener
     public void handleReservationSuccess(ReservationSuccessEvent event) {
         log.info("예매 성공 이벤트 감지: memberId={}, 공연명={}, 예매 Id={}",
-                SecurityUtil.getSignInMemberId(),
-                event.reservation().getPerformance().getTitle(),
+                event.member().getEmail(),
+                event.performance().getTitle(),
                 event.reservation().getId()
         );
 
@@ -49,8 +48,8 @@ public class ReservationEventListener {
     @EventListener
     public void handlePerformanceModified(ReservationSuccessEvent event) {
         log.info("공연 내용 수정 이벤트 감지: memberId={}, performanceTitle={}",
-                SecurityUtil.getSignInMemberId(),
-                event.reservation().getPerformance().getTitle()
+                event.member().getEmail(),
+                event.performance().getTitle()
         );
 
         notificationService.sendReservationSuccessNotification(event);
