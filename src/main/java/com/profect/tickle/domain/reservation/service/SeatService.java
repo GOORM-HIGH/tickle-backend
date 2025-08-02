@@ -3,7 +3,9 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.performance.entity.HallType;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
+import com.profect.tickle.domain.reservation.dto.response.SeatInfoResponse;
 import com.profect.tickle.domain.reservation.entity.Seat;
+import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.entity.SeatTemplate;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
@@ -11,6 +13,7 @@ import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +42,14 @@ public class SeatService {
 
         List<Seat> seats = createSeats(seatTemplates, performance, available);
         seatRepository.saveAll(seats);
+    }
+
+    public List<SeatInfoResponse> getSeatInfoListByPerformance(Long performanceId) {
+        List<Seat> seats = seatRepository.findByPerformanceIdOrderBySeatNumber(performanceId);
+
+        return seats.stream()
+                .map(this::convertToSeatStatusResponse)
+                .collect(Collectors.toList());
     }
 
     private Performance findPerformanceById(Long performanceId) {
@@ -101,5 +112,15 @@ public class SeatService {
                         .createdAt(now)
                         .build())
                 .toList();
+    }
+
+    private SeatInfoResponse convertToSeatStatusResponse(Seat seat) {
+        return SeatInfoResponse.builder()
+                .seatId(seat.getId())
+                .seatNumber(seat.getSeatNumber())
+                .seatGrade(seat.getSeatGrade())
+                .seatPrice(seat.getSeatPrice())
+                .statusId(seat.getStatus() != null ? seat.getStatus().getId() : SeatStatus.AVAILABLE.getId()) // 기본값: 예매가능
+                .build();
     }
 }
