@@ -23,8 +23,6 @@ public class SeatService {
     private final StatusRepository statusRepository;
     private final SeatRepository seatRepository;
 
-    private static final Long SEAT_AVAILABLE_STATUS_ID = 11L;
-
     public void createSeatsForPerformance(Long performanceId) {
 
         // 해당 공연의 유형 찾아오기
@@ -77,10 +75,10 @@ public class SeatService {
      * 예매 가능 상태를 조회합니다.
      */
     private Status findAvailableStatus() {
-        return statusRepository.findById(SEAT_AVAILABLE_STATUS_ID)
+        return statusRepository.findById(SeatStatus.AVAILABLE.getId())
                 .orElseThrow(() -> new IllegalStateException(
                         String.format("ID가 %d인 좌석 예매 가능 상태를 찾을 수 없습니다.",
-                                SEAT_AVAILABLE_STATUS_ID)));
+                                SeatStatus.AVAILABLE.getId())));
     }
 
     /**
