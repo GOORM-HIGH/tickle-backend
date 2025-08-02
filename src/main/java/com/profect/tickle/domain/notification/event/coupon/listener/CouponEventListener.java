@@ -1,5 +1,6 @@
-package com.profect.tickle.domain.notification.event.coupon;
+package com.profect.tickle.domain.notification.event.coupon.listener;
 
+import com.profect.tickle.domain.notification.event.coupon.event.CouponAlmostExpiredEvent;
 import com.profect.tickle.domain.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

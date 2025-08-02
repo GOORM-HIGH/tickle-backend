@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.notification.event.coupon;
+package com.profect.tickle.domain.notification.event.coupon.event;
 
 import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.member.entity.Member;

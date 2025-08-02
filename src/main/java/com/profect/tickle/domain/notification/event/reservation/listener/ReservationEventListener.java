@@ -1,5 +1,6 @@
-package com.profect.tickle.domain.notification.event.reservation;
+package com.profect.tickle.domain.notification.event.reservation.listener;
 
+import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
 import com.profect.tickle.domain.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
