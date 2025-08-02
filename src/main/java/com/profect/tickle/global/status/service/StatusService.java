@@ -16,14 +16,14 @@ public class StatusService {
 
     @Transactional(readOnly = true)
     public Status getReadStatusForNotification() {
-        Long readStatusId = 1L;
+        long readStatusId = 1L;
         return statusRepository.findById(readStatusId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public Status getReadYetStatusForNotification() {
-        int readStatusId = 2;
+        long readStatusId = 2;
         return statusRepository.findById(readStatusId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
