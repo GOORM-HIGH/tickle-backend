@@ -1,11 +1,12 @@
 package com.profect.tickle.domain.notification.service;
 
+import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
 import com.profect.tickle.domain.notification.dto.response.NotificationSseResponseDto;
 import com.profect.tickle.domain.notification.entity.Notification;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
-import com.profect.tickle.domain.notification.event.event.ReservationSuccessEvent;
+import com.profect.tickle.domain.notification.event.event.reservation.ReservationSuccessEvent;
 import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.mapper.NotificationTemplateMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -139,6 +141,32 @@ public class NotificationService {
         });
     }
 
+    @Transactional
+    public void sendCouponAlmostExpiredNotification(Member member, Coupon coupon, Duration remaining) {
+        var template = notificationTemplateService.getNotificationTemplateById(NotificationTemplateId.COUPON_ALMOST_EXPIRED.getId());
+
+        String title = String.format(template.getTitle(), coupon.getName());
+        String message = String.format(template.getContent(), coupon.getName(), coupon.getContent(), remaining.toHours());
+
+        // SSE 응답 DTO
+        NotificationSseResponseDto sseResponse = NotificationSseResponseDto.builder()
+                .title(title)
+                .message(message)
+                .build();
+
+        // 클라이언트에 전송
+        sendNotificationToClient(sseResponse);
+
+        // DB 저장
+        notificationRepository.save(Notification.builder()
+                .receivedMember(member)
+                .template(template)
+                .status(statusService.getReadYetStatusForNotification())
+                .createdAt(Instant.now())
+                .build());
+    }
+
+
     // 알림을 보내는 메서드
     public void sendReservationSuccessNotification(ReservationSuccessEvent event) {
         // 1. 데이터 조회
@@ -223,5 +251,4 @@ public class NotificationService {
             }
         }
     }
-
 }
