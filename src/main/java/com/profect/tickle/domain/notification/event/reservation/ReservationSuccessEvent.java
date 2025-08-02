@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.notification.event.event.reservation;
+package com.profect.tickle.domain.notification.event.reservation;
 
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.performance.entity.Performance;

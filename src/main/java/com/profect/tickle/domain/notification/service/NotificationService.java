@@ -6,7 +6,7 @@ import com.profect.tickle.domain.notification.dto.response.NotificationResponseD
 import com.profect.tickle.domain.notification.dto.response.NotificationSseResponseDto;
 import com.profect.tickle.domain.notification.entity.Notification;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
-import com.profect.tickle.domain.notification.event.event.reservation.ReservationSuccessEvent;
+import com.profect.tickle.domain.notification.event.reservation.ReservationSuccessEvent;
 import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.mapper.NotificationTemplateMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
