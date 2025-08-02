@@ -16,9 +16,6 @@ public record CouponResponseDto(
         @Schema(description = "할인율")
         short couponRate,
 
-        @Schema(description = "수량")
-        short couponCount,
-
         @Schema(description = "유효기간")
         LocalDate couponValid
 ) {
@@ -27,7 +24,6 @@ public record CouponResponseDto(
                 coupon.getId(),
                 coupon.getName(),
                 coupon.getRate(),
-                coupon.getCount(),
                 coupon.getValid()
         );
     }
