@@ -19,7 +19,20 @@ public class ReservationEventListener {
     @Async
     @EventListener
     public void handleReservationSuccess(ReservationSuccessEvent event) {
-        log.info("예매 성공 이벤트 감지: memberId={}, performanceTitle={}", SecurityUtil.getSignInMemberId(), event.reservation().getPerformance().getTitle());
+        log.info("예매 성공 이벤트 감지: memberId={}, 공연명={}, 예매 Id={}", SecurityUtil.getSignInMemberId(), event.reservation().getPerformance().getTitle(), event.reservation().getId());
+        notificationService.sendReservationSuccessNotification(event);
+
+        /* TODO: 이벤트 발행
+         *  bean으로 private final ApplicationEventPublisher eventPublisher; 를 주입
+         *  eventPublisher.publishEvent(new ReservationSuccessEvent(reservation));
+         *  마지막에 넣기
+         * */
+    }
+
+    @Async
+    @EventListener
+    public void handlePerformanceModified(ReservationSuccessEvent event) {
+        log.info("공연 내용 수정 이벤트 감지: memberId={}, performanceTitle={}", SecurityUtil.getSignInMemberId(), event.reservation().getPerformance().getTitle());
         notificationService.sendReservationSuccessNotification(event);
 
         /* TODO: 이벤트 발행
