@@ -70,8 +70,8 @@ public class PerformanceService {
         return performanceMapper.findTop10ByGenre(genreId);
     }
 
-    public List<PerformanceDto> getTop100Performances() {
-        return performanceMapper.findTop100ByClickCount();
+    public List<PerformanceDto> getTop10Performances() {
+        return performanceMapper.findTop10ByClickCount();
     }
 
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {

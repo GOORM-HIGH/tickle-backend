@@ -25,7 +25,7 @@ public interface PerformanceMapper {
 
     List<PerformanceDto> findTop10ByGenre(@Param("genreId") Long genreId);
 
-    List<PerformanceDto> findTop100ByClickCount();
+    List<PerformanceDto> findTop10ByClickCount();
 
     List<PerformanceDto> findTop4UpcomingPerformances();
 
