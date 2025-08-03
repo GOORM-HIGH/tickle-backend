@@ -1,10 +1,13 @@
 package com.profect.tickle.domain.notification.entity;
 
+import lombok.Getter;
+
+@Getter
 public enum NotificationTemplateId {
     RESERVATION_SUCCESS(1L),
-    RESERVATION_CHANGED(2L),
-    RESERVATION_DELETED(3L),
-    COUPON_ALMOST_EXPIRED(4L);
+    PERFORMANCE_MODIFIED(2L),
+    COUPON_ALMOST_EXPIRED(3L),
+    AUTH_CODE_SENT(4L); // 인증번호 전송
 
     private final Long id;
 
@@ -12,7 +15,4 @@ public enum NotificationTemplateId {
         this.id = id;
     }
 
-    public Long getId() {
-        return id;
-    }
 }
