@@ -79,6 +79,9 @@ public class PerformanceService {
         if (result == null) {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
         }
+
+        performanceMapper.increaseLookCount(performanceId);
+
         return result;
     }
 

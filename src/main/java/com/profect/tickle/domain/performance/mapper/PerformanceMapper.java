@@ -23,6 +23,8 @@ public interface PerformanceMapper {
 
     PerformanceDetailDto findDetailById(@Param("performanceId") Long performanceId);
 
+    void increaseLookCount(@Param("performanceId") Long performanceId);
+
     List<PerformanceDto> findTop10ByGenre(@Param("genreId") Long genreId);
 
     List<PerformanceDto> findTop10ByClickCount();
