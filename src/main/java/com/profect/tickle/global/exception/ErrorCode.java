@@ -24,6 +24,8 @@ public enum ErrorCode {
     DEFAULT_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND,"상태에 기본값이 존재하지 않습니다."),
     PERFORMANCE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND,"공연 가격이 존재하지 않습니다."),
     NO_PERMISSION(HttpStatus.FORBIDDEN,"공연을 삭제할 권한이 없습니다."),
+    ALREADY_SCRAPPED(HttpStatus.CONFLICT,"이미 스크랩된 공연입니다."),
+    FAVORITE_NOT_FOUND(HttpStatus.NOT_FOUND,"스크랩된 공연이 존재하지 않습니다."),
 
     // 채팅방 관련
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
