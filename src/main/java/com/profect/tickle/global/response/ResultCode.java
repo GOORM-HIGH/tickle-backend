@@ -22,8 +22,9 @@ public enum ResultCode {
     PERFORMANCE_POPULAR_SUCCESS(HttpStatus.OK,"예매예정인 TOP4 조회 성공"),
     PERFORMANCE_SEARCH_SUCCESS(HttpStatus.OK,"검색 성공"),
     PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
-
-    ;
+    PERFORMANCE_CREATE_SUCCESS(HttpStatus.CREATED,"공연 생성 성공"),
+    PERFORMANCE_UPDATE_SUCCESS(HttpStatus.OK, "공연 수정 성공"),
+    PERFORMANCE_DELETE_SUCCESS(HttpStatus.OK,"공연 삭제 성공");
 
     private final HttpStatus status;
     private final String message;

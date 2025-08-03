@@ -20,6 +20,10 @@ public enum ErrorCode {
 
     //PERFORMANCE
     PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 공연을 찾을 수 없습니다."),
+    GENRE_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 장르를 찾을 수 없습니다."),
+    DEFAULT_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND,"상태에 기본값이 존재하지 않습니다."),
+    PERFORMANCE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND,"공연 가격이 존재하지 않습니다."),
+    NO_PERMISSION(HttpStatus.FORBIDDEN,"공연을 삭제할 권한이 없습니다."),
 
     // 채팅방 관련
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
@@ -48,7 +52,9 @@ public enum ErrorCode {
     NOTIFICATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 알림에 접근할 권한이 없습니다."),
 
     // 상태 관련
-    STATUS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "상태를 찾을 수 없습니다."); // 전적인 개발자 잘못: 500 에러
+    STATUS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "상태를 찾을 수 없습니다."), // 전적인 개발자 잘못: 500 에러
+
+    MEMBER_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR,"해당 회원을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

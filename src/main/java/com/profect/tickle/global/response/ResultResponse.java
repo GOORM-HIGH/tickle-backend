@@ -27,5 +27,9 @@ public class ResultResponse<T> {
     public static <T> ResultResponse<List<T>> of(ResultCode resultCode, List<T> data) {
         return new ResultResponse<>(resultCode, data);
     }
+
+    public static ResultResponse<Void> ok(ResultCode code) {
+        return new ResultResponse<>(code, null);
+    }
 }
 
