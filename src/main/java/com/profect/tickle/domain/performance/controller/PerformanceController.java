@@ -1,15 +1,25 @@
 package com.profect.tickle.domain.performance.controller;
 
+import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
+import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.response.GenreDto;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
+import com.profect.tickle.domain.performance.dto.response.PerformanceResponseDto;
 import com.profect.tickle.domain.performance.service.PerformanceService;
+import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
+import com.profect.tickle.global.security.util.SecurityUtil;
+import com.profect.tickle.global.security.util.principal.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -79,5 +89,32 @@ public class PerformanceController {
         List<PerformanceDto> recommend = performanceService.getRelatedPerformances(performanceId);
         return ResultResponse.of(ResultCode.PERFORMANCE_RECOMMEND_LIST_SUCCESS, recommend);
     }
+
+    @PostMapping
+    @PreAuthorize("hasRole('HOST')")
+    public ResultResponse<PerformanceResponseDto> createPerformance(@RequestBody @Valid PerformanceRequestDto request) {
+        PerformanceResponseDto response = performanceService.createPerformance(request);
+        return ResultResponse.of(ResultCode.PERFORMANCE_CREATE_SUCCESS, response);
+    }
+
+    @PatchMapping("/{performanceId}")
+    @PreAuthorize("hasRole('HOST')")
+    public ResultResponse<PerformanceResponseDto> updatePerformance(
+            @PathVariable Long performanceId,
+            @RequestBody UpdatePerformanceRequestDto dto
+    ) {
+        Long currentMemberId = SecurityUtil.getSignInMemberId();
+        PerformanceResponseDto updated = performanceService.updatePerformance(performanceId, dto);
+        return ResultResponse.of(ResultCode.PERFORMANCE_UPDATE_SUCCESS, updated);
+    }
+
+    @DeleteMapping("/{performanceId}")
+    @PreAuthorize("hasRole('HOST')")
+    public ResultResponse<Void> deletePerformance(@PathVariable Long performanceId) {
+        Long memberId = SecurityUtil.getSignInMemberId();
+        performanceService.deletePerformance(performanceId, memberId);
+        return ResultResponse.ok(ResultCode.PERFORMANCE_DELETE_SUCCESS);
+    }
+
 
 }
