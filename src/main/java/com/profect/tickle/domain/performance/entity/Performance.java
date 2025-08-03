@@ -1,11 +1,11 @@
 package com.profect.tickle.domain.performance.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
+import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "performance")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Performance {
 
     @Id
@@ -41,7 +43,7 @@ public class Performance {
     private String title;
 
     @Column(name = "performance_price", nullable = false)
-    private Integer price;
+    private String price;
 
     @Column(name = "performance_date", nullable = false)
     private LocalDateTime date;
@@ -69,4 +71,77 @@ public class Performance {
 
     @Column(name = "performance_updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "performance_deleted_at")
+    private LocalDateTime deletedAt;
+
+    public Performance(
+            String title,
+            Member member,
+            Genre genre,
+            Hall hall,
+            Status status,
+            LocalDateTime date,
+            Short runtime,
+            String price,
+            String img,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            boolean isEvent
+    ) {
+        this.title = title;
+        this.member = member;
+        this.genre = genre;
+        this.hall = hall;
+        this.status = status;
+        this.date = date;
+        this.runtime = runtime;
+        this.price = price;
+        this.img = img;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.isEvent = isEvent;
+        this.lookCount = 0;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+
+    public static Performance create(
+            PerformanceRequestDto dto,
+            Member member,
+            Genre genre,
+            Hall hall,
+            Status status,
+            String priceRange
+    ) {
+        return new Performance(
+                dto.getTitle(),
+                member,
+                genre,
+                hall,
+                status,
+                dto.getDate(),
+                dto.getRuntime(),
+                priceRange,
+                dto.getImg(),
+                dto.getStartDate(),
+                dto.getEndDate(),
+                Boolean.TRUE.equals(dto.getIsEvent())
+        );
+    }
+
+    public void updateFrom(UpdatePerformanceRequestDto dto) {
+        if (dto.getTitle() != null) this.title = dto.getTitle();
+        if (dto.getDate() != null) this.date = dto.getDate();
+        if (dto.getRuntime() != null) this.runtime = dto.getRuntime();
+        if (dto.getImg() != null) this.img = dto.getImg();
+        if (dto.getIsEvent() != null) this.isEvent = dto.getIsEvent();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markAsDeleted() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
 }
