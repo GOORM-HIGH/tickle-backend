@@ -22,7 +22,7 @@ public class SeatClass {
     private Hall hall;
 
     @Column(name = "seat_class_grade", length = 3, nullable = false)
-    private Grade grade;
+    private SeatGrade grade;
 
     @Column(name = "seat_class_amount", nullable = false)
     private Short amount;
