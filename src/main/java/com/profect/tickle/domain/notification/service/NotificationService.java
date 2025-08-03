@@ -18,7 +18,7 @@ import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.service.StatusService;
-import com.profect.tickle.global.util.NotificationTemplateId;
+import com.profect.tickle.domain.notification.entity.NotificationTemplateId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.profect.tickle.global.util;
+package com.profect.tickle.domain.notification.entity;
 
 public enum NotificationTemplateId {
     RESERVATION_SUCCESS(1L),
