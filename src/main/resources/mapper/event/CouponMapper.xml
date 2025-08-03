@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.coupon.mapper.CouponMapper">
+
+    <!-- 만료일이 targetDate 이전인 쿠폰 조회 -->
+    <select id="findCouponsExpiringBefore" parameterType="java.time.LocalDate" resultType="ExpiringSoonCouponResponseDto">
+        SELECT
+            member.member_email AS memberEmail,
+            coupon.coupon_name AS couponName,
+            coupon.coupon_valid AS expiryDate
+        FROM coupon AS coupon
+        JOIN coupon_received AS received
+            ON coupon.coupon_id = received.coupon_id
+        JOIN member AS member
+            ON received.member_id = member.member_id
+        WHERE coupon_valid &lt;= #{targetDate}
+    </select>
+
+</mapper>

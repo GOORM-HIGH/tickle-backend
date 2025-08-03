@@ -4,10 +4,11 @@ import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.member.entity.Member;
 
 import java.time.Duration;
+import java.time.LocalDate;
 
 public record CouponAlmostExpiredEvent(
-        Member member,       // 쿠폰을 보유한 사용자
-        Coupon coupon,       // 만료 임박 쿠폰
-        Duration remaining   // 남은 시간
+        String memberEmail,       // 쿠폰을 보유한 사용자
+        String couponName,       // 만료 임박 쿠폰
+        LocalDate expiryDate   // 남은 시간
 ) {
 }

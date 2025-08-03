@@ -2,7 +2,10 @@ package com.profect.tickle.domain.member.service;
 
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +23,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MemberService implements UserDetailsService {
+
+    private final MemberMapper memberMapper;
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
@@ -49,5 +54,10 @@ public class MemberService implements UserDetailsService {
                 signInMember.getNickname(),
                 grantedAuthorityList
         );
+    }
+
+    public Member getMemberByEmail(String email) {
+        return memberMapper.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("가입된 유저가 압니다.", ErrorCode.MEMBER_NOT_FOUND));
     }
 }

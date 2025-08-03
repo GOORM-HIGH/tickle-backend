@@ -26,4 +26,6 @@ public interface EventService {
     List<EventListResponseDto> getRandomOngoingEvents();
 
     PagingResponse<CouponResponseDto> getMyCoupons(int page, int size);
+
+    public List<ExpiringSoonCouponResponseDto> getCouponsExpiringWithinOneDay();
 }

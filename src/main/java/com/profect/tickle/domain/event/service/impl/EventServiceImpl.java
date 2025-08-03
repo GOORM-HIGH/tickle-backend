@@ -6,6 +6,7 @@ import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.entity.EventType;
+import com.profect.tickle.domain.event.mapper.CouponMapper;
 import com.profect.tickle.domain.event.mapper.CouponReceivedMapper;
 import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
@@ -32,6 +33,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +53,7 @@ public class EventServiceImpl implements EventService {
     private final PointRepository pointRepository;
 
     private final EventMapper eventMapper;
+    private final CouponMapper couponMapper;
     private final CouponReceivedMapper couponReceivedMapper;
 
     private final PointTarget eventTarget = PointTarget.EVENT;
@@ -226,5 +231,11 @@ public class EventServiceImpl implements EventService {
 
         Point point = Point.create(member, event.getPerPrice(), target, member.getPointBalance());
         pointRepository.save(point);
+    }
+
+    public List<ExpiringSoonCouponResponseDto> getCouponsExpiringWithinOneDay() {
+        // 오늘 날짜 + 1일 (내일 날짜)
+        LocalDate targetDate = LocalDate.now().plusDays(1);
+        return couponMapper.findCouponsExpiringBefore(targetDate);
     }
 }

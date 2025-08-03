@@ -29,17 +29,17 @@ public class CouponEventListener {
     @Async
     @EventListener
     public void handleCouponAlmostExpired(CouponAlmostExpiredEvent event) {
-        log.info("쿠폰 만료 임박 이벤트 감지: memberId={}, couponName={}, remainingHours={}",
-                event.member().getId(),
-                event.coupon().getName(),
-                event.remaining().toHours()
+        log.info("쿠폰 만료 임박 이벤트 감지: memberEmail={}, couponName={}, expiryDate={}",
+                event.memberEmail(),
+                event.couponName(),
+                event.expiryDate()
         );
 
         // 알림 발송
         notificationService.sendCouponAlmostExpiredNotification(
-                event.member(),
-                event.coupon(),
-                event.remaining()
+                event.memberEmail(),
+                event.couponName(),
+                event.expiryDate()
         );
 
         /* TODO: 향후 이벤트 체인 확장을 위해 퍼블리셔 추가 가능

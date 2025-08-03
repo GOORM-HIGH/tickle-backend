@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.member.entity;
 
-import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.point.entity.Point;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,6 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
