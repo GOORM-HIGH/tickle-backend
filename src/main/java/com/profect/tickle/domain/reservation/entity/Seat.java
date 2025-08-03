@@ -12,8 +12,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Entity
 @Table(name = "seat")
@@ -81,5 +79,21 @@ public class Seat {
 
     public void assignReservation(Reservation reservation) {
         this.reservation = reservation;
+    }
+
+    public void assignPreemptionToken(String preemptionToken) {
+        this.preemptionToken = preemptionToken;
+    }
+
+    public void assignPreemptedAt(Instant now) {
+        this.preemptedAt = now;
+    }
+
+    public void assignPreemptedUntil(Instant preemptedUntil) {
+        this.preemptedUntil = preemptedUntil;
+    }
+
+    public void setStatusTo(Status status){
+        this.status = status;
     }
 }
