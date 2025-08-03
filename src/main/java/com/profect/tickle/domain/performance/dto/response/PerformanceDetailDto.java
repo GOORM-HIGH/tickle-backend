@@ -18,7 +18,7 @@ public class PerformanceDetailDto {
     private LocalDateTime date; //공연 일자
     private String StatusDescription;
     private short runtime; //공연 시간
-    private Integer price; //공연 금약
+    private String price; //공연 금액
     private String hallAddress; //공연장
     private String hostBizName; //주최측
     private LocalDateTime startDate; //공연 시작일
