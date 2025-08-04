@@ -75,7 +75,8 @@ public class SecurityConfig {
                                         "/swagger-resources/**",
                                         "/v3/api-docs/**",
                                         "/webjars/**",
-                                        "/api-docs/**").permitAll()
+                                        "/api-docs/**",
+                                        "/ws/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/sign-up", "/api/v1/auth/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/sign-in").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/performance/**").permitAll()
