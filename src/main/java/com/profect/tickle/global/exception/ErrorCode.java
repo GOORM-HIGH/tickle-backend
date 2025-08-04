@@ -76,11 +76,8 @@ public enum ErrorCode {
     MEMBER_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
     VALIDATION_CODE_REQUEST_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, "인증번호를 너무 자주 요청했습니다. 잠시 후 다시 시도하세요."),
     VALIDATION_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인증번호가 만료되었습니다."),
-    VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다."),
-    MEMBER_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR,"해당 회원을 찾을 수 없습니다."),
+    VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다.");
 
-
-    ;
     private final HttpStatus status;
     private final String message;
 }

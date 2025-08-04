@@ -140,7 +140,7 @@ public class PerformanceService {
                     }
                 });
 
-        Status status = statusRepository.findById(1)
+        Status status = statusRepository.findById(1L)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEFAULT_STATUS_NOT_FOUND));
 
         Integer minPrice = seatTemplateRepository.findMinPriceByHallType(dto.getHallType().toString());
