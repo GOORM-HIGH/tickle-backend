@@ -59,8 +59,10 @@ public class NotificationService {
     // 알림 읽은 처리
     @Transactional
     public void markAsRead(Long notificationId, Long memberId) {
-        Notification notification = notificationRepository.findById(notificationId).orElse(null);
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND.getMessage(), ErrorCode.NOTIFICATION_NOT_FOUND));
 
+        // 작성자가 아닌 경우
         if (notification != null && !notification.getReceivedMember().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.NOTIFICATION_ACCESS_DENIED);
         }
