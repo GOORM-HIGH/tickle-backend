@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.point.dto;
+package com.profect.tickle.domain.point.dto.response;
 
 import com.profect.tickle.domain.point.entity.Point;
 
