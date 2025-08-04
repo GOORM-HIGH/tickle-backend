@@ -5,6 +5,8 @@ import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -16,6 +18,8 @@ import java.util.List;
 @Entity
 @Table(name = "reservation")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Reservation {
 
     @Id
