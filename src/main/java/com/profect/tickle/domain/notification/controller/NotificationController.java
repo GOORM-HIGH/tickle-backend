@@ -2,6 +2,8 @@ package com.profect.tickle.domain.notification.controller;
 
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
 import com.profect.tickle.domain.notification.service.NotificationService;
+import com.profect.tickle.global.response.ResultCode;
+import com.profect.tickle.global.response.ResultResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,8 +12,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -55,4 +59,12 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "SSE 통신 연결 요청", description = "이벤트 내용을 전달하기 위한 SSE 통신을 연결을 요청합니다.")
+    @GetMapping(value = "/sse-connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResultResponse<SseEmitter> connect(@RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") final String lastEventId) {
+        return ResultResponse.of(
+                ResultCode.SSE_CONNECTION_SUCCESS,
+                notificationService.sseConnect(lastEventId)
+        );
+    }
 }
