@@ -1,10 +1,15 @@
 package com.profect.tickle.domain.member.service;
 
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.member.entity.EmailValidationCode;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.repository.EmailValidationCodeRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +28,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MemberService implements UserDetailsService {
 
-    private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final MemberRepository memberRepository;
+    private final EmailValidationCodeRepository emailValidationCodeRepository;
+
 
     @Transactional
     public void createMember(CreateMemberRequestDto createUserRequest) {
@@ -49,5 +59,59 @@ public class MemberService implements UserDetailsService {
                 signInMember.getNickname(),
                 grantedAuthorityList
         );
+    }
+
+    @Transactional
+    public void createEmailValidationCode(String email) {
+        Member member = memberRepository.findByEmail(email).orElse(null);
+        String newValidationCode = createAuthenticationCode();
+
+        if (member == null) { // 신규 가입
+            EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email);
+
+            if (emailValidationCode == null) {
+                // 처음 발급
+                emailValidationCodeRepository.save(
+                        EmailValidationCode.builder()
+                                .email(email)
+                                .validationCode(newValidationCode)
+                                .build()
+                );
+            } else {
+                Instant now = Instant.now();
+
+                // 1) 아직 만료 안됨 → 쿨타임 체크 후 제한
+                if (emailValidationCode.getExpiresAt().isAfter(now)) {
+                    if (emailValidationCode.getCreatedAt().isAfter(now.minus(1, ChronoUnit.MINUTES))) { // 1분 이내엔 재발송 안됨.
+                        throw new BusinessException(ErrorCode.VALIDATION_CODE_REQUEST_TOO_SOON); // 429
+                    }
+                }
+
+                // 2) 만료 or 쿨타임 경과 → 재발급
+                emailValidationCode.regenerateCode(newValidationCode);
+            }
+
+        } else if (member.getDeletedAt() != null) { // 재가입
+            EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email);
+            if (emailValidationCode == null) {
+                emailValidationCodeRepository.save(
+                        EmailValidationCode.builder()
+                                .email(email)
+                                .validationCode(newValidationCode)
+                                .build()
+                );
+            } else {
+                emailValidationCode.regenerateCode(newValidationCode);
+            }
+
+        } else { // 이미 가입된 유저
+            throw new BusinessException(ErrorCode.MEMBER_ALREADY_REGISTERED);
+        }
+    }
+
+    // 랜덤 인증번호 생성 함수
+    public String createAuthenticationCode() {
+        // 12자리, 문자, 숫자 포함 문자열 생성
+        return RandomStringUtils.random(12, true, true);
     }
 }

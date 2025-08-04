@@ -23,8 +23,11 @@ public enum ResultCode {
     PERFORMANCE_TOP100_SUCCESS(HttpStatus.OK,"모든장르포함 인기랭킹 TOP10 조회 성공"),
     PERFORMANCE_POPULAR_SUCCESS(HttpStatus.OK,"예매예정인 TOP4 조회 성공"),
     PERFORMANCE_SEARCH_SUCCESS(HttpStatus.OK,"검색 성공"),
-    PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공")
+    PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
 
+    // MEMBER
+    MEMBER_CREATE_SUCCESS(HttpStatus.CREATED, "회원가입 성공"),
+    EMAIL_VALIDATION_CODE_CREATE(HttpStatus.CREATED, "이메일 인증코드 생성 성공")
     ;
 
     private final HttpStatus status;
