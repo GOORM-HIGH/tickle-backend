@@ -102,7 +102,7 @@ public class Event {
     }
 
     public void accumulate(Short perPrice) {
-        this.goalPrice += perPrice;
+        this.accrued += perPrice;
     }
 
     public void updateStatus(Status status) {
