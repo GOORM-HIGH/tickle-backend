@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.event.dto.response;
 
-import com.profect.tickle.domain.reservation.entity.Grade;
+import com.profect.tickle.domain.reservation.entity.SeatGrade;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record TicketEventDetailResponseDto(
@@ -24,7 +24,7 @@ public record TicketEventDetailResponseDto(
         String seatCode,
 
         @Schema(description = "좌석 등급", example = "VIP")
-        Grade seatClassGrade,
+        SeatGrade seatGrade,
 
         @Schema(description = "응모 가격", example = "5000")
         Short perPrice,
