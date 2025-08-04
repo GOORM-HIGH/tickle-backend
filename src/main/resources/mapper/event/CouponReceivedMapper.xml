@@ -13,6 +13,7 @@
                  JOIN coupon c ON cr.coupon_id = c.coupon_id
         WHERE cr.member_id = #{memberId}
           AND c.coupon_valid > CURRENT_DATE
+        And cr.status.id = 17
         ORDER BY cr.coupon_received_created_at DESC
             LIMIT #{size} OFFSET #{offset}
     </select>
@@ -23,5 +24,6 @@
                  JOIN coupon c ON cr.coupon_id = c.coupon_id
         WHERE cr.member_id = #{memberId}
           AND c.coupon_valid > CURRENT_DATE
+          And cr.status.id = 17
     </select>
 </mapper>
