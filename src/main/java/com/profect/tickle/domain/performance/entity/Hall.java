@@ -3,14 +3,14 @@ package com.profect.tickle.domain.performance.entity;
 import jakarta.persistence.GenerationType;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @Entity
 @Table(name = "hall")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Hall {
 
     @Id

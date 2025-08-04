@@ -7,9 +7,9 @@
 
     <select id="findCouponEventList" resultType="com.profect.tickle.domain.event.dto.response.CouponListResponseDto">
         SELECT
-            c.coupon_id AS couponId,
+            c.coupon_id AS id,
             c.coupon_name AS name,
-            c.coupon_valid AS validDate
+            c.coupon_rate AS rate
         FROM coupon c
         ORDER BY c.coupon_created_at DESC
             LIMIT #{size} OFFSET #{offset}
@@ -30,7 +30,7 @@
         LIMIT #{size} OFFSET #{offset}
     </select>
 
-    <select id="countCouponEvents" resultType="int">
+    <select id="countCouponEvents" resultType="long">
         SELECT COUNT(*)
         FROM coupon c
         WHERE EXISTS (
@@ -53,34 +53,37 @@
     <select id="findTicketEventDetail"
             resultType="com.profect.tickle.domain.event.dto.response.TicketEventDetailResponseDto">
         SELECT
-            e.event_id AS eventId,
+            e.event_id AS id,
             p.performance_title AS performanceTitle,
-            p.performance_place AS performancePlace,
+            h.hall_address AS performancePlace,
+            p.performance_runtime AS performanceRuntime,
             p.performance_date AS performanceDate,
-            p.performance_time AS performanceRuntime,
-            s.seat_code AS seatCode,
-            sc.seat_class_grade AS seatClassGrade,
+            s.seat_number AS seatNumber,
+            s.seat_grade AS seatGrade,
             e.event_per_price AS perPrice,
             p.performance_img AS performanceImg,
-            st.status_name AS eventStatusName
+            st.status_description AS eventStatusName
         FROM event e
                  JOIN seat s ON e.seat_id = s.seat_id
-                 JOIN seat_class sc ON s.seat_class_id = sc.seat_class_id
                  JOIN performance p ON s.performance_id = p.performance_id
                  JOIN status st ON e.status_id = st.status_id
+                 JOIN hall h ON p.hall_id = h.hall_id
         WHERE e.event_id = #{eventId}
     </select>
 
     <select id="searchTicketEvents" resultType="com.profect.tickle.domain.event.dto.response.TicketListResponseDto">
         SELECT
-            e.event_id AS eventId,
+            e.event_id AS id,
             e.event_name AS name,
-            e.event_created_at AS createdAt
+            e.event_per_price AS perPrice,
+            p.performance_img AS img
         FROM event e
-                 JOIN status s ON e.status_id = s.status_id
+                 JOIN seat s ON e.seat_id = s.seat_id
+                 JOIN performance p ON s.performance_id = p.performance_id
+                 JOIN status st ON e.status_id = st.status_id
         WHERE e.event_type = 1
-          AND s.status_code IN (100, 101)
-          AND e.event_name LIKE CONCAT('%', #{keyword}, '%')
+          AND st.status_code IN (100, 101)
+          AND e.event_name LIKE '%' || #{keyword} || '%'
         ORDER BY e.event_created_at DESC
             LIMIT #{size}
         OFFSET #{offset}
@@ -92,18 +95,22 @@
                  JOIN status s ON e.status_id = s.status_id
         WHERE e.event_type = 1
           AND s.status_code IN (100, 101)
-          AND e.event_name LIKE CONCAT('%', #{keyword}, '%')
+          AND e.event_name LIKE '%' || #{keyword} || '%'
     </select>
 
-    <select id="findRandomOngoingEvents" resultType="com.profect.tickle.domain.event.dto.response.EventListResponseDto">
+    <select id="findRandomOngoingEvents"
+            resultType="com.profect.tickle.domain.event.dto.response.SeatProjection">
         SELECT
             e.event_id AS eventId,
-            e.event_name AS name,
-            e.event_created_at AS createdAt
+            p.performance_id AS performanceId,
+            e.event_name AS eventName,
+            s.seat_number AS seatNumber
         FROM event e
-                 JOIN status s ON e.status_id = s.status_id
-        WHERE s.status_code = 101
-        ORDER BY RAND()
-            LIMIT 5
+                 JOIN status st ON e.status_id = st.status_id
+                 JOIN seat s ON e.seat_id = s.seat_id
+                 JOIN performance p ON s.performance_id = p.performance_id
+        WHERE st.status_id IN (4, 5)
+        ORDER BY RANDOM()
+            LIMIT #{size} OFFSET #{offset}
     </select>
 </mapper>
