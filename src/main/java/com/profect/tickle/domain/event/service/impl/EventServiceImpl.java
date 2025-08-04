@@ -223,16 +223,6 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 
-    private void deductPoint(Member member, Event event, PointTarget target) {
-        if (member.getPointBalance() < event.getPerPrice()) {
-            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
-        }
-        member.usePoint(event.getPerPrice());
-
-        Point point = Point.deduct(member, event.getPerPrice(), target);
-        pointRepository.save(point);
-    }
-
     public List<ExpiringSoonCouponResponseDto> getCouponsExpiringWithinOneDay() {
         // 오늘 날짜 + 1일 (내일 날짜)
         LocalDate targetDate = LocalDate.now().plusDays(1);

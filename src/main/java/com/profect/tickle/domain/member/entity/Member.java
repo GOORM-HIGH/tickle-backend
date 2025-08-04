@@ -2,6 +2,9 @@ package com.profect.tickle.domain.member.entity;
 
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.point.entity.Point;
+import com.profect.tickle.domain.point.entity.PointTarget;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -130,6 +133,25 @@ public class Member {
 
     public void encryptPassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public Point deductPoint(Short price, PointTarget target) {
+        if (this.getPointBalance() < price) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+        this.usePoint(price);
+
+        return Point.deduct(this, price, target);
+    }
+
+    public Point deductPoint(Integer price, PointTarget target) {
+        if (this.getPointBalance() < price) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+
+        pointBalance -= price;
+
+        return Point.deduct(this, price, target);
     }
 
     public void usePoint(Short perPrice) {

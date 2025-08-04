@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.member.entity;
 
 import com.profect.tickle.domain.event.entity.Coupon;
+import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,10 @@ public class CouponReceived {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id", nullable = false)
     private Coupon coupon;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private Status status;
 
     @Column(name = "coupon_received_created_at", nullable = false, updatable = false)
     private Instant createdAt;
