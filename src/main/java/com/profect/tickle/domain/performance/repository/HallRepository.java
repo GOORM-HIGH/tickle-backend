@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface HallRepository extends JpaRepository<Hall,Long> {
     Optional<Hall> findByTypeAndAddress(HallType type, String address);
+    Optional<Hall> findByAddress(String address);
 }
