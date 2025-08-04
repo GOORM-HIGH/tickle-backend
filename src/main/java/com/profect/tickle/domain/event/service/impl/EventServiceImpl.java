@@ -99,7 +99,9 @@ public class EventServiceImpl implements EventService {
         Event event = getEventOrThrow(eventId);
         Member member = getMemberOrThrow();
 
-        //deductPoint(member, event, eventTarget);
+        Point point = member.deductPoint(event.getPerPrice(), eventTarget);
+        pointRepository.save(point);
+
         event.accumulate(event.getPerPrice());
 
         boolean isWinner = (event.getAccrued().equals(event.getGoalPrice()));
