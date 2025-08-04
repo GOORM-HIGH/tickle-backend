@@ -6,7 +6,7 @@ plugins {
     id 'org.graalvm.buildtools.native' version '0.10.6'
 }
 
-group = 'com.profect'  // 프로젝트에 맞게 수정
+group = 'com.profect'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -32,6 +32,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     testImplementation 'org.springframework.security:spring-security-test'
 
     // ===== Database =====
@@ -63,6 +64,16 @@ dependencies {
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'
     implementation 'org.springframework:spring-messaging'
+
+    // ==== Payment ====
+    implementation 'io.github.bootpay:backend:+'
+
+    // ==== thymeleaf ====
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    // SMB/CIFS Protocol
+    implementation 'org.springframework.integration:spring-integration-smb'
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
 }
 
 hibernate {
