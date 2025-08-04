@@ -86,7 +86,16 @@
             JOIN hall h ON p.hall_id = h.hall_id
             JOIN member m ON p.member_id = m.member_id
         WHERE p.performance_id = #{performanceId}
+          AND p.performance_deleted_at IS NULL
     </select>
+    <!--  공연 상세조회시 카운트 증가  -->
+    <update id="increaseLookCount">
+        UPDATE performance
+        SET performance_look_count = performance_look_count + 1
+        WHERE performance_id = #{performanceId}
+          AND performance_deleted_at IS NULL
+    </update>
+
 
     <!-- 오픈예정 TOP4 -->
     <select id="findTop4UpcomingPerformances" resultType="PerformanceDto">
