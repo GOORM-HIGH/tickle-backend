@@ -3,6 +3,7 @@ package com.profect.tickle.domain.member.service;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.member.entity.EmailValidationCode;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.EmailValidationCodeRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -30,6 +31,7 @@ public class MemberService implements UserDetailsService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final MemberMapper memberMapper;
     private final MemberRepository memberRepository;
     private final EmailValidationCodeRepository emailValidationCodeRepository;
 
@@ -139,5 +141,10 @@ public class MemberService implements UserDetailsService {
                 });
 
         // 5. (필요 시 인증 완료 처리 로직 추가 - 예: 상태 플래그 변경)
+    }
+
+    public Member getMemberByEmail(String email) {
+        return memberMapper.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("가입된 유저가 압니다.", ErrorCode.MEMBER_NOT_FOUND));
     }
 }

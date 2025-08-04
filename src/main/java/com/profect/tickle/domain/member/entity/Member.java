@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -133,5 +134,9 @@ public class Member {
 
     public void usePoint(Short perPrice) {
         pointBalance -= perPrice;
+    }
+
+    public void addPoint(int point) {
+        pointBalance += point;
     }
 }
