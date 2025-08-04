@@ -229,7 +229,7 @@ public class EventServiceImpl implements EventService {
         }
         member.usePoint(event.getPerPrice());
 
-        Point point = Point.create(member, event.getPerPrice(), target, member.getPointBalance());
+        Point point = Point.deduct(member, event.getPerPrice(), target);
         pointRepository.save(point);
     }
 

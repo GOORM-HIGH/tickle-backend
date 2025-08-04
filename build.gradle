@@ -64,6 +64,12 @@ dependencies {
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'
     implementation 'org.springframework:spring-messaging'
+
+    // ==== Payment ====
+    implementation 'io.github.bootpay:backend:+'
+
+    // ==== thymeleaf ====
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 }
 
 hibernate {

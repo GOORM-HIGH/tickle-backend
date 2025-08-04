@@ -135,4 +135,8 @@ public class Member {
     public void usePoint(Short perPrice) {
         pointBalance -= perPrice;
     }
+
+    public void addPoint(int point) {
+        pointBalance += point;
+    }
 }
