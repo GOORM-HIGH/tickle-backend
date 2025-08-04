@@ -114,4 +114,30 @@ public class MemberService implements UserDetailsService {
         // 12자리, 문자, 숫자 포함 문자열 생성
         return RandomStringUtils.random(12, true, true);
     }
+
+    // 인증코드 검증
+    @Transactional(readOnly = true)
+    public void verifyEmailCode(String email, String code) {
+        // 1. 인증코드 조회
+        EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email);
+
+        // 2. 만료 여부 확인
+        if (emailValidationCode.getExpiresAt().isBefore(Instant.now())) {
+            throw new BusinessException(ErrorCode.VALIDATION_CODE_EXPIRED); // 400
+        }
+
+        // 3. 코드 일치 여부 확인
+        if (!emailValidationCode.getValidationCode().equals(code)) {
+            throw new BusinessException(ErrorCode.VALIDATION_CODE_MISMATCH); // 404
+        }
+
+        // 4. 이미 가입된 유저 확인
+        memberRepository.findByEmail(email)
+                .filter(m -> m.getDeletedAt() == null)
+                .ifPresent(m -> {
+                    throw new BusinessException(ErrorCode.MEMBER_ALREADY_REGISTERED); // 409
+                });
+
+        // 5. (필요 시 인증 완료 처리 로직 추가 - 예: 상태 플래그 변경)
+    }
 }
