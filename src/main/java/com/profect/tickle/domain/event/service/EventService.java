@@ -23,7 +23,7 @@ public interface EventService {
 
     PagingResponse<TicketListResponseDto> searchTicketEvents(String keyword, int page, int size);
 
-    List<EventListResponseDto> getRandomOngoingEvents();
+    PagingResponse<TicketEventResponseDto> findRandomOngoingEvents();
 
     PagingResponse<CouponResponseDto> getMyCoupons(int page, int size);
 

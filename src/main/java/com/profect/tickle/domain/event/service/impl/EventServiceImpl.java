@@ -185,10 +185,31 @@ public class EventServiceImpl implements EventService {
         return PagingResponse.from(list, page, size, total);
     }
 
-    @Override
     @Transactional(readOnly = true)
-    public List<EventListResponseDto> getRandomOngoingEvents() {
-        return new ArrayList<>(eventMapper.findRandomOngoingEvents());
+    public PagingResponse<TicketEventResponseDto> findRandomOngoingEvents() {
+        int page = 0;
+        int size = 5;
+        int offset = page * size;
+
+        List<SeatProjection> raw = eventMapper.findRandomOngoingEvents(size, offset);
+        long total = eventMapper.countTicketEvents();
+
+        List<TicketEventResponseDto> content = raw.stream()
+                .map(r -> {
+                    String row = r.seatNumber().replaceAll("[0-9]", "");
+                    String number = r.seatNumber().replaceAll("[^0-9]", "");
+                    String formattedSeat = row + "열 " + number + "번";
+
+                    return new TicketEventResponseDto(
+                            r.eventId(),
+                            r.performanceId(),
+                            r.eventName(),
+                            formattedSeat
+                    );
+                })
+                .toList();
+
+        return PagingResponse.from(content, page, size, total);
     }
 
     @Override

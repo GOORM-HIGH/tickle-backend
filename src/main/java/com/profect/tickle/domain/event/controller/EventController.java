@@ -116,9 +116,9 @@ public class EventController {
             responses = {@ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = EventListResponseDto.class)))})
     @GetMapping("/random")
-    public ResultResponse<List<EventListResponseDto>> getRandomEvents() {
-        List<EventListResponseDto> events = eventService.getRandomOngoingEvents();
-        return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, events);
+    public ResultResponse<PagingResponse<TicketEventResponseDto>> getRandomEvents() {
+        PagingResponse<TicketEventResponseDto> dto = eventService.findRandomOngoingEvents();
+        return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, dto);
     }
 
 }
