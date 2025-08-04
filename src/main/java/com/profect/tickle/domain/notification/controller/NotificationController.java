@@ -40,7 +40,10 @@ public class NotificationController {
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
         List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId);
 
-        return new ResultResponse<>(ResultCode.NOTIFICATION_INFO_SUCCESS, data);
+        return new ResultResponse<>(
+                ResultCode.NOTIFICATION_INFO_SUCCESS,
+                data
+        );
     }
 
     @PatchMapping("/{notificationId}/read")
