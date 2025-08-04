@@ -53,21 +53,21 @@
     <select id="findTicketEventDetail"
             resultType="com.profect.tickle.domain.event.dto.response.TicketEventDetailResponseDto">
         SELECT
-            e.event_id AS eventId,
+            e.event_id AS id,
             p.performance_title AS performanceTitle,
-            p.performance_place AS performancePlace,
+            h.hall_address AS performancePlace,
+            p.performance_runtime AS performanceRuntime,
             p.performance_date AS performanceDate,
-            p.performance_time AS performanceRuntime,
-            s.seat_code AS seatCode,
-            sc.seat_class_grade AS seatClassGrade,
+            s.seat_number AS seatNumber,
+            s.seat_grade AS seatGrade,
             e.event_per_price AS perPrice,
             p.performance_img AS performanceImg,
-            st.status_name AS eventStatusName
+            st.status_description AS eventStatusName
         FROM event e
                  JOIN seat s ON e.seat_id = s.seat_id
-                 JOIN seat_class sc ON s.seat_class_id = sc.seat_class_id
                  JOIN performance p ON s.performance_id = p.performance_id
                  JOIN status st ON e.status_id = st.status_id
+                 JOIN hall h ON p.hall_id = h.hall_id
         WHERE e.event_id = #{eventId}
     </select>
 
