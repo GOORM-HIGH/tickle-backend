@@ -58,4 +58,8 @@ public class CouponReceived {
     public static CouponReceived create(Member member, Coupon coupon) {
         return new CouponReceived (member, coupon);
     }
+
+    public void setCouponStatusToUsed(Status used) {
+        this.status = used;
+    }
 }
