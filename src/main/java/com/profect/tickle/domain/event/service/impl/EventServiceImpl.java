@@ -33,9 +33,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,9 +109,8 @@ public class EventServiceImpl implements EventService {
                     member,
                     seat.getPerformance(),
                     getStatusOrThrow(9L),
-                    "100",  // [임의 값]예매코드 생성 로직 따로 필요 -> 예매코드 로직 생성 시 변경
-                    event.getGoalPrice(),
-                    true);
+                    event.getGoalPrice()
+            );
 
             reservation.assignSeat(seat);
 
