@@ -21,7 +21,7 @@ public class WebSocketInfoController {
 
     private final WebSocketSessionManager sessionManager;
 
-    @Value("${server.port:8080}")
+    @Value("${server.port:8081}")
     private String serverPort;
 
     /**
