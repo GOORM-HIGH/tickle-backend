@@ -39,7 +39,7 @@ public class Performance {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
-    @Column(name = "performance_title", length = 50, nullable = false)
+    @Column(name = "performance_title", length = 255, nullable = false)
     private String title;
 
     @Column(name = "performance_price", nullable = false)
