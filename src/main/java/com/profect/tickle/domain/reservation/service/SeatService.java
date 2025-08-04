@@ -26,6 +26,8 @@ public class SeatService {
     private final StatusRepository statusRepository;
     private final SeatRepository seatRepository;
 
+    private static final Long SEAT_AVAILABLE_STATUS_ID = 11L;
+
     public void createSeatsForPerformance(Long performanceId) {
 
         // 해당 공연의 유형 찾아오기
