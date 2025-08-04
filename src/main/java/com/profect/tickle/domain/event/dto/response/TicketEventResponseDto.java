@@ -16,14 +16,12 @@ public record TicketEventResponseDto(
         String eventName,
 
         @Schema(description = "좌석 정보", example = "A열 3번")
-        String ticketSeat
-) {
+        String seatNumber
+)  {
     public static TicketEventResponseDto from(Event event, Long performanceId) {
         String seatNumber = event.getSeat().getSeatNumber(); // ex: "A45"
-
-        String row = seatNumber.replaceAll("[0-9]", "");     // "A"
-        String number = seatNumber.replaceAll("[^0-9]", ""); // "45"
-
+        String row = seatNumber.replaceAll("[0-9]", "");
+        String number = seatNumber.replaceAll("[^0-9]", "");
         String ticketSeat = row + "열 " + number + "번";
 
         return new TicketEventResponseDto(

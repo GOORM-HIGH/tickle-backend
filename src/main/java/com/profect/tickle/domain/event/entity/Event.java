@@ -3,6 +3,8 @@ package com.profect.tickle.domain.event.entity;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.reservation.entity.Seat;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -102,7 +104,9 @@ public class Event {
     }
 
     public void accumulate(Short perPrice) {
-        this.goalPrice += perPrice;
+        if (this.status.getId() != 5) {
+            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);}
+        this.accrued += perPrice;
     }
 
     public void updateStatus(Status status) {
