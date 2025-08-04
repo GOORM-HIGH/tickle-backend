@@ -12,8 +12,13 @@ public enum ResultCode {
     //EVENT
     EVENT_INFO_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
     EVENT_CREATE_SUCCESS(HttpStatus.CREATED, "이벤트 생성 성공"),
-    COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰을 성공적으로 지급하였습니다."),
+    COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰 지급 성공"),
     COUPON_INFO_SUCCESS(HttpStatus.OK, "쿠폰 조회 성공"),
+
+    //POINT
+    POINT_INFO_SUCCESS(HttpStatus.OK, "포인트 조회 성공"),
+    POINT_CHARGE_SUCCESS(HttpStatus.OK, "포인트 충전 성공"),
+    POINT_HISTORY_SUCCESS(HttpStatus.OK, "포인트 충전/사용 내역 조회 성공"),
 
     //PERFORMANCE
     GENRE_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
