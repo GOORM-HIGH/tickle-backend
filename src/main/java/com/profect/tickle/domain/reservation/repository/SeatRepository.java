@@ -30,4 +30,11 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query("SELECT s.id FROM Seat s WHERE s.preemptUserId = :userId AND s.id IN :seatIds AND s.preemptedUntil > :now")
     List<Long> findPreemptedSeatIdsByUserAndSeatIds(@Param("userId") Long userId,
             @Param("seatIds") List<Long> seatIds);
+
+    @Query("SELECT s FROM Seat s WHERE s.preemptionToken = :token")
+    List<Seat> findByPreemptionToken(@Param("token") String preemptionToken);
+
+    @Query("SELECT s FROM Seat s WHERE s.preemptionToken = :token")
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<Seat> findByPreemptionTokenWithLock(@Param("token") String preemptionToken);
 }
