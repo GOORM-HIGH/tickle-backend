@@ -29,16 +29,16 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    @Operation(summary = "최신 알림 조회", description = "로그인 사용자의 최신 10건의 알림을 조회합니다.")
+    @Operation(summary = "최신 알림 조회", description = "로그인 사용자의 알림을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResultResponse<?> getRecentNotificationList() {
-        log.info("{}님의 최신 10건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail());
+    public ResultResponse<?> getRecentNotificationList(@RequestParam(defaultValue = "10") int size) {
+        log.info("{}님의 최신 {}건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail(), size);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
-        List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId);
+        List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId, size);
 
         return new ResultResponse<>(
                 ResultCode.NOTIFICATION_INFO_SUCCESS,

@@ -44,7 +44,7 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
     private final NotificationRepository notificationRepository;
     private final NotificationTemplateMapper notificationTemplateMapper;
-    private final MailService mailService; // ✅ 메일 서비스 추가
+    private final MailService mailService;
 
     private final Map<String, SseEmitter> emitterMap = new ConcurrentHashMap<>();
     private final Map<String, Object> eventCache = new ConcurrentHashMap<>();
@@ -52,8 +52,8 @@ public class NotificationService {
 
     // 최신 알림 조회
     @Transactional(readOnly = true)
-    public List<NotificationResponseDto> getRecentNotificationListByMemberId(Long memberId) {
-        return notificationMapper.getRecentNotificationListByMemberId(memberId);
+    public List<NotificationResponseDto> getRecentNotificationListByMemberId(Long memberId, int limit) {
+        return notificationMapper.getRecentNotificationListByMemberId(memberId, limit);
     }
 
     // 알림 읽은 처리

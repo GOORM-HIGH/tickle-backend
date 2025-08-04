@@ -9,5 +9,5 @@ import java.util.List;
 @Mapper
 public interface NotificationMapper {
 
-    List<NotificationResponseDto> getRecentNotificationListByMemberId(@Param("memberId") Long userId);
+    List<NotificationResponseDto> getRecentNotificationListByMemberId(@Param("memberId") Long userId, @Param("size") int limit);
 }
