@@ -6,6 +6,10 @@ import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.EmailValidationCodeRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.entity.NotificationTemplate;
+import com.profect.tickle.domain.notification.entity.NotificationTemplateId;
+import com.profect.tickle.domain.notification.service.MailService;
+import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.principal.CustomUserDetails;
@@ -30,6 +34,9 @@ import java.util.List;
 public class MemberService implements UserDetailsService {
 
     private final PasswordEncoder passwordEncoder;
+
+    private final MailService mailService;
+    private final NotificationTemplateService notificationTemplateService;
 
     private final MemberMapper memberMapper;
     private final MemberRepository memberRepository;
@@ -65,50 +72,39 @@ public class MemberService implements UserDetailsService {
 
     @Transactional
     public void createEmailValidationCode(String email) {
+        // 1. 이미 가입된 회원인지 확인
         Member member = memberRepository.findByEmail(email).orElse(null);
-        String newValidationCode = createAuthenticationCode();
-
-        if (member == null) { // 신규 가입
-            EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email);
-
-            if (emailValidationCode == null) {
-                // 처음 발급
-                emailValidationCodeRepository.save(
-                        EmailValidationCode.builder()
-                                .email(email)
-                                .validationCode(newValidationCode)
-                                .build()
-                );
-            } else {
-                Instant now = Instant.now();
-
-                // 1) 아직 만료 안됨 → 쿨타임 체크 후 제한
-                if (emailValidationCode.getExpiresAt().isAfter(now)) {
-                    if (emailValidationCode.getCreatedAt().isAfter(now.minus(1, ChronoUnit.MINUTES))) { // 1분 이내엔 재발송 안됨.
-                        throw new BusinessException(ErrorCode.VALIDATION_CODE_REQUEST_TOO_SOON); // 429
-                    }
-                }
-
-                // 2) 만료 or 쿨타임 경과 → 재발급
-                emailValidationCode.regenerateCode(newValidationCode);
-            }
-
-        } else if (member.getDeletedAt() != null) { // 재가입
-            EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email);
-            if (emailValidationCode == null) {
-                emailValidationCodeRepository.save(
-                        EmailValidationCode.builder()
-                                .email(email)
-                                .validationCode(newValidationCode)
-                                .build()
-                );
-            } else {
-                emailValidationCode.regenerateCode(newValidationCode);
-            }
-
-        } else { // 이미 가입된 유저
+        if (member != null && member.getDeletedAt() == null) {
             throw new BusinessException(ErrorCode.MEMBER_ALREADY_REGISTERED);
         }
+
+        // 2. 인증번호 생성
+        String newValidationCode = createAuthenticationCode();
+
+        // 3. 기존 인증코드 확인
+        EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email)
+                .orElse(null);
+
+        if (emailValidationCode != null) {
+            // 쿨타임 체크: 최근 생성 1분 이내 요청이면 차단
+            if (emailValidationCode.getCreatedAt().isAfter(Instant.now().minus(1, ChronoUnit.MINUTES))) {
+                throw new BusinessException(ErrorCode.VALIDATION_CODE_REQUEST_TOO_SOON);
+            }
+            emailValidationCode.regenerateCode(newValidationCode);
+        } else {
+            emailValidationCode = EmailValidationCode.builder()
+                    .email(email)
+                    .validationCode(newValidationCode)
+                    .build();
+        }
+
+        emailValidationCodeRepository.save(emailValidationCode);
+
+        // 4. 메일 발송
+        NotificationTemplate template = notificationTemplateService.getNotificationTemplateById(NotificationTemplateId.AUTH_CODE_SENT.getId());
+        String title = template.getTitle();
+        String content = String.format(template.getContent(), newValidationCode);
+        mailService.sendSimpleMailMessage(email, title, content);
     }
 
     // 랜덤 인증번호 생성 함수
@@ -121,7 +117,11 @@ public class MemberService implements UserDetailsService {
     @Transactional(readOnly = true)
     public void verifyEmailCode(String email, String code) {
         // 1. 인증코드 조회
-        EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email);
+        EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.MEMBER_NOT_FOUND.getMessage(),
+                        ErrorCode.MEMBER_NOT_FOUND
+                ));
 
         // 2. 만료 여부 확인
         if (emailValidationCode.getExpiresAt().isBefore(Instant.now())) {
