@@ -34,13 +34,13 @@ public class NotificationController {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResponseEntity<?> getRecentNotificationList() {
+    public ResultResponse<?> getRecentNotificationList() {
         log.info("{}님의 최신 10건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail());
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
         List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId);
 
-        return new ResponseEntity<>(data, HttpStatus.OK);
+        return new ResultResponse<>(ResultCode.NOTIFICATION_INFO_SUCCESS, data);
     }
 
     @PatchMapping("/{notificationId}/read")

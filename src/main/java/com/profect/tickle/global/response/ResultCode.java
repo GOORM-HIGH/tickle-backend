@@ -31,6 +31,7 @@ public enum ResultCode {
     PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
 
     // NOTIFICATION
+    NOTIFICATION_INFO_SUCCESS(HttpStatus.OK, "알림 조회 성공"),
     SSE_CONNECTION_SUCCESS(HttpStatus.OK, "SSE 통신 연결 성공"),
 
     // MEMBER
