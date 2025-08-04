@@ -2,41 +2,64 @@ package com.profect.tickle.domain.point.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "Point")
+import java.time.Instant;
+
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Entity
+@Table(name = "point")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Point {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "point_id")
-    private Long pointId;  // 포인트 고유번호
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
     @Column(name = "point_credit", nullable = false)
-    private Integer pointCredit;  // 충전/차감 포인트 (양수: 충전, 음수: 차감)
+    private int credit;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "point_target")
-    private PointTarget pointTarget;  // 포인트 사용 대상 (예약, 이벤트)
+    @Column(name = "point_target", nullable = false)
+    private PointTarget target;
 
-    @Column(name = "point_result", nullable = false)
-    private Integer pointResult;  // 포인트 잔액 결과
+    @Column(name = "point_order_id", nullable = false, unique = true, length = 100)
+    private String orderId;
 
     @Column(name = "point_created_at", nullable = false, updatable = false)
-    private LocalDateTime pointCreatedAt;  // 생성일시
+    private Instant createdAt;
+
+    private Point(Member member, int credit, PointTarget target, String orderId) {
+        this.member = member;
+        this.credit = credit;
+        this.target = target;
+        this.orderId = orderId;
+        this.createdAt = Instant.now();
+    }
 
     @PrePersist
     public void prePersist() {
-        this.pointCreatedAt = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
+        }
+    }
+
+    public static Point charge(Member member, int amount, String orderId) {
+        return new Point(member, amount, PointTarget.CHARGE, orderId);
+    }
+
+    public static Point deduct(Member member, int amount, PointTarget target) {
+        return new Point(member, -amount, target, generateInternalOrderId());
+    }
+
+    private static String generateInternalOrderId() {
+        return "deduct_" + System.currentTimeMillis();
     }
 }

@@ -10,8 +10,15 @@ public enum ResultCode {
     RESPONSE_TEST(HttpStatus.OK, "응답 테스트 성공"),
 
     //EVENT
-    EVENT_LIST_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
+    EVENT_INFO_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
     EVENT_CREATE_SUCCESS(HttpStatus.CREATED, "이벤트 생성 성공"),
+    COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰 지급 성공"),
+    COUPON_INFO_SUCCESS(HttpStatus.OK, "쿠폰 조회 성공"),
+
+    //POINT
+    POINT_INFO_SUCCESS(HttpStatus.OK, "포인트 조회 성공"),
+    POINT_CHARGE_SUCCESS(HttpStatus.OK, "포인트 충전 성공"),
+    POINT_HISTORY_SUCCESS(HttpStatus.OK, "포인트 충전/사용 내역 조회 성공"),
 
     //PERFORMANCE
     GENRE_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
@@ -26,7 +33,17 @@ public enum ResultCode {
     PERFORMANCE_UPDATE_SUCCESS(HttpStatus.OK, "공연 수정 성공"),
     PERFORMANCE_DELETE_SUCCESS(HttpStatus.OK,"공연 삭제 성공"),
     PERFORMANCE_SCRAP_SUCCESS(HttpStatus.CREATED,"공연 스크랩 성공"),
-    PERFORMANCE_SCRAP_CANCEL_SUCCESS(HttpStatus.OK,"공연 스크랩 취소 성공");
+    PERFORMANCE_SCRAP_CANCEL_SUCCESS(HttpStatus.OK,"공연 스크랩 취소 성공"),
+
+    // NOTIFICATION
+    SSE_CONNECTION_SUCCESS(HttpStatus.OK, "SSE 통신 연결 성공"),
+
+    // MEMBER
+    MEMBER_CREATE_SUCCESS(HttpStatus.CREATED, "회원가입 성공"),
+    EMAIL_VALIDATION_CODE_CREATE(HttpStatus.CREATED, "이메일 인증코드 생성 성공"),
+    EMAIL_VERIFICATION_SUCCESS(HttpStatus.OK, "이메일 인증 성공"),
+
+    ;
 
     private final HttpStatus status;
     private final String message;

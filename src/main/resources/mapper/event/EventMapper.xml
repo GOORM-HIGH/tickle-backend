@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.event.mapper.EventMapper">
+
+    <select id="findCouponEventList" resultType="com.profect.tickle.domain.event.dto.response.CouponListResponseDto">
+        SELECT
+            c.coupon_id AS couponId,
+            c.coupon_name AS name,
+            c.coupon_valid AS validDate
+        FROM coupon c
+        ORDER BY c.coupon_created_at DESC
+            LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="findTicketEventList" resultType="com.profect.tickle.domain.event.dto.response.TicketListResponseDto">
+        SELECT
+        e.event_id AS id,
+        e.event_name AS name,
+        e.event_per_price AS perPrice,
+        p.performance_img AS img
+        FROM event e
+        JOIN seat s ON e.seat_id = s.seat_id
+        JOIN performance p ON s.performance_id = p.performance_id
+        JOIN status st ON e.status_id = st.status_id
+        WHERE st.status_code IN (100, 101)  <!-- 예정, 진행 -->
+        ORDER BY e.event_created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countCouponEvents" resultType="int">
+        SELECT COUNT(*)
+        FROM coupon c
+        WHERE EXISTS (
+            SELECT 1
+            FROM event e
+                     JOIN status s ON e.status_id = s.status_id
+            WHERE e.coupon_id = c.coupon_id
+              AND s.status_code IN (100, 101)
+        )
+    </select>
+
+    <select id="countTicketEvents" resultType="int">
+        SELECT COUNT(*)
+        FROM event e
+                 JOIN status s ON e.status_id = s.status_id
+        WHERE e.event_type = 1
+          AND s.status_code IN (100, 101)
+    </select>
+
+    <select id="findTicketEventDetail"
+            resultType="com.profect.tickle.domain.event.dto.response.TicketEventDetailResponseDto">
+        SELECT
+            e.event_id AS eventId,
+            p.performance_title AS performanceTitle,
+            p.performance_place AS performancePlace,
+            p.performance_date AS performanceDate,
+            p.performance_time AS performanceRuntime,
+            s.seat_code AS seatCode,
+            sc.seat_class_grade AS seatClassGrade,
+            e.event_per_price AS perPrice,
+            p.performance_img AS performanceImg,
+            st.status_name AS eventStatusName
+        FROM event e
+                 JOIN seat s ON e.seat_id = s.seat_id
+                 JOIN seat_class sc ON s.seat_class_id = sc.seat_class_id
+                 JOIN performance p ON s.performance_id = p.performance_id
+                 JOIN status st ON e.status_id = st.status_id
+        WHERE e.event_id = #{eventId}
+    </select>
+
+    <select id="searchTicketEvents" resultType="com.profect.tickle.domain.event.dto.response.TicketListResponseDto">
+        SELECT
+            e.event_id AS eventId,
+            e.event_name AS name,
+            e.event_created_at AS createdAt
+        FROM event e
+                 JOIN status s ON e.status_id = s.status_id
+        WHERE e.event_type = 1
+          AND s.status_code IN (100, 101)
+          AND e.event_name LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY e.event_created_at DESC
+            LIMIT #{size}
+        OFFSET #{offset}
+    </select>
+
+    <select id="countSearchTicketEvents" resultType="int">
+        SELECT COUNT(*)
+        FROM event e
+                 JOIN status s ON e.status_id = s.status_id
+        WHERE e.event_type = 1
+          AND s.status_code IN (100, 101)
+          AND e.event_name LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+    <select id="findRandomOngoingEvents" resultType="com.profect.tickle.domain.event.dto.response.EventListResponseDto">
+        SELECT
+            e.event_id AS eventId,
+            e.event_name AS name,
+            e.event_created_at AS createdAt
+        FROM event e
+                 JOIN status s ON e.status_id = s.status_id
+        WHERE s.status_code = 101
+        ORDER BY RAND()
+            LIMIT 5
+    </select>
+</mapper>

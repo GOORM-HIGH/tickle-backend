@@ -3,14 +3,15 @@ package com.profect.tickle.domain.member.dto.request;
 import com.profect.tickle.domain.member.entity.MemberRole;
 import lombok.Getter;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.Instant;
 
 @Getter
 public class CreateMemberRequestDto {
 
     private String email;
     private String password;
-    private LocalDate birthday;
+    private Instant birthday;
     private String nickname;
     private String img;
     private String phoneNumber;
@@ -23,7 +24,8 @@ public class CreateMemberRequestDto {
     private String hostBizName;
     private String hostBizAddress;
     private String hostBizEcommerceRegistrationNumber;
-    private String hostBizBank;
+    private String hostBizBankName;
     private String hostBizDepositor;
     private String hostBizBankNumber;
+    private BigDecimal hostContractCharge;
 }

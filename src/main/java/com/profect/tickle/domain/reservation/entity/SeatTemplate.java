@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.reservation.entity;
 
 import jakarta.persistence.*;
+import com.profect.tickle.domain.performance.entity.HallType;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,10 +17,10 @@ public class SeatTemplate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "hall_type", length = 10, nullable = false)
-    private String hallType;
-
     @Enumerated(EnumType.STRING)
+    @Column(name = "hall_type", length = 10, nullable = false)
+    private HallType hallType;
+
     @Column(name = "seat_grade", length = 3, nullable = false)
     private SeatGrade seatGrade;
 

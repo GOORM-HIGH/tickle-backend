@@ -1,7 +1,7 @@
 package com.profect.tickle.global.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.profect.tickle.global.security.dto.request.SignInRequestDto;
+import com.profect.tickle.domain.member.dto.request.SignInRequestDto;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

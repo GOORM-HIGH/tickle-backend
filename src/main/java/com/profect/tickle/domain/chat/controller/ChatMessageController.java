@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.chat.controller;
 
+import com.profect.tickle.domain.chat.annotation.CurrentMember; // ✅ import 추가
 import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
@@ -55,7 +56,7 @@ public class ChatMessageController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId,
+            @CurrentMember Long currentMemberId, // ✅ 변경
             @Valid @RequestBody ChatMessageSendRequestDto requestDto) {
 
         log.info("메시지 전송 API 호출: chatRoomId={}, memberId={}, type={}",
@@ -86,7 +87,7 @@ public class ChatMessageController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId,
+            @CurrentMember Long currentMemberId, // ✅ 변경
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기", example = "50")
@@ -125,7 +126,7 @@ public class ChatMessageController {
             @Parameter(description = "메시지 ID", required = true, example = "456")
             @PathVariable Long messageId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId,
+            @CurrentMember Long currentMemberId, // ✅ 변경
             @Parameter(description = "수정할 메시지 내용", required = true)
             @RequestBody String newContent) {
 
@@ -159,7 +160,7 @@ public class ChatMessageController {
             @Parameter(description = "메시지 ID", required = true, example = "456")
             @PathVariable Long messageId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId) {
+            @CurrentMember Long currentMemberId) { // ✅ 변경
 
         log.info("메시지 삭제 API 호출: chatRoomId={}, messageId={}, memberId={}",
                 chatRoomId, messageId, currentMemberId);
@@ -170,7 +171,7 @@ public class ChatMessageController {
     }
 
     /**
-     * 채팅방의 마지막 메시지 조회 (수정 버전)
+     * 채팅방의 마지막 메시지 조회
      */
     @Operation(
             summary = "마지막 메시지 조회",
@@ -187,11 +188,11 @@ public class ChatMessageController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId) { // ✅ 추가
+            @CurrentMember Long currentMemberId) { // ✅ 변경
 
         log.info("마지막 메시지 조회 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
-        ChatMessageResponseDto response = chatMessageService.getLastMessage(chatRoomId, currentMemberId); // ✅ 파라미터 추가
+        ChatMessageResponseDto response = chatMessageService.getLastMessage(chatRoomId, currentMemberId);
 
         if (response == null) {
             return ResponseEntity.ok(ApiResponseDto.success("메시지가 없습니다.", null));
@@ -199,7 +200,6 @@ public class ChatMessageController {
 
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
-
 
     /**
      * 읽지않은 메시지 개수 조회
@@ -220,7 +220,7 @@ public class ChatMessageController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long currentMemberId,
+            @CurrentMember Long currentMemberId, // ✅ 변경
             @Parameter(description = "마지막으로 읽은 메시지 ID", example = "789")
             @RequestParam(required = false) Long lastReadMessageId) {
 
@@ -243,7 +243,7 @@ public class ChatMessageController {
     public ResponseEntity<Resource> downloadMessageFile(
             @PathVariable Long chatRoomId,
             @PathVariable Long messageId,
-            @RequestHeader("X-Member-Id") Long currentMemberId) {
+            @CurrentMember Long currentMemberId) { // ✅ 변경
 
         log.info("메시지 파일 다운로드 API 호출: messageId={}, memberId={}", messageId, currentMemberId);
 
@@ -264,5 +264,4 @@ public class ChatMessageController {
                         "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName)
                 .body(resource);
     }
-
 }

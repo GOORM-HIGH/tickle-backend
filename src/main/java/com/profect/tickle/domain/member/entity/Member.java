@@ -1,6 +1,10 @@
 package com.profect.tickle.domain.member.entity;
 
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.point.entity.Point;
+import com.profect.tickle.domain.point.entity.PointTarget;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +13,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "member")
@@ -35,7 +39,7 @@ public class Member {
     private String nickname;  // 닉네임
 
     @Column(name = "member_birthday", nullable = false)
-    private LocalDate birthday;  // 생년월일
+    private Instant birthday;  // 생년월일
 
     @Column(name = "member_img", nullable = false, length = 255)
     private String img;  // 프로필 이미지 URL (외부 저장소)
@@ -86,6 +90,12 @@ public class Member {
     @Column(name = "host_biz_bank_number", length = 25)
     private String hostBizBankNumber;  // 계좌번호
 
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Point> points = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CouponReceived> receivedCoupons = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         this.createdAt = Instant.now();
@@ -114,7 +124,7 @@ public class Member {
                 .hostBizName(dto.getHostBizName())
                 .hostBizAddress(dto.getHostBizAddress())
                 .hostBizEcommerceRegistrationNumber(dto.getHostBizEcommerceRegistrationNumber())
-                .hostBizBank(dto.getHostBizBank())
+                .hostBizBank(dto.getHostBizBankName())
                 .hostBizDepositor(dto.getHostBizDepositor())
                 .hostBizBankNumber(dto.getHostBizBankNumber())
                 .build();
@@ -122,5 +132,32 @@ public class Member {
 
     public void encryptPassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public Point deductPoint(Short price, PointTarget target) {
+        if (this.getPointBalance() < price) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+        this.usePoint(price);
+
+        return Point.deduct(this, price, target);
+    }
+
+    public Point deductPoint(Integer price, PointTarget target) {
+        if (this.getPointBalance() < price) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+
+        pointBalance -= price;
+
+        return Point.deduct(this, price, target);
+    }
+
+    public void usePoint(Short perPrice) {
+        pointBalance -= perPrice;
+    }
+
+    public void addPoint(int point) {
+        pointBalance += point;
     }
 }

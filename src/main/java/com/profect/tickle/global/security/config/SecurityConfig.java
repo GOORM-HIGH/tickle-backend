@@ -25,11 +25,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
 @Configuration
-@EnableWebSecurity // 해당 클래스에서 시큐리티에 관한 설정을 할 것이다.
+@EnableWebSecurity
 @RequiredArgsConstructor
-public class SecurityConfig { // 주의: 클래스를 상속받아 시큐리티를 구현하는 방식은 구버전의 방식이다.
+public class SecurityConfig {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final MemberService memberService;
@@ -37,56 +41,57 @@ public class SecurityConfig { // 주의: 클래스를 상속받아 시큐리티�
     private final JwtUtil jwtUtil;
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:3000"
+        ));
+
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     protected SecurityFilterChain configure(HttpSecurity http) throws Exception {
         http
-                // CSRF 토큰 발급 비활성화
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // 요청별 접근 권한 설정
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth ->
                         auth
-                                // Swagger 문서: 인증 없이 접근 허용
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/swagger-ui/**",
                                         "/swagger-resources/**",
                                         "/v3/api-docs/**",
                                         "/webjars/**",
                                         "/api-docs/**").permitAll()
-
-                                // 회원가입, 인증 관련 API: 인증 없이 접근 허용
                                 .requestMatchers(HttpMethod.POST, "/api/v1/sign-up", "/api/v1/auth/**").permitAll()
-
-                                // 로그인 API: 인증 없이 접근 허용
                                 .requestMatchers(HttpMethod.POST, "/api/v1/sign-in").permitAll()
-
-                                // 공연 조회: 인증 없이 접근 허용
                                 .requestMatchers(HttpMethod.GET, "/api/v1/performance/**").permitAll()
-
-                                // 이벤트 조회: 인증 없이 접근 허용
                                 .requestMatchers(HttpMethod.GET, "/api/v1/event/**").permitAll()
-
-                                // 이벤트(할인쿠폰 발급): 관리자 권한 필요
                                 .requestMatchers(HttpMethod.POST, "/api/v1/event/coupon").hasRole(MemberRole.ADMIN.name())
-
-                                // 나머지 모든 요청: 인증 필요
                                 .anyRequest().authenticated()
                 )
-
-                // 세션 사용 안함 (STATELESS → JWT 방식)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // JWT 필터 추가: UsernamePasswordAuthenticationFilter 실행 전에 수행
                 .addFilterBefore(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
-
-                // 커스텀 로그인 필터 추가: 기존 UsernamePasswordAuthenticationFilter 실행 전에 수행
                 .addFilterBefore(getAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-
-                // 인증, 인가 실패 시 핸들러 설정
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling
-                                .accessDeniedHandler(new JwtAccessDeniedHandler())            // 권한 부족(403) 처리
-                                .authenticationEntryPoint(new JwtAuthenticationEntryPoint()) // 인증 실패(401) 처리
+                                .accessDeniedHandler(new JwtAccessDeniedHandler())
+                                .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
                 );
 
         return http.build();

@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.performance.repository;
 
+import com.profect.tickle.domain.performance.entity.HallType;
 import com.profect.tickle.domain.performance.entity.Performance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,4 +16,6 @@ public interface PerformanceRepository extends JpaRepository<Performance,Long> {
     @Query("SELECT p FROM Performance p WHERE p.deletedAt IS NULL")
     List<Performance> findAllActive();
     boolean existsByTitleAndDate(String title, LocalDateTime date);
+
+    HallType findHallTypeById(Long performanceId);
 }
