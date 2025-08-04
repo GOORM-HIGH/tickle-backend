@@ -6,6 +6,8 @@ import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,12 @@ public class MemberController {
 
     @PostMapping(value = "/auth/email-verification")
     @Operation(summary = "이메일 인증번호 생성", description = "이메일 인증번호를 생성합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "이메일 인증번호 생성 완료"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (이메일 형식 오류 등)"),
+            @ApiResponse(responseCode = "409", description = "이미 가입된 회원"),
+            @ApiResponse(responseCode = "429", description = "인증번호를 너무 자주 요청함 (쿨타임 미충족)")
+    })
     public ResultResponse<?> emailVerification(@RequestBody EmailRequestDto email) {
         log.info("인증번호 발송 email: {}", email.email());
 
