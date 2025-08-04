@@ -70,7 +70,7 @@ public class EventServiceImpl implements EventService {
         );
         couponRepository.save(coupon);
 
-        Status status = getStatusOrThrow(9L);
+        Status status = getStatusOrThrow(4L);
         Event event = Event.create(status, coupon, request.name());
 
         eventRepository.save(event);
@@ -173,7 +173,8 @@ public class EventServiceImpl implements EventService {
         }
 
         coupon.decreaseCount();
-        couponReceivedRepository.save(CouponReceived.create(member, coupon));
+        Status issuedStatus = getStatusOrThrow(17L);
+        couponReceivedRepository.save(CouponReceived.create(member, coupon, issuedStatus));
     }
 
     @Override

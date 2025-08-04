@@ -81,7 +81,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.POST, "/api/v1/sign-in").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/performance/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/event/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/v1/event/coupon").hasRole(MemberRole.ADMIN.name())
+                                .requestMatchers(HttpMethod.POST, "/api/v1/event/coupon").hasAuthority("ADMIN")
                                 .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->

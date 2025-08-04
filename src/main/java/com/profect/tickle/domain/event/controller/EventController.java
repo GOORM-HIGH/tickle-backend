@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class EventController {
 
     private final EventService eventService;
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @Operation(summary = "쿠폰 이벤트 생성", description = "관리자가 쿠폰 이벤트를 생성합니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "쿠폰 생성 요청 DTO",
@@ -42,6 +44,7 @@ public class EventController {
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
     }
 
+    @PreAuthorize("hasRole('HOST')")
     @Operation(summary = "티켓 이벤트 생성", description = "주최자가 티켓 이벤트를 생성합니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "티켓 이벤트 생성 요청 DTO",
@@ -62,7 +65,7 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "응모 성공",
                             content = @Content(schema = @Schema(implementation = TicketApplyResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "포인트 부족, 중복 응모 등 예외 발생")})
-    @PostMapping("/ticket/{eventId}")
+    @GetMapping("/ticket/{eventId}")
     public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
         TicketApplyResponseDto response = eventService.applyTicketEvent(eventId);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
@@ -84,6 +87,7 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "조회 성공",
                             content = @Content(schema = @Schema(implementation = PagingResponse.class))),
                     @ApiResponse(responseCode = "400", description = "유효하지 않은 이벤트 타입")})
+    @PostMapping
     public ResultResponse<PagingResponse<EventListResponseDto>> getEventList(@RequestParam("type") EventType eventType,
                                                                              @RequestParam("page") int page,
                                                                              @RequestParam("size") int size) {
@@ -95,7 +99,7 @@ public class EventController {
     @Operation(summary = "티켓 이벤트 상세 조회", description = "티켓 이벤트의 상세 정보를 조회합니다.",
             responses = {@ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = TicketEventDetailResponseDto.class)))})
-    @GetMapping("/ticket/{eventId}")
+    @GetMapping("/ticket/detail/{eventId}")
     public ResultResponse<TicketEventDetailResponseDto> getTicketEventDetail(@PathVariable Long eventId) {
         TicketEventDetailResponseDto detail = eventService.getTicketEventDetail(eventId);
         return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, detail);

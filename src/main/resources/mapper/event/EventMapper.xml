@@ -7,9 +7,9 @@
 
     <select id="findCouponEventList" resultType="com.profect.tickle.domain.event.dto.response.CouponListResponseDto">
         SELECT
-            c.coupon_id AS couponId,
+            c.coupon_id AS id,
             c.coupon_name AS name,
-            c.coupon_valid AS validDate
+            c.coupon_rate AS rate
         FROM coupon c
         ORDER BY c.coupon_created_at DESC
             LIMIT #{size} OFFSET #{offset}
@@ -30,7 +30,7 @@
         LIMIT #{size} OFFSET #{offset}
     </select>
 
-    <select id="countCouponEvents" resultType="int">
+    <select id="countCouponEvents" resultType="long">
         SELECT COUNT(*)
         FROM coupon c
         WHERE EXISTS (
