@@ -36,6 +36,8 @@ public enum ResultCode {
     PERFORMANCE_SCRAP_CANCEL_SUCCESS(HttpStatus.OK,"공연 스크랩 취소 성공"),
 
     // NOTIFICATION
+    NOTIFICATION_INFO_SUCCESS(HttpStatus.OK, "알림 조회 성공"),
+    NOTIFICATION_READ_SUCCESS(HttpStatus.NO_CONTENT, "알림 읽음 성공"),
     SSE_CONNECTION_SUCCESS(HttpStatus.OK, "SSE 통신 연결 성공"),
 
     // MEMBER

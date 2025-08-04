@@ -11,9 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -29,18 +27,21 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    @Operation(summary = "최신 알림 조회", description = "로그인 사용자의 최신 10건의 알림을 조회합니다.")
+    @Operation(summary = "최신 알림 조회", description = "로그인 사용자의 알림을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResponseEntity<?> getRecentNotificationList() {
-        log.info("{}님의 최신 10건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail());
+    public ResultResponse<List<NotificationResponseDto>> getRecentNotificationList(@RequestParam(defaultValue = "10") int size) {
+        log.info("{}님의 최신 {}건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail(), size);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
-        List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId);
+        List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId, size);
 
-        return new ResponseEntity<>(data, HttpStatus.OK);
+        return new ResultResponse<>(
+                ResultCode.NOTIFICATION_INFO_SUCCESS,
+                data
+        );
     }
 
     @PatchMapping("/{notificationId}/read")
@@ -50,13 +51,16 @@ public class NotificationController {
             @ApiResponse(responseCode = "403", description = "접근 권한이 없는 알림"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {
+    public ResultResponse<String> markAsRead(@PathVariable Long notificationId) {
         log.info("{}님이 {}번 알림을 읽음 처리합니다.", SecurityUtil.getSignInMemberEmail(), notificationId);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
         notificationService.markAsRead(notificationId, signInMemberId);
 
-        return ResponseEntity.noContent().build();
+        return new ResultResponse<>(
+                ResultCode.NOTIFICATION_READ_SUCCESS,
+                ResultCode.NOTIFICATION_INFO_SUCCESS.getMessage()
+        );
     }
 
     @Operation(summary = "SSE 통신 연결 요청", description = "이벤트 내용을 전달하기 위한 SSE 통신을 연결을 요청합니다.")

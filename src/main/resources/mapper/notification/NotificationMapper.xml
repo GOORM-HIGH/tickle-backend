@@ -5,20 +5,17 @@
 
 <mapper namespace="com.profect.tickle.domain.notification.mapper.NotificationMapper">
 
-    <!-- 특정 사용자(memberId)의 최신 10건 알림 조회 -->
+    <!-- 특정 사용자(memberId)의 최신 알림 조회 -->
     <select id="getRecentNotificationListByMemberId"
-            parameterType="long"
             resultType="NotificationResponseDto">
-        SELECT
-            n.notification_id AS id,
-            nt.notification_template_title AS title,
-            nt.notification_template_content AS content,
-            CASE
-                WHEN s.status_name = '알림 읽음' THEN TRUE
-                WHEN s.status_name = '알림 안읽음' THEN FALSE
-                ELSE FALSE
-                END AS isRead,
-            n.notification_created_at AS createdAt
+        SELECT n.notification_id                AS id,
+               nt.notification_template_title   AS title,
+               nt.notification_template_content AS content,
+               CASE
+                   WHEN s.status_id = 8 THEN TRUE
+                   WHEN s.status_id = 7 THEN FALSE
+                   END                          AS isRead,
+               n.notification_created_at        AS createdAt
         FROM notification AS n
                  JOIN notification_template AS nt
                       ON n.notification_template_id = nt.notification_template_id
@@ -28,7 +25,7 @@
                       ON n.status_id = s.status_id
         WHERE m.member_id = #{memberId}
         ORDER BY n.notification_created_at DESC
-            LIMIT 10
+            LIMIT #{limit}
     </select>
 
 </mapper>
