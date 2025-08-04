@@ -31,6 +31,12 @@ public enum ErrorCode {
 
     //PERFORMANCE
     PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 공연을 찾을 수 없습니다."),
+    GENRE_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 장르를 찾을 수 없습니다."),
+    DEFAULT_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND,"상태에 기본값이 존재하지 않습니다."),
+    PERFORMANCE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND,"공연 가격이 존재하지 않습니다."),
+    NO_PERMISSION(HttpStatus.FORBIDDEN,"공연을 삭제할 권한이 없습니다."),
+    ALREADY_SCRAPPED(HttpStatus.CONFLICT,"이미 스크랩된 공연입니다."),
+    FAVORITE_NOT_FOUND(HttpStatus.NOT_FOUND,"스크랩된 공연이 존재하지 않습니다."),
 
     //SEAT
     SEAT_CLASS_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 등급 정보를 찾을 수 없습니다."),
@@ -70,9 +76,8 @@ public enum ErrorCode {
     MEMBER_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
     VALIDATION_CODE_REQUEST_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, "인증번호를 너무 자주 요청했습니다. 잠시 후 다시 시도하세요."),
     VALIDATION_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인증번호가 만료되었습니다."),
-    VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다."),
+    VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다.");
 
-    ;
     private final HttpStatus status;
     private final String message;
 }

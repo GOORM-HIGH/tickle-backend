@@ -50,13 +50,13 @@ public class CouponReceived {
         this.updatedAt = Instant.now();
     }
 
-    private CouponReceived(Member member, Coupon coupon) {
+    private CouponReceived(Member member, Coupon coupon, Status status) {
         this.member = member;
         this.coupon = coupon;
+        this.status = status;
     }
-
-    public static CouponReceived create(Member member, Coupon coupon) {
-        return new CouponReceived (member, coupon);
+    public static CouponReceived create(Member member, Coupon coupon, Status status) {
+        return new CouponReceived(member, coupon, status);
     }
 
     public void setCouponStatusToUsed(Status used) {

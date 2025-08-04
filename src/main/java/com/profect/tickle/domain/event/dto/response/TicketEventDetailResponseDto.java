@@ -3,10 +3,12 @@ package com.profect.tickle.domain.event.dto.response;
 import com.profect.tickle.domain.reservation.entity.SeatGrade;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDate;
+
 public record TicketEventDetailResponseDto(
 
         @Schema(description = "이벤트 ID", example = "1")
-        Long eventId,
+        Long id,
 
         @Schema(description = "공연 이름", example = "뮤지컬 <레미제라블>")
         String performanceTitle,
@@ -18,10 +20,10 @@ public record TicketEventDetailResponseDto(
         Short performanceRuntime,
 
         @Schema(description = "공연 기간", example = "2025-08-01")
-        String performanceDate,
+        LocalDate performanceDate,
 
         @Schema(description = "이벤트 좌석 코드", example = "A12")
-        String seatCode,
+        String seatNumber,
 
         @Schema(description = "좌석 등급", example = "VIP")
         SeatGrade seatGrade,

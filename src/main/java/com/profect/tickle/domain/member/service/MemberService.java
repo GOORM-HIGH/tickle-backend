@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.member.service;
 
+import com.profect.tickle.domain.contract.service.ContractService;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.member.entity.EmailValidationCode;
 import com.profect.tickle.domain.member.entity.Member;
@@ -37,6 +38,7 @@ public class MemberService implements UserDetailsService {
 
     private final MailService mailService;
     private final NotificationTemplateService notificationTemplateService;
+    private final ContractService contractService;
 
     private final MemberMapper memberMapper;
     private final MemberRepository memberRepository;
@@ -45,9 +47,19 @@ public class MemberService implements UserDetailsService {
 
     @Transactional
     public void createMember(CreateMemberRequestDto createUserRequest) {
+        // 1. 신규 회원 생성
         Member newMember = Member.createMember(createUserRequest);
         newMember.encryptPassword(passwordEncoder.encode(createUserRequest.getPassword()));
+
+        // 2. 신규 회원 저장
         memberRepository.save(newMember);
+
+        // 3. 저장된 회원 조회
+        Member member = memberRepository.findByEmail(newMember.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 4. 신규 계약 생성
+        contractService.createContract(member, createUserRequest.getHostContractCharge());
     }
 
     // 로그인 요청 시 AuthenticationManager를 통해서 호출 될 메서드

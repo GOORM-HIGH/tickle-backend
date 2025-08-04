@@ -1,0 +1,20 @@
+package com.profect.tickle.domain.performance.dto.request;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UpdatePerformanceRequestDto {
+    private String title;
+    private LocalDateTime date;
+    private Short runtime;
+    private String img;
+    private Boolean isEvent;
+}

@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -125,7 +124,7 @@ public class Member {
                 .hostBizName(dto.getHostBizName())
                 .hostBizAddress(dto.getHostBizAddress())
                 .hostBizEcommerceRegistrationNumber(dto.getHostBizEcommerceRegistrationNumber())
-                .hostBizBank(dto.getHostBizBank())
+                .hostBizBank(dto.getHostBizBankName())
                 .hostBizDepositor(dto.getHostBizDepositor())
                 .hostBizBankNumber(dto.getHostBizBankNumber())
                 .build();

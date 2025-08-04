@@ -70,7 +70,7 @@ public class EventServiceImpl implements EventService {
         );
         couponRepository.save(coupon);
 
-        Status status = getStatusOrThrow(9L);
+        Status status = getStatusOrThrow(4L);
         Event event = Event.create(status, coupon, request.name());
 
         eventRepository.save(event);
@@ -97,12 +97,15 @@ public class EventServiceImpl implements EventService {
         Event event = getEventOrThrow(eventId);
         Member member = getMemberOrThrow();
 
-        deductPoint(member, event, eventTarget);
+        Point point = member.deductPoint(event.getPerPrice(), eventTarget);
+        pointRepository.save(point);
+
         event.accumulate(event.getPerPrice());
 
         boolean isWinner = (event.getAccrued().equals(event.getGoalPrice()));
         if (isWinner) {
             Seat seat = getSeatOrThrow(event.getSeat().getId());
+            event.updateStatus(getStatusOrThrow(6L));
 
             seat.assignTo(member);
             Reservation reservation = Reservation.create(
@@ -169,7 +172,8 @@ public class EventServiceImpl implements EventService {
         }
 
         coupon.decreaseCount();
-        couponReceivedRepository.save(CouponReceived.create(member, coupon));
+        Status issuedStatus = getStatusOrThrow(17L);
+        couponReceivedRepository.save(CouponReceived.create(member, coupon, issuedStatus));
     }
 
     @Override
@@ -181,10 +185,31 @@ public class EventServiceImpl implements EventService {
         return PagingResponse.from(list, page, size, total);
     }
 
-    @Override
     @Transactional(readOnly = true)
-    public List<EventListResponseDto> getRandomOngoingEvents() {
-        return new ArrayList<>(eventMapper.findRandomOngoingEvents());
+    public PagingResponse<TicketEventResponseDto> findRandomOngoingEvents() {
+        int page = 0;
+        int size = 5;
+        int offset = page * size;
+
+        List<SeatProjection> raw = eventMapper.findRandomOngoingEvents(size, offset);
+        long total = eventMapper.countTicketEvents();
+
+        List<TicketEventResponseDto> content = raw.stream()
+                .map(r -> {
+                    String row = r.seatNumber().replaceAll("[0-9]", "");
+                    String number = r.seatNumber().replaceAll("[^0-9]", "");
+                    String formattedSeat = row + "열 " + number + "번";
+
+                    return new TicketEventResponseDto(
+                            r.eventId(),
+                            r.performanceId(),
+                            r.eventName(),
+                            formattedSeat
+                    );
+                })
+                .toList();
+
+        return PagingResponse.from(content, page, size, total);
     }
 
     @Override

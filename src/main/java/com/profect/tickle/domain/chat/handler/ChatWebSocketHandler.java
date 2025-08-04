@@ -33,6 +33,9 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     // 채팅 전용 세션 관리 (roomId -> sessionId -> WebSocketSession)
     private final ConcurrentMap<Long, ConcurrentMap<String, WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
 
+    // 🆕 세션별 사용자 정보 저장 (sessionId -> userId)
+    private final ConcurrentMap<String, Long> sessionToUserId = new ConcurrentHashMap<>();
+
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         log.info("채팅 WebSocket 연결 설정: sessionId={}", session.getId());
@@ -90,6 +93,9 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
         log.info("채팅 WebSocket 연결 종료: sessionId={}, status={}", session.getId(), closeStatus);
+
+        // 🆕 세션별 사용자 정보 제거
+        sessionToUserId.remove(session.getId());
 
         // 온라인 사용자에서 제거
         onlineUserService.removeOnlineUser(session.getId());
@@ -178,23 +184,18 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         Long memberId = requestDto.getSenderId();
 
         try {
+            // 🆕 세션별 사용자 정보 저장
+            sessionToUserId.put(session.getId(), memberId);
+
             // 온라인 사용자 추가
             onlineUserService.addOnlineUser(session.getId(), chatRoomId, memberId);
 
             // Global 세션 관리자 업데이트
             sessionManager.registerSession(session.getId(), session, memberId.toString(), chatRoomId.toString());
 
-            // 다른 사용자들에게 참여 알림
-            WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
-                    .type("USER_JOIN")
-                    .chatRoomId(chatRoomId)
-                    .senderId(memberId)
-                    .senderNickname(requestDto.getSenderNickname())
-                    .onlineCount(onlineUserService.getOnlineCount(chatRoomId))
-                    .message(requestDto.getSenderNickname() + "님이 채팅방에 참여했습니다")
-                    .build();
+            // 다른 사용자들에게 참여 알림 (개별 전송으로 isMyMessage 설정)
+            broadcastSystemMessage(chatRoomId, memberId, requestDto.getSenderNickname() + "님이 채팅방에 참여했습니다", "USER_JOIN");
 
-            broadcastToRoom(chatRoomId, response);
             log.info("사용자 채팅방 참여: chatRoomId={}, memberId={}", chatRoomId, memberId);
 
         } catch (Exception e) {
@@ -204,11 +205,11 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     }
 
     /**
-     * 채팅 메시지 처리
+     * 🆕 채팅 메시지 처리 (isMyMessage 개별 계산)
      */
     private void handleChatMessage(WebSocketSession session, WebSocketMessageRequestDto requestDto) throws Exception {
         try {
-            // REST API용 DTO로 변환 (생성자 방식 대신 Builder 패턴 사용)
+            // REST API용 DTO로 변환
             ChatMessageSendRequestDto sendRequest = ChatMessageSendRequestDto.builder()
                     .messageType(requestDto.getMessageType())
                     .content(requestDto.getContent())
@@ -225,25 +226,9 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                     sendRequest
             );
 
-            // WebSocket 응답 DTO로 변환
-            WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
-                    .type("MESSAGE")
-                    .messageId(savedMessage.getId())
-                    .chatRoomId(requestDto.getChatRoomId())
-                    .senderId(requestDto.getSenderId())
-                    .senderNickname(requestDto.getSenderNickname())
-                    .messageType(requestDto.getMessageType())
-                    .content(requestDto.getContent())
-                    .filePath(requestDto.getFilePath())
-                    .fileName(requestDto.getFileName())
-                    .fileSize(requestDto.getFileSize())
-                    .fileType(requestDto.getFileType())
-                    .createdAt(savedMessage.getCreatedAt())
-                    .onlineCount(onlineUserService.getOnlineCount(requestDto.getChatRoomId()))
-                    .build();
+            // 🎯 채팅방의 각 사용자에게 개별적으로 isMyMessage 설정하여 전송
+            broadcastChatMessage(requestDto, savedMessage);
 
-            // 채팅방의 모든 사용자에게 브로드캐스트
-            broadcastToRoom(requestDto.getChatRoomId(), response);
             log.info("채팅 메시지 브로드캐스트 완료: messageId={}", savedMessage.getId());
 
         } catch (Exception e) {
@@ -260,20 +245,15 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         Long memberId = requestDto.getSenderId();
 
         try {
+            // 🆕 세션별 사용자 정보 제거
+            sessionToUserId.remove(session.getId());
+
             // 온라인 사용자에서 제거
             onlineUserService.removeOnlineUser(session.getId());
 
             // 다른 사용자들에게 나가기 알림
-            WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
-                    .type("USER_LEAVE")
-                    .chatRoomId(chatRoomId)
-                    .senderId(memberId)
-                    .senderNickname(requestDto.getSenderNickname())
-                    .onlineCount(onlineUserService.getOnlineCount(chatRoomId))
-                    .message(requestDto.getSenderNickname() + "님이 채팅방을 나갔습니다")
-                    .build();
+            broadcastSystemMessage(chatRoomId, memberId, requestDto.getSenderNickname() + "님이 채팅방을 나갔습니다", "USER_LEAVE");
 
-            broadcastToRoom(chatRoomId, response);
             log.info("사용자 채팅방 나가기: chatRoomId={}, memberId={}", chatRoomId, memberId);
 
         } catch (Exception e) {
@@ -303,6 +283,99 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     }
 
     /**
+     * 🆕 채팅 메시지를 각 사용자별로 isMyMessage 설정하여 브로드캐스트
+     */
+    private void broadcastChatMessage(WebSocketMessageRequestDto requestDto, ChatMessageResponseDto savedMessage) {
+        ConcurrentMap<String, WebSocketSession> sessions = roomSessions.get(requestDto.getChatRoomId());
+        if (sessions == null) {
+            log.warn("채팅방에 활성 세션이 없습니다: chatRoomId={}", requestDto.getChatRoomId());
+            return;
+        }
+
+        sessions.entrySet().parallelStream().forEach(entry -> {
+            try {
+                String sessionId = entry.getKey();
+                WebSocketSession targetSession = entry.getValue();
+
+                if (!targetSession.isOpen()) {
+                    return;
+                }
+
+                // 🎯 각 세션별로 isMyMessage 개별 계산
+                Long targetUserId = sessionToUserId.get(sessionId);
+                boolean isMyMessage = requestDto.getSenderId().equals(targetUserId);
+
+                // 개별 응답 DTO 생성
+                WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
+                        .type("MESSAGE")
+                        .messageId(savedMessage.getId())
+                        .chatRoomId(requestDto.getChatRoomId())
+                        .senderId(requestDto.getSenderId())
+                        .senderNickname(requestDto.getSenderNickname())
+                        .messageType(requestDto.getMessageType())
+                        .content(requestDto.getContent())
+                        .filePath(requestDto.getFilePath())
+                        .fileName(requestDto.getFileName())
+                        .fileSize(requestDto.getFileSize())
+                        .fileType(requestDto.getFileType())
+                        .createdAt(savedMessage.getCreatedAt())
+                        .isMyMessage(isMyMessage) // 🎯 개별 계산된 값
+                        .onlineCount(onlineUserService.getOnlineCount(requestDto.getChatRoomId()))
+                        .build();
+
+                String messageJson = objectMapper.writeValueAsString(response);
+                targetSession.sendMessage(new TextMessage(messageJson));
+
+                log.debug("메시지 전송 완료: sessionId={}, userId={}, isMyMessage={}",
+                        sessionId, targetUserId, isMyMessage);
+
+            } catch (Exception e) {
+                log.error("메시지 전송 실패: sessionId={}, error={}", entry.getKey(), e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 🆕 시스템 메시지 브로드캐스트 (입장/퇴장 알림)
+     */
+    private void broadcastSystemMessage(Long chatRoomId, Long senderId, String messageContent, String messageType) {
+        ConcurrentMap<String, WebSocketSession> sessions = roomSessions.get(chatRoomId);
+        if (sessions == null) {
+            return;
+        }
+
+        sessions.entrySet().parallelStream().forEach(entry -> {
+            try {
+                String sessionId = entry.getKey();
+                WebSocketSession targetSession = entry.getValue();
+
+                if (!targetSession.isOpen()) {
+                    return;
+                }
+
+                // 시스템 메시지는 모든 사용자에게 동일하게 전송 (isMyMessage = false)
+                WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
+                        .type(messageType)
+                        .chatRoomId(chatRoomId)
+                        .senderId(senderId)
+                        .messageType(com.profect.tickle.domain.chat.entity.ChatMessageType.SYSTEM)
+                        .content(messageContent)
+                        .message(messageContent)
+                        .createdAt(java.time.Instant.now())
+                        .isMyMessage(false) // 시스템 메시지는 항상 false
+                        .onlineCount(onlineUserService.getOnlineCount(chatRoomId))
+                        .build();
+
+                String messageJson = objectMapper.writeValueAsString(response);
+                targetSession.sendMessage(new TextMessage(messageJson));
+
+            } catch (Exception e) {
+                log.error("시스템 메시지 전송 실패: sessionId={}, error={}", entry.getKey(), e.getMessage());
+            }
+        });
+    }
+
+    /**
      * 에러 메시지 전송
      */
     private void sendErrorMessage(WebSocketSession session, String errorMessage) {
@@ -320,7 +393,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     }
 
     /**
-     * 채팅방의 모든 사용자에게 메시지 브로드캐스트
+     * 채팅방의 모든 사용자에게 메시지 브로드캐스트 (기존 방식 - 단순 시스템 메시지용)
      */
     private void broadcastToRoom(Long chatRoomId, WebSocketMessageResponseDto message) {
         ConcurrentMap<String, WebSocketSession> sessions = roomSessions.get(chatRoomId);
