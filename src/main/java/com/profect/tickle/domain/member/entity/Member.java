@@ -37,7 +37,7 @@ public class Member {
     private String nickname;  // 닉네임
 
     @Column(name = "member_birthday", nullable = false)
-    private LocalDate birthday;  // 생년월일
+    private Instant birthday;  // 생년월일
 
     @Column(name = "member_img", nullable = false, length = 255)
     private String img;  // 프로필 이미지 URL (외부 저장소)

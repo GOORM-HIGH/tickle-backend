@@ -18,7 +18,7 @@ public class MemberResponseDto {
     private Long id;                     // 사용자 고유번호
     private String email;                // 이메일
     private String nickname;             // 닉네임
-    private LocalDate birthday;          // 생년월일
+    private Instant birthday;          // 생년월일
     private String img;                  // 프로필 이미지 URL
     private Integer pointBalance;        // 포인트 잔액
     private MemberRole memberRole;           // 사용자 역할 (USER, HOST, ADMIN)
