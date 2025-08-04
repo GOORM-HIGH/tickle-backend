@@ -104,7 +104,7 @@ public class Event {
     }
 
     public void accumulate(Short perPrice) {
-        if (this.status.getCode() != 5L) {
+        if (this.status.getId() != 5) {
             throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);}
         this.accrued += perPrice;
     }
