@@ -105,6 +105,7 @@ public class EventServiceImpl implements EventService {
         boolean isWinner = (event.getAccrued().equals(event.getGoalPrice()));
         if (isWinner) {
             Seat seat = getSeatOrThrow(event.getSeat().getId());
+            event.updateStatus(getStatusOrThrow(6L));
 
             seat.assignTo(member);
             Reservation reservation = Reservation.create(
