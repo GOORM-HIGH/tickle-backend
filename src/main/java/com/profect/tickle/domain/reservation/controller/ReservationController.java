@@ -1,10 +1,13 @@
 package com.profect.tickle.domain.reservation.controller;
 
+import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequest;
 import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequest;
+import com.profect.tickle.domain.reservation.dto.response.ReservationCompletionResponse;
 import com.profect.tickle.domain.reservation.dto.response.ReservationInfoResponse;
 import com.profect.tickle.domain.reservation.dto.response.SeatInfoResponse;
 import com.profect.tickle.domain.reservation.dto.response.SeatPreemptionResponse;
 import com.profect.tickle.domain.reservation.service.ReservationInfoService;
+import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.domain.reservation.service.SeatPreemptionService;
 import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.security.util.SecurityUtil;
@@ -27,6 +30,7 @@ public class ReservationController {
     private final SeatService seatService;
     private final SeatPreemptionService seatPreemptionService;
     private final ReservationInfoService reservationInfoService;
+    private final ReservationService reservationService;
 
     @GetMapping("/{performanceId}/seats")
     public ResponseEntity<List<SeatInfoResponse>> getPerformanceSeats(
@@ -50,6 +54,14 @@ public class ReservationController {
             @PathVariable String preemptionToken) {
 
         ReservationInfoResponse response = reservationInfoService.getReservationInfo(preemptionToken);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/complete")
+    public ResponseEntity<ReservationCompletionResponse> completeReservation(
+            @RequestBody @Valid ReservationCompletionRequest request) {
+
+        ReservationCompletionResponse response = reservationService.completeReservation(request);
         return ResponseEntity.ok(response);
     }
 }
