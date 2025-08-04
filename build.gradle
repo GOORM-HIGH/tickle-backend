@@ -63,10 +63,6 @@ dependencies {
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'
     implementation 'org.springframework:spring-messaging'
-
-    // SMB/CIFS Protocol
-    implementation 'org.springframework.integration:spring-integration-smb'
-    implementation 'javax.annotation:javax.annotation-api:1.3.2'
 }
 
 hibernate {

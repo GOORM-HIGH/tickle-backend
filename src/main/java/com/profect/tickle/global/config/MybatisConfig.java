@@ -54,17 +54,18 @@ public class MybatisConfig {
     public SqlSessionFactory sqlSessionFactory() throws Exception {
         // MyBatis 전역 설정 객체 생성
         org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
-//        configuration.addMapper(NotificationMapper.class); // 알림 매퍼 등록
-//        configuration.setMapUnderscoreToCamelCase(true);
 
         // SqlSessionFactoryBean 설정
         SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
         sqlSessionFactoryBean.setDataSource(hikariDataSource()); // DataSource 주입
         sqlSessionFactoryBean.setConfiguration(configuration);   // MyBatis 전역 설정 주입
 
-        // **패키지 단위로 별칭 등록 (클래스 이름을 별칭으로 사용)**
+        // Instant 타입 핸들러 등록
+//        configuration.getTypeHandlerRegistry().register(java.time.Instant.class, new com.profect.tickle.global.handler.InstantTypeHandler());
+
+        // com.profect.ticklet 패키지 하위의 모든 클래스를 MyBatis가 스캔해서 별칭(alias)으로 등록합니다.
         sqlSessionFactoryBean.setTypeAliasesPackage(
-                "com.profect.tickle.domain.**.dto.response"
+                "com.profect.tickle"
         );
 
         // 매퍼 XML 경로 추가

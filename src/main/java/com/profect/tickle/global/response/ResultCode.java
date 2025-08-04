@@ -12,8 +12,13 @@ public enum ResultCode {
     //EVENT
     EVENT_INFO_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
     EVENT_CREATE_SUCCESS(HttpStatus.CREATED, "이벤트 생성 성공"),
-    COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰을 성공적으로 지급하였습니다."),
+    COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰 지급 성공"),
     COUPON_INFO_SUCCESS(HttpStatus.OK, "쿠폰 조회 성공"),
+
+    //POINT
+    POINT_INFO_SUCCESS(HttpStatus.OK, "포인트 조회 성공"),
+    POINT_CHARGE_SUCCESS(HttpStatus.OK, "포인트 충전 성공"),
+    POINT_HISTORY_SUCCESS(HttpStatus.OK, "포인트 충전/사용 내역 조회 성공"),
 
     //PERFORMANCE
     GENRE_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
@@ -23,7 +28,15 @@ public enum ResultCode {
     PERFORMANCE_TOP100_SUCCESS(HttpStatus.OK,"모든장르포함 인기랭킹 TOP10 조회 성공"),
     PERFORMANCE_POPULAR_SUCCESS(HttpStatus.OK,"예매예정인 TOP4 조회 성공"),
     PERFORMANCE_SEARCH_SUCCESS(HttpStatus.OK,"검색 성공"),
-    PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공")
+    PERFORMANCE_RECOMMEND_LIST_SUCCESS(HttpStatus.OK,"장르별 공연 조회 성공"),
+
+    // NOTIFICATION
+    SSE_CONNECTION_SUCCESS(HttpStatus.OK, "SSE 통신 연결 성공"),
+
+    // MEMBER
+    MEMBER_CREATE_SUCCESS(HttpStatus.CREATED, "회원가입 성공"),
+    EMAIL_VALIDATION_CODE_CREATE(HttpStatus.CREATED, "이메일 인증코드 생성 성공"),
+    EMAIL_VERIFICATION_SUCCESS(HttpStatus.OK, "이메일 인증 성공"),
 
     ;
 

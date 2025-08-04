@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.member.mapper.MemberMapper">
+
+    <!-- 이메일로 회원 조회 -->
+    <select id="findByEmail" parameterType="string" resultType="com.profect.tickle.domain.member.entity.Member">
+        SELECT
+            member_id AS id,
+            member_email AS email,
+            member_pw AS password,
+            member_nickname AS nickname,
+            member_birthday AS birthday,
+            member_img AS img,
+            member_role AS memberRole,
+            member_number AS phoneNumber,
+            member_point_balance AS pointBalance,
+            member_created_at AS createdAt,
+            member_updated_at AS updatedAt,
+            member_deleted_at AS deletedAt,
+            host_biz_number AS hostBizNumber,
+            host_biz_ceo AS hostBizCeo,
+            host_biz_name AS hostBizName,
+            host_biz_address AS hostBizAddress,
+            host_biz_ecommerce_registration_number AS hostBizEcommerceRegistrationNumber,
+            host_biz_bank AS hostBizBank,
+            host_biz_depositor AS hostBizDepositor,
+            host_biz_bank_number AS hostBizBankNumber
+        FROM member
+        WHERE member_email = #{email}
+    </select>
+
+</mapper>

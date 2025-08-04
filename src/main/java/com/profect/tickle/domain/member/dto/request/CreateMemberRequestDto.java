@@ -3,14 +3,14 @@ package com.profect.tickle.domain.member.dto.request;
 import com.profect.tickle.domain.member.entity.MemberRole;
 import lombok.Getter;
 
-import java.time.LocalDate;
+import java.time.Instant;
 
 @Getter
 public class CreateMemberRequestDto {
 
     private String email;
     private String password;
-    private LocalDate birthday;
+    private Instant birthday;
     private String nickname;
     private String img;
     private String phoneNumber;
