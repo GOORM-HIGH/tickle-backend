@@ -229,7 +229,8 @@ public class ChatWebSocketHandler implements WebSocketHandler {
             // 🎯 채팅방의 각 사용자에게 개별적으로 isMyMessage 설정하여 전송
             broadcastChatMessage(requestDto, savedMessage);
 
-            log.info("채팅 메시지 브로드캐스트 완료: messageId={}", savedMessage.getId());
+            log.info("채팅 메시지 브로드캐스트 완료: messageId={}, senderNickname={}", 
+                    savedMessage.getId(), savedMessage.getSenderNickname());
 
         } catch (Exception e) {
             log.error("채팅 메시지 처리 오류: {}", e.getMessage(), e);
@@ -305,13 +306,21 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                 Long targetUserId = sessionToUserId.get(sessionId);
                 boolean isMyMessage = requestDto.getSenderId().equals(targetUserId);
 
+                // 🎯 올바른 닉네임 사용 (savedMessage에서 가져오기)
+                String senderNickname = savedMessage.getSenderNickname();
+                if (senderNickname == null || senderNickname.isEmpty()) {
+                    // 백업: requestDto에서 가져오기 (이메일이 아닌 닉네임이어야 함)
+                    senderNickname = requestDto.getSenderNickname();
+                    log.warn("savedMessage에서 senderNickname이 null입니다. requestDto에서 가져옵니다: {}", senderNickname);
+                }
+
                 // 개별 응답 DTO 생성
                 WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
                         .type("MESSAGE")
                         .messageId(savedMessage.getId())
                         .chatRoomId(requestDto.getChatRoomId())
                         .senderId(requestDto.getSenderId())
-                        .senderNickname(requestDto.getSenderNickname())
+                        .senderNickname(senderNickname) // 🎯 올바른 닉네임 사용
                         .messageType(requestDto.getMessageType())
                         .content(requestDto.getContent())
                         .filePath(requestDto.getFilePath())
@@ -326,8 +335,8 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                 String messageJson = objectMapper.writeValueAsString(response);
                 targetSession.sendMessage(new TextMessage(messageJson));
 
-                log.debug("메시지 전송 완료: sessionId={}, userId={}, isMyMessage={}",
-                        sessionId, targetUserId, isMyMessage);
+                log.debug("메시지 전송 완료: sessionId={}, userId={}, isMyMessage={}, senderNickname={}",
+                        sessionId, targetUserId, isMyMessage, senderNickname);
 
             } catch (Exception e) {
                 log.error("메시지 전송 실패: sessionId={}, error={}", entry.getKey(), e.getMessage());
