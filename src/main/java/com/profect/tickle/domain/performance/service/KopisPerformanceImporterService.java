@@ -77,8 +77,8 @@ public class KopisPerformanceImporterService {
 
     public void importPerformances() {
         String baseUrl = "http://www.kopis.or.kr/openApi/restful/pblprfr?service=" + serviceKey;
-        String startDate = "20250201";
-        String endDate = "20250202";
+        String startDate = "20000101";
+        String endDate = "20250805";
         int page = 1;
         int rows = 100;
 
