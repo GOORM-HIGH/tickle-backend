@@ -2,10 +2,12 @@ package com.profect.tickle.domain.reservation.controller;
 
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequest;
 import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequest;
+import com.profect.tickle.domain.reservation.dto.response.ReservationCancelResponse;
 import com.profect.tickle.domain.reservation.dto.response.ReservationCompletionResponse;
 import com.profect.tickle.domain.reservation.dto.response.ReservationInfoResponse;
 import com.profect.tickle.domain.reservation.dto.response.SeatInfoResponse;
 import com.profect.tickle.domain.reservation.dto.response.SeatPreemptionResponse;
+import com.profect.tickle.domain.reservation.service.ReservationHistoryService;
 import com.profect.tickle.domain.reservation.service.ReservationInfoService;
 import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.domain.reservation.service.SeatPreemptionService;
@@ -15,6 +17,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +34,7 @@ public class ReservationController {
     private final SeatPreemptionService seatPreemptionService;
     private final ReservationInfoService reservationInfoService;
     private final ReservationService reservationService;
+    private final ReservationHistoryService reservationHistoryService;
 
     @GetMapping("/{performanceId}/seats")
     public ResponseEntity<List<SeatInfoResponse>> getPerformanceSeats(
@@ -62,6 +66,16 @@ public class ReservationController {
             @RequestBody @Valid ReservationCompletionRequest request) {
 
         ReservationCompletionResponse response = reservationService.completeReservation(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{reservationId}")
+    public ResponseEntity<ReservationCancelResponse> cancelReservation(
+            @PathVariable Long reservationId) {
+
+        ReservationCancelResponse response = reservationHistoryService
+                .cancelReservation(reservationId);
+
         return ResponseEntity.ok(response);
     }
 }
