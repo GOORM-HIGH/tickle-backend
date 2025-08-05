@@ -220,9 +220,30 @@ public class ChatMessageService {
      * 읽지않은 메시지 개수 조회 (MyBatis 사용)
      */
     public int getUnreadCount(Long chatRoomId, Long memberId, Long lastReadMessageId) {
-        log.info("읽지않은 메시지 개수 조회: chatRoomId={}, memberId={}", chatRoomId, memberId);
+        log.info("읽지않은 메시지 개수 조회: chatRoomId={}, memberId={}, lastReadMessageId={}", 
+                chatRoomId, memberId, lastReadMessageId);
 
-        return chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
+        // 1. 채팅방 존재 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+
+        // 2. 회원 확인
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId));
+
+        // 3. 참여 여부 확인
+        boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
+        if (!isParticipant) {
+            throw ChatExceptions.chatNotParticipant();
+        }
+
+        // 4. MyBatis로 읽지 않은 메시지 개수 조회
+        int unreadCount = chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
+
+        log.info("읽지않은 메시지 개수 조회 결과: chatRoomId={}, memberId={}, lastReadMessageId={}, unreadCount={}", 
+                chatRoomId, memberId, lastReadMessageId, unreadCount);
+
+        return unreadCount;
     }
 
     // ===== Private 헬퍼 메서드들 =====
