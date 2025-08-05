@@ -1,6 +1,5 @@
 package com.profect.tickle.domain.settlement.dto.batch;
 
-import com.profect.tickle.global.status.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,6 +1,5 @@
 package com.profect.tickle.domain.settlement.entity;
 
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailDto;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
