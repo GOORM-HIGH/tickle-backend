@@ -24,7 +24,7 @@ public class BatchScheduler {
         this.settlementJob = settlementJob;
     }
 
-    // 매 분 0초에 정산 job 호출
+    // 매 분 0초에 정산 job 호출 
     @Scheduled(cron = "0 * * * * *")
     public void runSettlementJob() throws Exception{
         JobParameters jobParameters = new JobParametersBuilder()
