@@ -5,7 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -13,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 public class UpdatePerformanceRequestDto {
     private String title;
-    private LocalDateTime date;
+    private Instant date;
     private Short runtime;
     private String img;
     private Boolean isEvent;

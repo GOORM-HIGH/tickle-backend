@@ -8,13 +8,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
 public class StatusService {
 
     private final StatusRepository statusRepository;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Transactional(readOnly = true)
     public Status getReadStatusForNotification() {
@@ -30,16 +33,18 @@ public class StatusService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
 
-    private Status getStatusByDate(LocalDateTime performanceDate) {
-        LocalDateTime now = LocalDateTime.now();
-        short code;
+    @Transactional(readOnly = true)
+    public Status getStatusByDate(Instant performanceDate) {
+        LocalDate perf = performanceDate.atZone(KST).toLocalDate();
+        LocalDate today = Instant.now().atZone(KST).toLocalDate();
 
-        if (performanceDate.isAfter(now)) {
-            code = 100;
-        } else if (performanceDate.toLocalDate().isEqual(now.toLocalDate())) {
-            code = 101;
+        short code;
+        if (perf.isAfter(today)) {
+            code = 100; // 공연 예정
+        } else if (perf.isEqual(today)) {
+            code = 101; // 공연 진행(당일)
         } else {
-            code = 102;
+            code = 102; // 공연 완료
         }
 
         return statusRepository.findByTypeAndCode("공연", code)
