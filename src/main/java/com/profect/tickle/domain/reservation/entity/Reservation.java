@@ -70,6 +70,10 @@ public class Reservation {
         seat.assignReservation(this); // 연관관계 편의 메서드
     }
 
+    public void changeStatusTo(Status status) {
+        this.status = status;
+    }
+
     private static String generateReservationCode() {
         String uuidPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
