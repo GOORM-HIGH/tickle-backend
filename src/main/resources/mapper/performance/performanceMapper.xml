@@ -53,7 +53,7 @@
     </select>
 
     <!-- 모든 카테고리별 인기랭킹 top10   -->
-    <select id="findTop100ByClickCount" resultType="PerformanceDto">
+    <select id="findTop10ByClickCount" resultType="PerformanceDto">
         SELECT
             p.performance_id AS performanceId,
             p.performance_title AS title,
