@@ -50,6 +50,9 @@ public class Reservation {
     @Column(name = "reservation_created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "reservation_updated_at", nullable = false)
+    private Instant updatedAt;
+
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Seat> seats = new ArrayList<>();
 
