@@ -32,7 +32,6 @@ public class ReservationController {
     private final SeatPreemptionService seatPreemptionService;
     private final ReservationInfoService reservationInfoService;
     private final ReservationService reservationService;
-    private final ReservationHistoryService reservationHistoryService;
 
     @GetMapping("/{performanceId}/seats")
     public ResponseEntity<List<SeatInfoResponse>> getPerformanceSeats(
