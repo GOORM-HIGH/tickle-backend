@@ -112,9 +112,8 @@ public class EventServiceImpl implements EventService {
                     member,
                     seat.getPerformance(),
                     getStatusOrThrow(9L),
-                    "100",  // [임의 값]예매코드 생성 로직 따로 필요 -> 예매코드 로직 생성 시 변경
-                    event.getGoalPrice(),
-                    true);
+                    event.getGoalPrice()
+            );
 
             reservation.assignSeat(seat);
 
