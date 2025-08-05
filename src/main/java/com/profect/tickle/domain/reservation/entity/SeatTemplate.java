@@ -21,6 +21,7 @@ public class SeatTemplate {
     @Column(name = "hall_type", length = 10, nullable = false)
     private HallType hallType;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "seat_grade", length = 3, nullable = false)
     private SeatGrade seatGrade;
 

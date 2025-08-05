@@ -143,8 +143,8 @@ public class PerformanceService {
         Status status = statusRepository.findById(1L)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEFAULT_STATUS_NOT_FOUND));
 
-        Integer minPrice = seatTemplateRepository.findMinPriceByHallType(dto.getHallType().toString());
-        Integer maxPrice = seatTemplateRepository.findMaxPriceByHallType(dto.getHallType().toString());
+        Integer minPrice = seatTemplateRepository.findMinPriceByHallType(dto.getHallType());
+        Integer maxPrice = seatTemplateRepository.findMaxPriceByHallType(dto.getHallType());
         if (minPrice == null || maxPrice == null) {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }

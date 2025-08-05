@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.reservation.repository;
 
+import com.profect.tickle.domain.performance.entity.Hall;
 import com.profect.tickle.domain.performance.entity.HallType;
 import com.profect.tickle.domain.reservation.entity.SeatTemplate;
 import java.util.List;
@@ -14,9 +15,9 @@ public interface SeatTemplateRepository extends JpaRepository<SeatTemplate, Long
     List<SeatTemplate> findByHallType(HallType hallType);
 
     @Query("SELECT MIN(s.price) FROM SeatTemplate s WHERE s.hallType = :hallType")
-    Integer findMinPriceByHallType(@Param("hallType") String hallType);
+    Integer findMinPriceByHallType(@Param("hallType") HallType hallType);
 
     @Query("SELECT MAX(s.price) FROM SeatTemplate s WHERE s.hallType = :hallType")
-    Integer findMaxPriceByHallType(@Param("hallType") String hallType);
+    Integer findMaxPriceByHallType(@Param("hallType") HallType hallType);
 
 }

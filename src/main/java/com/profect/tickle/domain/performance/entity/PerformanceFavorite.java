@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -28,13 +29,13 @@ public class PerformanceFavorite {
     private Performance performance;
 
     @Column(name = "performance_favorite_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public static PerformanceFavorite from(Member member, Performance performance) {
         PerformanceFavorite favorite = new PerformanceFavorite();
         favorite.member = member;
         favorite.performance = performance;
-        favorite.createdAt = LocalDateTime.now();
+        favorite.createdAt = Instant.now();
         return favorite;
     }
 }

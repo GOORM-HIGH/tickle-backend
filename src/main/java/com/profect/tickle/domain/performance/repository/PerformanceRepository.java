@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,7 @@ public interface PerformanceRepository extends JpaRepository<Performance,Long> {
     Optional<Performance> findActiveById(@Param("id") Long id);
     @Query("SELECT p FROM Performance p WHERE p.deletedAt IS NULL")
     List<Performance> findAllActive();
-    boolean existsByTitleAndDate(String title, LocalDateTime date);
+    boolean existsByTitleAndDate(String title, Instant date);
 
     HallType findHallTypeById(Long performanceId);
 }

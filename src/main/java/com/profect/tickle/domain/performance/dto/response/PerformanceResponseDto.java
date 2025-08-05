@@ -6,7 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -18,17 +20,17 @@ public class PerformanceResponseDto {
     private String title; //공연명
     private String genreTitle; //공연장르
     private String price; //공연가격
-    private LocalDateTime date; //공연날짜
+    private Instant date; //공연날짜
     private Short runtime; //공연상영시간
     private String hallType; //공연유형
     private String hallAddress; //공연장소
     private String hostBizName; //주최측
-    private LocalDateTime startDate; //예매시작날짜
-    private LocalDateTime endDate; //예매종료날짜
+    private Instant startDate; //예매시작날짜
+    private Instant endDate; //예매종료날짜
     private Boolean isEvent; //이벤트참여여부
     private String img; //이미지
-    private LocalDateTime createdAt; //생성시간
-    private LocalDateTime updatedAt; //업데이트 시간
+    private Instant createdAt; //생성시간
+    private Instant updatedAt; //업데이트 시간
 
     public static PerformanceResponseDto from(Performance performance) {
         return PerformanceResponseDto.builder()

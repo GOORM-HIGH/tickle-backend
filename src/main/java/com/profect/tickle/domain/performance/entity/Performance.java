@@ -7,6 +7,7 @@ import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -46,7 +47,7 @@ public class Performance {
     private String price;
 
     @Column(name = "performance_date", nullable = false)
-    private LocalDateTime date;
+    private Instant date;
 
     @Column(name = "performance_runtime", nullable = false)
     private Short runtime;
@@ -55,10 +56,10 @@ public class Performance {
     private String img;
 
     @Column(name = "performance_start_date", nullable = false)
-    private LocalDateTime startDate;
+    private Instant startDate;
 
     @Column(name = "performance_end_date", nullable = false)
-    private LocalDateTime endDate;
+    private Instant endDate;
 
     @Column(name = "performance_is_event", nullable = false)
     private Boolean isEvent;
@@ -67,13 +68,13 @@ public class Performance {
     private Short lookCount;
 
     @Column(name = "performance_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "performance_updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "performance_deleted_at")
-    private LocalDateTime deletedAt;
+    private Instant deletedAt;
 
     public Performance(
             String title,
@@ -81,12 +82,12 @@ public class Performance {
             Genre genre,
             Hall hall,
             Status status,
-            LocalDateTime date,
+            Instant date,
             Short runtime,
             String price,
             String img,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            Instant startDate,
+            Instant endDate,
             boolean isEvent
     ) {
         this.title = title;
@@ -102,8 +103,8 @@ public class Performance {
         this.endDate = endDate;
         this.isEvent = isEvent;
         this.lookCount = 0;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
 
@@ -137,11 +138,11 @@ public class Performance {
         if (dto.getRuntime() != null) this.runtime = dto.getRuntime();
         if (dto.getImg() != null) this.img = dto.getImg();
         if (dto.getIsEvent() != null) this.isEvent = dto.getIsEvent();
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = Instant.now();
     }
 
     public void markAsDeleted() {
-        this.deletedAt = LocalDateTime.now();
+        this.deletedAt = Instant.now();
     }
 
 }
