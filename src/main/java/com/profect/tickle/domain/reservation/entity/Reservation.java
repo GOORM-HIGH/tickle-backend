@@ -4,6 +4,9 @@ import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -45,25 +48,31 @@ public class Reservation {
     private Boolean isNotify;
 
     @Column(name = "reservation_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Seat> seats = new ArrayList<>();
 
-    public static Reservation create(Member member, Performance performance, Status status, String code, Integer price, Boolean isNotify) {
+    public static Reservation create(Member member, Performance performance, Status status, Integer price) {
         Reservation reservation = new Reservation();
         reservation.member = member;
         reservation.performance = performance;
         reservation.status = status;
-        reservation.code = code;
+        reservation.code = generateReservationCode();
         reservation.price = price;
-        reservation.isNotify = isNotify;
-        reservation.createdAt = LocalDateTime.now();
+        reservation.isNotify = true;
+        reservation.createdAt = Instant.now();
         return reservation;
     }
 
     public void assignSeat(Seat seat) {
         this.seats.add(seat);
         seat.assignReservation(this); // 연관관계 편의 메서드
+    }
+
+    private static String generateReservationCode() {
+        String uuidPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return uuidPart + dateTime;
     }
 }

@@ -16,20 +16,21 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class StatusService {
 
+    public static final long NOTIFICATION_READ_YET_STATUS = 7L;
+    public static final long NOTIFICATION_READ_STATUS = 8L;
+
     private final StatusRepository statusRepository;
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Transactional(readOnly = true)
     public Status getReadStatusForNotification() {
-        long readStatusId = 1L;
-        return statusRepository.findById(readStatusId)
+        return statusRepository.findById(NOTIFICATION_READ_STATUS)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public Status getReadYetStatusForNotification() {
-        long readStatusId = 2;
-        return statusRepository.findById(readStatusId)
+        return statusRepository.findById(NOTIFICATION_READ_YET_STATUS)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
 

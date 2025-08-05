@@ -65,7 +65,7 @@ public enum ErrorCode {
     CHAT_PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅방 참여 정보를 찾을 수 없습니다."),
 
     // 알림 관련
-//    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다."),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다."),
     NOTIFICATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 알림에 접근할 권한이 없습니다."),
     NOTIFICATION_TEMPLATE_NOT_FOUND(HttpStatus.BAD_REQUEST, "알림 템플릿을 찾을 수 없습니다."),
 
@@ -76,7 +76,9 @@ public enum ErrorCode {
     MEMBER_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
     VALIDATION_CODE_REQUEST_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, "인증번호를 너무 자주 요청했습니다. 잠시 후 다시 시도하세요."),
     VALIDATION_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인증번호가 만료되었습니다."),
-    VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다.");
+    VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다."),
+
+    ;
 
     private final HttpStatus status;
     private final String message;
