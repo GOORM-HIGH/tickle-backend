@@ -1,14 +1,28 @@
-package com.profect.tickle.domain.stl.entity;
+package com.profect.tickle.domain.settlement.entity;
 
+import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "settlement_daily")
+@Table(
+        name = "settlement_daily",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uniq_settlement_daily",
+                columnNames = {
+                        "host_biz_name",
+                        "performance_title",
+                        "settlement_year",
+                        "settlement_month",
+                        "settlement_day"
+                }
+))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class SettlementDaily {
 
     @Id
@@ -16,8 +30,9 @@ public class SettlementDaily {
     @Column(name = "settlement_daily_id")
     private Long id;
 
-    @Column(name = "status_id", nullable = false)
-    private Long statusId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private Status statusId;
 
     @Column(name = "host_biz_name", length = 15, nullable = false)
     private String hostBizName;
@@ -48,5 +63,8 @@ public class SettlementDaily {
 
     @Column(name = "settlement_daily_net_amount", nullable = false)
     private Long dailyNetAmount;
+
+    @Column(name = "settlement_daily_created_at", nullable = false)
+    private LocalDateTime dailyCreatedAt;
 
 }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.settlement.mapper.SettlementDailyMapper">
+
+    <!-- 일간 정산 데이터 집계 -->
+    <select id="aggregateByDetail" parameterType="java.time.LocalDateTime"
+            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto">
+        SELECT
+            host_biz_name,
+            performance_title,
+            TO_CHAR(performance_end_date, 'YYYY') AS year,
+            TO_CHAR(performance_end_date, 'MM') AS month,
+            TO_CHAR(performance_end_date, 'DD') AS day,
+            SUM(settlement_detail_sales_amount) AS dailySalesAmount,
+            SUM(settlement_detail_refund_amount) AS dailyRefundAmount,
+            SUM(settlement_detail_gross_amount) AS dailyGrossAmount,
+            SUM(settlement_detail_commission) AS dailyCommission,
+            SUM(settlement_detail_net_amount) AS dailyNetAmount
+        FROM settlement_detail
+        WHERE performance_end_date &lt; #{now}
+        AND status_id IN (14, 16)
+        AND settled_flag = 'N'
+        GROUP BY host_biz_name, performance_title,
+                 TO_CHAR(performance_end_date, 'YYYY'),
+                 TO_CHAR(performance_end_date, 'MM'),
+                 TO_CHAR(performance_end_date, 'DD')
+    </select>
+
+    <!-- 일간 정산 upsert -->
+    <insert id="upsertSettlementDaily" parameterType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto">
+        INSERT INTO settlement_daily (
+            status_id, host_biz_name, performance_title, settlement_year, settlement_month, settlement_day,
+            settlement_daily_sales_amount, settlement_daily_refund_amount, settlement_daily_gross_amount,
+            settlement_daily_commission, settlement_daily_net_amount, settlement_daily_created_at
+        ) VALUES (
+            15, #{hostBizName}, #{performanceTitle}, #{year}, #{month}, #{day}, #{dailySalesAmount},
+            #{dailyRefundAmount}, #{dailyGrossAmount}, #{dailyCommission}, #{dailyNetAmount}, NOW()
+        )
+        ON CONFLICT (host_biz_name, performance_title, settlement_year, settlement_month, settlement_day)
+        DO UPDATE SET
+            settlement_daily_sales_amount = settlement_daily.settlement_daily_sales_amount + EXCLUDED.settlement_daily_sales_amount,
+            settlement_daily_refund_amount = settlement_daily.settlement_daily_refund_amount + EXCLUDED.settlement_daily_refund_amount,
+            settlement_daily_gross_amount = settlement_daily.settlement_daily_gross_amount + EXCLUDED.settlement_daily_gross_amount,
+            settlement_daily_commission = settlement_daily.settlement_daily_commission + EXCLUDED.settlement_daily_commission,
+            settlement_daily_net_amount = settlement_daily.settlement_daily_net_amount + EXCLUDED.settlement_daily_net_amount,
+            settlement_daily_created_at = EXCLUDED.settlement_daily_created_at
+    </insert>
+</mapper>

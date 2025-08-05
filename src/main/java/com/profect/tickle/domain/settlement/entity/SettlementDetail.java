@@ -1,9 +1,11 @@
-package com.profect.tickle.domain.stl.entity;
+package com.profect.tickle.domain.settlement.entity;
 
+import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailDto;
+import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "settlement_detail")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class SettlementDetail {
 
     @Id
@@ -18,8 +22,9 @@ public class SettlementDetail {
     @Column(name = "settlement_detail_id")
     private Long id;
 
-    @Column(name = "status_id", nullable = false)
-    private Long statusId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private Status statusId;
 
     @Column(name = "host_biz_name", length = 15, nullable = false)
     private String hostBizName;
@@ -29,6 +34,9 @@ public class SettlementDetail {
 
     @Column(name = "performance_end_date", nullable = false)
     private LocalDateTime performanceEndDate;
+
+    @Column(name = "reservation_code", length = 15, nullable = false)
+    private String reservationCode;
 
     @Column(name = "settlement_detail_created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -47,4 +55,9 @@ public class SettlementDetail {
 
     @Column(name = "settlement_detail_net_amount", nullable = false)
     private Long netAmount;
+
+    @Column(name = "settled_flag", length = 1, nullable = false)
+    @ColumnDefault("'N'")
+    private String flag;
+
 }
