@@ -1,9 +1,12 @@
-package com.profect.tickle.domain.stl.entity;
+package com.profect.tickle.domain.settlement.entity;
 
+import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -16,8 +19,9 @@ public class SettlementWeekly {
     @Column(name = "settlement_weekly_id")
     private Long id;
 
-    @Column(name = "status_id", nullable = false)
-    private Long statusId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private Status statusId;
 
     @Column(name = "host_biz_name", length = 15, nullable = false)
     private String hostBizName;
@@ -48,4 +52,8 @@ public class SettlementWeekly {
 
     @Column(name = "settlement_weekly_net_amount", nullable = false)
     private Long weeklyNetAmount;
+
+    @Column(name = "settlement_weekly_created_at", nullable = false)
+    private LocalDateTime weeklyCreatedAt;
+
 }

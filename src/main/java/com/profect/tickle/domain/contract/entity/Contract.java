@@ -27,7 +27,10 @@ public class Contract {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(name = "contract_charge", nullable = false)
+    @Column(name = "contract_charge",
+            precision = 38,
+            scale = 2,
+            nullable = false)
     private BigDecimal charge;  // 계약 수수료
 
     @Column(name = "contract_created_at", nullable = false, updatable = false)
