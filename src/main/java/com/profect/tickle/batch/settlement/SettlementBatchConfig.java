@@ -20,7 +20,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 // 스프링배치 작동 시 디폴트로 'transactionManager' 찾아서 주입하려고 함
-// 배치 전용으로 만든 txManager 사용하려면 아래처럼 명시
+// 배치 전용으로 만든 txManager 사용하려면 아래처럼 명시해서 사용
 @EnableBatchProcessing(transactionManagerRef = "batchTxManager")
 public class SettlementBatchConfig {
 

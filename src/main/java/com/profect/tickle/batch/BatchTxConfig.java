@@ -10,7 +10,7 @@ import javax.sql.DataSource;
 @Configuration
 public class BatchTxConfig {
 
-    // 스프링부트의 기본 HikariDataSource 객체 주입 받아서 txManager 하나 더 생성
+    // 스프링부트의 기본 HikariDataSource 객체 주입 받아서 txManager 하나 더 생성함
     private final DataSource dataSource;
 
     public BatchTxConfig(DataSource dataSource) {
