@@ -59,6 +59,10 @@ public class Point {
         return new Point(member, -amount, target, generateInternalOrderId());
     }
 
+    public static Point refund(Member member, int amount, PointTarget target) {
+        return new Point(member, amount, target, generateInternalOrderId());
+    }
+
     private static String generateInternalOrderId() {
         return "deduct_" + System.currentTimeMillis();
     }
