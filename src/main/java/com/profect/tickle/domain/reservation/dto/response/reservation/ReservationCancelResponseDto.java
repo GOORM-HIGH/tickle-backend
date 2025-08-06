@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.reservation.dto.response;
+package com.profect.tickle.domain.reservation.dto.response.reservation;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,14 +9,14 @@ import java.time.Instant;
 @Getter
 @Builder
 @AllArgsConstructor
-public class ReservationCancelResponse {
+public class ReservationCancelResponseDto {
     private boolean success;
     private String message;
     private Integer refundAmount;               // 환불 금액
     private Instant cancelledAt;                // 취소 일시
     
-    public static ReservationCancelResponse success(Integer refundAmount) {
-        return ReservationCancelResponse.builder()
+    public static ReservationCancelResponseDto success(Integer refundAmount) {
+        return ReservationCancelResponseDto.builder()
                 .success(true)
                 .message("예매가 취소되었습니다.")
                 .refundAmount(refundAmount)
@@ -24,8 +24,8 @@ public class ReservationCancelResponse {
                 .build();
     }
     
-    public static ReservationCancelResponse failure(String message) {
-        return ReservationCancelResponse.builder()
+    public static ReservationCancelResponseDto failure(String message) {
+        return ReservationCancelResponseDto.builder()
                 .success(false)
                 .message(message)
                 .build();

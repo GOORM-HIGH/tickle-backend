@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SeatPreemptionRequest {
+public class SeatPreemptionRequestDto {
 
     @NotNull
     private Long performanceId;

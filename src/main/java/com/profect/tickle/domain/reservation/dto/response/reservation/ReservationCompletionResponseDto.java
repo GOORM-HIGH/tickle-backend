@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.reservation.dto.response;
+package com.profect.tickle.domain.reservation.dto.response.reservation;
 
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import java.time.Instant;
@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class ReservationCompletionResponse {
+public class ReservationCompletionResponseDto {
     private boolean success;
     private Long reservationId;                    // 생성된 예매 ID
     private String reservationNumber;              // 예매 번호
@@ -20,10 +20,10 @@ public class ReservationCompletionResponse {
     private Instant reservedAt;                    // 예매 완료 시간
     private String message;
 
-    public static ReservationCompletionResponse success(Reservation reservation,
+    public static ReservationCompletionResponseDto success(Reservation reservation,
             List<ReservedSeatInfo> seats,
             Integer remainingPoints) {
-        return ReservationCompletionResponse.builder()
+        return ReservationCompletionResponseDto.builder()
                 .success(true)
                 .reservationId(reservation.getId())
                 .reservationNumber(reservation.getCode())
@@ -35,8 +35,8 @@ public class ReservationCompletionResponse {
                 .build();
     }
 
-    public static ReservationCompletionResponse failure(String message) {
-        return ReservationCompletionResponse.builder()
+    public static ReservationCompletionResponseDto failure(String message) {
+        return ReservationCompletionResponseDto.builder()
                 .success(false)
                 .message(message)
                 .build();
