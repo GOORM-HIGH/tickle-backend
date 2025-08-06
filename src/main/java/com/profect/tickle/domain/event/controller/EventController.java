@@ -67,7 +67,7 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "응모 성공",
                             content = @Content(schema = @Schema(implementation = TicketApplyResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "포인트 부족, 중복 응모 등 예외 발생")})
-    @GetMapping("/ticket/{eventId}")
+    @PostMapping("/ticket/{eventId}")
     public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
         TicketApplyResponseDto response = eventService.applyTicketEvent(eventId);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
