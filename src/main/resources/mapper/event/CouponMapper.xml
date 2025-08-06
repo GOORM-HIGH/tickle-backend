@@ -19,4 +19,15 @@
         WHERE coupon.coupon_valid &lt;= #{targetDate}
     </select>
 
+    <select id="findCouponById" resultType="com.profect.tickle.domain.event.dto.response.CouponListResponseDto">
+        SELECT
+            c.coupon_id AS id,
+            c.coupon_name AS name,
+            c.coupon_rate AS rate,
+            e.event_id AS eventId
+        FROM coupon c
+                 JOIN event e ON c.coupon_id = e.coupon_id
+        WHERE c.coupon_id = #{couponId}
+    </select>
+
 </mapper>
