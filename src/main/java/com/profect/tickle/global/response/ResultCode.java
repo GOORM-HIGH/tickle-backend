@@ -35,6 +35,15 @@ public enum ResultCode {
     PERFORMANCE_SCRAP_SUCCESS(HttpStatus.CREATED,"공연 스크랩 성공"),
     PERFORMANCE_SCRAP_CANCEL_SUCCESS(HttpStatus.OK,"공연 스크랩 취소 성공"),
 
+    //RESERVATION
+    RESERVATION_SEATS_INFO_SUCCESS(HttpStatus.OK, "공연 좌석 정보 조회 성공"),
+    RESERVATION_SEAT_PREEMPTION_SUCCESS(HttpStatus.OK, "좌석 선점 성공"),
+    RESERVATION_PAYMENT_INFO_SUCCESS(HttpStatus.OK, "결제 정보 조회 성공"),
+    RESERVATION_COMPLETE_SUCCESS(HttpStatus.CREATED, "예매 완료 성공"),
+    RESERVATION_HISTORY_SUCCESS(HttpStatus.OK, "예매 내역 조회 성공"),
+    RESERVATION_DETAIL_SUCCESS(HttpStatus.OK, "예매 상세 정보 조회 성공"),
+    RESERVATION_CANCEL_SUCCESS(HttpStatus.OK, "예매 취소 성공"),
+
     // NOTIFICATION
     NOTIFICATION_INFO_SUCCESS(HttpStatus.OK, "알림 조회 성공"),
     NOTIFICATION_READ_SUCCESS(HttpStatus.NO_CONTENT, "알림 읽음 성공"),

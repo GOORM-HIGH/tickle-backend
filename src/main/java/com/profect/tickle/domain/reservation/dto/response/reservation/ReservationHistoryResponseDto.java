@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.reservation.dto.response;
+package com.profect.tickle.domain.reservation.dto.response.reservation;
 
 import com.profect.tickle.global.status.Status;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
-public class ReservationHistoryResponse {
+public class ReservationHistoryResponseDto {
     private Long reservationId;
     private String reservationNumber;           // 예매 번호
     private String performanceTitle;            // 공연명

@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.reservation.dto.response;
+package com.profect.tickle.domain.reservation.dto.response.reservation;
 
 import com.profect.tickle.domain.reservation.entity.SeatGrade;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class PreemptedSeatInfo {
+public class ReservedSeatInfo {
     private Long seatId;
     private String seatNumber;
     private SeatGrade seatGrade;

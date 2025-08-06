@@ -2,12 +2,14 @@ package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequest;
-import com.profect.tickle.domain.reservation.dto.response.PreemptedSeatInfo;
-import com.profect.tickle.domain.reservation.dto.response.SeatPreemptionResponse;
+import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequestDto;
+import com.profect.tickle.domain.reservation.dto.response.preemption.PreemptedSeatInfo;
+import com.profect.tickle.domain.reservation.dto.response.preemption.SeatPreemptionResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import java.time.Instant;
@@ -31,7 +33,7 @@ public class SeatPreemptionService {
 
     private static final int PREEMPTION_DURATION_MINUTES = 5; // 5분간 선점
 
-    public SeatPreemptionResponse preemptSeats(SeatPreemptionRequest request, Long userId) {
+    public SeatPreemptionResponseDto preemptSeats(SeatPreemptionRequestDto request, Long userId) {
         // 1. 기본 검증
         seatPreemptionValidator.validateRequest(request, userId);
 
@@ -46,7 +48,7 @@ public class SeatPreemptionService {
                     .map(Seat::getId)
                     .collect(Collectors.toList());
 
-            return SeatPreemptionResponse.failure(
+            return SeatPreemptionResponseDto.failure(
                     "선택한 좌석 중 선점할 수 없는 좌석이 있습니다.",
                     unavailableSeatIds);
         }
@@ -64,7 +66,7 @@ public class SeatPreemptionService {
                 .map(this::convertToPreemptedSeatInfo)
                 .collect(Collectors.toList());
 
-        return SeatPreemptionResponse.success(
+        return SeatPreemptionResponseDto.success(
                 preemptionToken,
                 preemptedUntil,
                 preemptedSeats,
@@ -73,7 +75,7 @@ public class SeatPreemptionService {
 
     private void preemptSeat(Seat seat, Long userId, String preemptionToken, Instant preemptedUntil) {
         Member member = memberRepository.findById(userId)
-                .orElseThrow();
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         seat.assignTo(member);
         seat.assignPreemptionToken(preemptionToken);
@@ -82,7 +84,7 @@ public class SeatPreemptionService {
 
         // DB status 선점중으로 변경 (ID: 12)
         Status preempted = statusRepository.findById(SeatStatus.PREEMPTED.getId())
-                .orElseThrow();
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
         seat.setStatusTo(preempted);
 

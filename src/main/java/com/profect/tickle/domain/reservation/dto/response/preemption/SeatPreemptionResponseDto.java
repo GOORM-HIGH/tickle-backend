@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.reservation.dto.response;
+package com.profect.tickle.domain.reservation.dto.response.preemption;
 
 import java.time.Instant;
 import java.util.List;
@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class SeatPreemptionResponse {
+public class SeatPreemptionResponseDto {
     private boolean success;                 // 성공 여부
     private String preemptionToken;          // 선점 토큰 (성공시에만)
     private Instant preemptedUntil;          // 선점 만료 시간 (성공시에만)
@@ -18,9 +18,9 @@ public class SeatPreemptionResponse {
     private List<Long> unavailableSeatIds;   // 선점 불가능한 좌석 ID들 (실패시에만)
 
     // 성공 응답 생성
-    public static SeatPreemptionResponse success(String preemptionToken, Instant preemptedUntil,
+    public static SeatPreemptionResponseDto success(String preemptionToken, Instant preemptedUntil,
             List<PreemptedSeatInfo> seats, String message) {
-        return SeatPreemptionResponse.builder()
+        return SeatPreemptionResponseDto.builder()
                 .success(true)
                 .preemptionToken(preemptionToken)
                 .preemptedUntil(preemptedUntil)
@@ -30,8 +30,8 @@ public class SeatPreemptionResponse {
     }
 
     // 실패 응답 생성
-    public static SeatPreemptionResponse failure(String message, List<Long> unavailableSeatIds) {
-        return SeatPreemptionResponse.builder()
+    public static SeatPreemptionResponseDto failure(String message, List<Long> unavailableSeatIds) {
+        return SeatPreemptionResponseDto.builder()
                 .success(false)
                 .message(message)
                 .unavailableSeatIds(unavailableSeatIds)
