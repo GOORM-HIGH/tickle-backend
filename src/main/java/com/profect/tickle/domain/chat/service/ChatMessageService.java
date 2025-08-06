@@ -1,28 +1,34 @@
 package com.profect.tickle.domain.chat.service;
 
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
-import com.profect.tickle.domain.chat.dto.common.PaginationDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
+import com.profect.tickle.domain.chat.dto.websocket.WebSocketMessageResponseDto;
 import com.profect.tickle.domain.chat.entity.Chat;
-import com.profect.tickle.domain.chat.entity.ChatMessageType;
 import com.profect.tickle.domain.chat.entity.ChatRoom;
-import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
-import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
+import com.profect.tickle.domain.chat.entity.ChatParticipants;
+import com.profect.tickle.domain.chat.entity.ChatMessageType;
+import com.profect.tickle.global.exception.ChatExceptions;
 import com.profect.tickle.domain.chat.repository.ChatRepository;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
+import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
+import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
 import com.profect.tickle.domain.file.service.FileService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.global.exception.ChatExceptions;
+import com.profect.tickle.domain.chat.dto.common.PaginationDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +42,7 @@ public class ChatMessageService {
     private final MemberRepository memberRepository;
     private final ChatMessageMapper chatMessageMapper; // MyBatis
     private final FileService fileService;
+    private final SimpMessagingTemplate simpMessagingTemplate; // WebSocket 템플릿
 
     // ✅ ChatParticipantsService 의존성 제거
     // private final ChatParticipantsService chatParticipantsService;
@@ -211,6 +218,23 @@ public class ChatMessageService {
         message.markAsDeleted();
 
         log.info("메시지 삭제 완료: messageId={}", messageId);
+
+        // 5. WebSocket을 통해 삭제 이벤트 전송
+        try {
+            WebSocketMessageResponseDto deleteEvent = WebSocketMessageResponseDto.builder()
+                    .type(WebSocketMessageResponseDto.MessageType.DELETE)
+                    .messageId(messageId)
+                    .chatRoomId(message.getChatRoomId())
+                    .senderId(message.getMember().getId())
+                    .senderNickname(message.getMember().getNickname())
+                    .build();
+
+            simpMessagingTemplate.convertAndSend("/topic/chat/" + message.getChatRoomId(), deleteEvent);
+            log.info("🗑️ 삭제 이벤트 WebSocket 전송 완료: messageId={}, chatRoomId={}", messageId, message.getChatRoomId());
+        } catch (Exception e) {
+            log.error("❌ 삭제 이벤트 WebSocket 전송 실패: messageId={}, error={}", messageId, e.getMessage());
+            // WebSocket 전송 실패해도 삭제는 성공으로 처리
+        }
     }
 
     /**
