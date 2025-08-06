@@ -6,6 +6,7 @@ import com.profect.tickle.domain.reservation.dto.response.ReservationCompletionR
 import com.profect.tickle.domain.reservation.dto.response.ReservationInfoResponse;
 import com.profect.tickle.domain.reservation.dto.response.SeatInfoResponse;
 import com.profect.tickle.domain.reservation.dto.response.SeatPreemptionResponse;
+import com.profect.tickle.domain.reservation.service.ReservationHistoryService;
 import com.profect.tickle.domain.reservation.service.ReservationInfoService;
 import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.domain.reservation.service.SeatPreemptionService;

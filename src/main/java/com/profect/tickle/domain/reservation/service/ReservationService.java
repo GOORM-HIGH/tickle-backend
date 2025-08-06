@@ -12,6 +12,7 @@ import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRe
 import com.profect.tickle.domain.reservation.dto.response.ReservationCompletionResponse;
 import com.profect.tickle.domain.reservation.dto.response.ReservedSeatInfo;
 import com.profect.tickle.domain.reservation.entity.Reservation;
+import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
@@ -145,7 +146,7 @@ public class ReservationService {
 
         Performance performance = seats.get(0).getPerformance();
 
-        Status paidStatus = statusRepository.findById(9L)
+        Status paidStatus = statusRepository.findById(ReservationStatus.PAID.getId())
                 .orElseThrow();
 
         Reservation reservation = Reservation.create(

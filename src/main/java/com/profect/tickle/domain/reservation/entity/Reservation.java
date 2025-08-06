@@ -50,6 +50,9 @@ public class Reservation {
     @Column(name = "reservation_created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "reservation_updated_at", nullable = false)
+    private Instant updatedAt;
+
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Seat> seats = new ArrayList<>();
 
@@ -68,6 +71,10 @@ public class Reservation {
     public void assignSeat(Seat seat) {
         this.seats.add(seat);
         seat.assignReservation(this); // 연관관계 편의 메서드
+    }
+
+    public void changeStatusTo(Status status) {
+        this.status = status;
     }
 
     private static String generateReservationCode() {
