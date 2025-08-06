@@ -10,7 +10,18 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "settlement_weekly")
+@Table(
+        name = "settlement_weekly",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uniq_settlement_weekly",
+                columnNames = {
+                        "host_biz_name",
+                        "performance_title",
+                        "settlement_year",
+                        "settlement_month",
+                        "settlement_week"
+                }
+        ))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SettlementWeekly {
 

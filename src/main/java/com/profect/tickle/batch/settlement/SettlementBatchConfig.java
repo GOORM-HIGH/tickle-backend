@@ -1,7 +1,5 @@
 package com.profect.tickle.batch.settlement;
 
-import com.profect.tickle.domain.settlement.entity.SettlementDaily;
-import com.profect.tickle.domain.settlement.entity.SettlementDetail;
 import com.profect.tickle.domain.settlement.service.SettlementDailyService;
 import com.profect.tickle.domain.settlement.service.SettlementDetailService;
 import com.profect.tickle.domain.settlement.service.SettlementMonthlyService;
@@ -47,8 +45,11 @@ public class SettlementBatchConfig {
         this.settlementMonthlyService = settlementMonthlyService;
     }
 
+    /**
+     * 건별, 일간 정산 배치
+     */
     @Bean
-    public Job settlementJob() {
+    public Job settlementDetailDailyJob() {
         // 1) 정산 tasklet 구조 step 생성
         // 건별정산, 배치_스텝 테이블에서 식별자로 구분
         Step detailStep = new StepBuilder("stepSettlementDetail", jobRepository)
@@ -66,9 +67,36 @@ public class SettlementBatchConfig {
                 .build();
 
         // 2) JobBuilder로 Job 구성(순차 실행)
-        return new JobBuilder("settlementJob", jobRepository)
+        return new JobBuilder("settlementDetailDailyJob", jobRepository)
                 .start(detailStep)
                 .next(dailyStep)
+                .build();
+    }
+
+    /**
+     * 주간, 월간 정산 배치
+     */
+    @Bean
+    public Job settlementWeeklyMonthlyJob() {
+        // 주간정산
+        Step weeklyStep = new StepBuilder("stepSettlementWeekly", jobRepository)
+                .tasklet((contribution, chunkContext) -> {
+                    settlementWeeklyService.getSettlementWeekly();
+                    return RepeatStatus.FINISHED;
+                }, batchTxManager)
+                .build();
+
+        // 월간정산
+        Step monthlyStep = new StepBuilder("stepSettlementMonthly", jobRepository)
+                .tasklet((contribution, chunkContext) -> {
+                    settlementMonthlyService.getSettlementMonthly();
+                    return RepeatStatus.FINISHED;
+                }, batchTxManager)
+                .build();
+
+        return new JobBuilder("settlementWeeklyMonthlyJob", jobRepository)
+                .start(weeklyStep)
+                .next(monthlyStep)
                 .build();
     }
 }
