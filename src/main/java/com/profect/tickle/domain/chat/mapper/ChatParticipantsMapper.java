@@ -39,7 +39,7 @@ public interface ChatParticipantsMapper {
      */
     int countActiveParticipants(@Param("roomId") Long roomId);
 
-    /**
+        /**
      * 사용자가 참여 중인 채팅방 목록 조회 (복잡한 정보 포함)
      */
     List<ChatParticipantsResponseDto> findMyChatRooms(@Param("memberId") Long memberId);
