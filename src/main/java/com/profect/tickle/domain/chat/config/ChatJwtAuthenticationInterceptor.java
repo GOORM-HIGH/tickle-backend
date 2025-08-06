@@ -42,20 +42,20 @@ public class ChatJwtAuthenticationInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            String userIdStr = jwtUtil.getUserId(token); // 이메일 반환
+            String email = jwtUtil.getEmail(token); // 이메일 반환
 
             // ✅ 수정: 이메일로 사용자 ID 조회
-            Long memberId = getMemberIdByEmail(userIdStr);
+            Long memberId = getMemberIdByEmail(email);
 
             if (memberId == null) {
-                log.warn("존재하지 않는 사용자: email={}", userIdStr);
+                log.warn("존재하지 않는 사용자: email={}", email);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "존재하지 않는 사용자입니다.");
                 return false;
             }
 
             request.setAttribute("currentMemberId", memberId);
 
-            log.debug("JWT 인증 성공: email={}, memberId={}, uri={}", userIdStr, memberId, requestURI);
+            log.debug("JWT 인증 성공: email={}, memberId={}, uri={}", email, memberId, requestURI);
             return true;
 
         } catch (Exception e) {
