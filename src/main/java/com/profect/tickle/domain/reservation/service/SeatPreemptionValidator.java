@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.reservation.service;
 
-import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequest;
+import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequestDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -17,7 +17,7 @@ public class SeatPreemptionValidator {
 
     private final SeatRepository seatRepository;
 
-    public void validateRequest(SeatPreemptionRequest request, Long userId) {
+    public void validateRequest(SeatPreemptionRequestDto request, Long userId) {
         // 1. 사용자의 기존 선점 좌석 수 확인
         int currentPreemptedCount = seatRepository.countByPreemptUserIdAndPreemptedUntilAfter(
                 userId, Instant.now());

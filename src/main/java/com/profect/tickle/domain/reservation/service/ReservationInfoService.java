@@ -3,8 +3,8 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.event.dto.response.CouponResponseDto;
 import com.profect.tickle.domain.event.service.CouponService;
 import com.profect.tickle.domain.point.service.PointService;
-import com.profect.tickle.domain.reservation.dto.response.PreemptedSeatInfo;
-import com.profect.tickle.domain.reservation.dto.response.ReservationInfoResponse;
+import com.profect.tickle.domain.reservation.dto.response.preemption.PreemptedSeatInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationInfoResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -25,7 +25,7 @@ public class ReservationInfoService {
     private final PointService pointService;
     private final CouponService couponService;
 
-    public ReservationInfoResponse getReservationInfo(String preemptionToken) {
+    public ReservationInfoResponseDto getReservationInfo(String preemptionToken) {
         // 1. 선점된 좌석들 조회
         List<Seat> seats = seatRepository.findByPreemptionToken(preemptionToken);
 
@@ -52,7 +52,7 @@ public class ReservationInfoService {
                 .map(this::convertToPreemptedSeatInfo)
                 .collect(Collectors.toList());
 
-        return ReservationInfoResponse.builder()
+        return ReservationInfoResponseDto.builder()
                 .seats(seatInfos)
                 .totalAmount(totalAmount)
                 .currentPoints(currentPoints)

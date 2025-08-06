@@ -3,7 +3,7 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.performance.entity.HallType;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
-import com.profect.tickle.domain.reservation.dto.response.SeatInfoResponse;
+import com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.entity.SeatTemplate;
@@ -46,7 +46,7 @@ public class SeatService {
         seatRepository.saveAll(seats);
     }
 
-    public List<SeatInfoResponse> getSeatInfoListByPerformance(Long performanceId) {
+    public List<SeatInfoResponseDto> getSeatInfoListByPerformance(Long performanceId) {
         List<Seat> seats = seatRepository.findByPerformanceIdOrderBySeatNumber(performanceId);
 
         return seats.stream()
@@ -111,8 +111,8 @@ public class SeatService {
                 .toList();
     }
 
-    private SeatInfoResponse convertToSeatStatusResponse(Seat seat) {
-        return SeatInfoResponse.builder()
+    private SeatInfoResponseDto convertToSeatStatusResponse(Seat seat) {
+        return SeatInfoResponseDto.builder()
                 .seatId(seat.getId())
                 .seatNumber(seat.getSeatNumber())
                 .seatGrade(seat.getSeatGrade())

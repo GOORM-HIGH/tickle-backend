@@ -8,9 +8,9 @@ import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.point.service.PointService;
-import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequest;
-import com.profect.tickle.domain.reservation.dto.response.ReservationCompletionResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservedSeatInfo;
+import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatInfo;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -44,7 +44,7 @@ public class ReservationService {
     private final PointService pointService;
     private final CouponService couponService;
 
-    public ReservationCompletionResponse completeReservation(ReservationCompletionRequest request) {
+    public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
 
         Long userId = SecurityUtil.getSignInMemberId();
 
@@ -96,11 +96,11 @@ public class ReservationService {
 
             Integer remainingPoints = pointService.getCurrentPoint().credit();
 
-            return ReservationCompletionResponse.success(reservation, reservedSeats, remainingPoints);
+            return ReservationCompletionResponseDto.success(reservation, reservedSeats, remainingPoints);
 
         } catch (BusinessException e) {
             log.error("Reservation completion failed", e);
-            return ReservationCompletionResponse.failure(e.getMessage());
+            return ReservationCompletionResponseDto.failure(e.getMessage());
         }
     }
 
@@ -130,7 +130,7 @@ public class ReservationService {
         return seats;
     }
 
-    private void validatePaymentAmount(List<Seat> seats, ReservationCompletionRequest request) {
+    private void validatePaymentAmount(List<Seat> seats, ReservationCompletionRequestDto request) {
         Integer calculatedTotal = seats.stream()
                 .mapToInt(Seat::getSeatPrice)
                 .sum();

@@ -1,8 +1,8 @@
 package com.profect.tickle.domain.reservation.controller;
 
-import com.profect.tickle.domain.reservation.dto.response.ReservationCancelResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationDetailResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationHistoryResponse;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCancelResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDetailResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationHistoryResponseDto;
 import com.profect.tickle.domain.reservation.service.ReservationHistoryService;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
@@ -33,14 +33,14 @@ public class ReservationHistoryController {
     @Operation(summary = "예매 내역 목록 조회", description = "사용자의 예매 내역을 페이징하여 조회합니다.")
     @GetMapping("/history")
     @PreAuthorize("hasRole('MEMBER')")
-    public ResultResponse<List<ReservationHistoryResponse>> getReservationHistory(
+    public ResultResponse<List<ReservationHistoryResponseDto>> getReservationHistory(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status) {
 
         Long userId = SecurityUtil.getSignInMemberId();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        List<ReservationHistoryResponse> history = reservationHistoryService
+        List<ReservationHistoryResponseDto> history = reservationHistoryService
                 .getReservationHistory(userId, pageable);
 
         return ResultResponse.of(ResultCode.RESERVATION_HISTORY_SUCCESS, history);
@@ -49,12 +49,12 @@ public class ReservationHistoryController {
     @Operation(summary = "예매 상세 정보 조회", description = "특정 예매의 상세 정보를 조회합니다.")
     @GetMapping("/{reservationId}")
     @PreAuthorize("hasRole('MEMBER')")
-    public ResultResponse<ReservationDetailResponse> getReservationDetail(
+    public ResultResponse<ReservationDetailResponseDto> getReservationDetail(
             @PathVariable Long reservationId) {
 
         Long userId = SecurityUtil.getSignInMemberId();
 
-        ReservationDetailResponse detail = reservationHistoryService
+        ReservationDetailResponseDto detail = reservationHistoryService
                 .getReservationDetail(reservationId, userId);
 
         return ResultResponse.of(ResultCode.RESERVATION_DETAIL_SUCCESS, detail);
@@ -63,10 +63,10 @@ public class ReservationHistoryController {
     @Operation(summary = "예매 취소", description = "예매를 취소합니다.")
     @DeleteMapping("/{reservationId}")
     @PreAuthorize("hasRole('MEMBER')")
-    public ResultResponse<ReservationCancelResponse> cancelReservation(
+    public ResultResponse<ReservationCancelResponseDto> cancelReservation(
             @PathVariable Long reservationId) {
 
-        ReservationCancelResponse response = reservationHistoryService
+        ReservationCancelResponseDto response = reservationHistoryService
                 .cancelReservation(reservationId);
 
         return ResultResponse.of(ResultCode.RESERVATION_CANCEL_SUCCESS, response);

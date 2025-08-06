@@ -1,19 +1,18 @@
 package com.profect.tickle.domain.reservation.service;
 
-import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
-import com.profect.tickle.domain.reservation.dto.response.PaymentInfo;
-import com.profect.tickle.domain.reservation.dto.response.PerformanceInfo;
-import com.profect.tickle.domain.reservation.dto.response.ReservationCancelResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationDetailResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationHistoryResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationInfo;
-import com.profect.tickle.domain.reservation.dto.response.ReservedSeatDetail;
+import com.profect.tickle.domain.reservation.dto.response.reservation.PaymentInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.PerformanceInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCancelResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDetailResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationHistoryResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDetail;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -46,7 +45,7 @@ public class ReservationHistoryService {
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
 
-    public List<ReservationHistoryResponse> getReservationHistory(Long userId, Pageable pageable) {
+    public List<ReservationHistoryResponseDto> getReservationHistory(Long userId, Pageable pageable) {
         Page<Reservation> reservations = reservationRepository.findByMemberIdOrderByCreatedAtDesc(userId, pageable);
 
         return reservations.getContent().stream()
@@ -54,7 +53,7 @@ public class ReservationHistoryService {
                 .collect(Collectors.toList());
     }
 
-    public ReservationDetailResponse getReservationDetail(Long reservationId, Long userId) {
+    public ReservationDetailResponseDto getReservationDetail(Long reservationId, Long userId) {
         Reservation reservation = getReservation(reservationId, userId);
 
         // 좌석 정보 조회
@@ -65,7 +64,7 @@ public class ReservationHistoryService {
 
 
     @Transactional
-    public ReservationCancelResponse cancelReservation(Long reservationId) {
+    public ReservationCancelResponseDto cancelReservation(Long reservationId) {
 
         Long userId = SecurityUtil.getSignInMemberId();
 
@@ -74,7 +73,7 @@ public class ReservationHistoryService {
 
             // 취소 가능 여부 확인
             if (!isCancellable(reservation)) {
-                return ReservationCancelResponse.failure("취소할 수 없는 예매입니다.");
+                return ReservationCancelResponseDto.failure("취소할 수 없는 예매입니다.");
             }
 
             // 좌석 상태 변경 (예매완료 → 예매가능)
@@ -100,21 +99,21 @@ public class ReservationHistoryService {
 
             member.addPoint(refundAmount);
 
-            return ReservationCancelResponse.success(refundAmount);
+            return ReservationCancelResponseDto.success(refundAmount);
 
         } catch (BusinessException e) {
-            return ReservationCancelResponse.failure(e.getMessage());
+            return ReservationCancelResponseDto.failure(e.getMessage());
         }
     }
 
-    private ReservationHistoryResponse convertToHistoryResponse(Reservation reservation) {
+    private ReservationHistoryResponseDto convertToHistoryResponse(Reservation reservation) {
         List<Seat> seats = seatRepository.findByReservationId(reservation.getId());
 
         List<String> seatNumbers = seats.stream()
                 .map(Seat::getSeatNumber)
                 .collect(Collectors.toList());
 
-        return ReservationHistoryResponse.builder()
+        return ReservationHistoryResponseDto.builder()
                 .reservationId(reservation.getId())
                 .reservationNumber(reservation.getCode())
                 .performanceTitle(reservation.getPerformance().getTitle())
@@ -129,7 +128,7 @@ public class ReservationHistoryService {
                 .build();
     }
 
-    private ReservationDetailResponse  convertToDetailResponse(Reservation reservation, List<Seat> seats) {
+    private ReservationDetailResponseDto convertToDetailResponse(Reservation reservation, List<Seat> seats) {
 
         // 공연 정보
         Performance performance = reservation.getPerformance();
@@ -166,7 +165,7 @@ public class ReservationHistoryService {
                 .cancellable(isCancellable(reservation))
                 .build();
 
-        return ReservationDetailResponse.builder()
+        return ReservationDetailResponseDto.builder()
                 .reservationId(reservation.getId())
                 .reservationNumber(reservation.getCode())
                 .performance(performanceInfo)
