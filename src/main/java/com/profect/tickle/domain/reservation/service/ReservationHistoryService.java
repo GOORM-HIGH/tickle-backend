@@ -55,8 +55,7 @@ public class ReservationHistoryService {
     }
 
     public ReservationDetailResponse getReservationDetail(Long reservationId, Long userId) {
-        Reservation reservation = reservationRepository.findByIdAndMemberId(reservationId, userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+        Reservation reservation = getReservation(reservationId, userId);
 
         // 좌석 정보 조회
         List<Seat> seats = seatRepository.findByReservationId(reservationId);
@@ -71,8 +70,7 @@ public class ReservationHistoryService {
         Long userId = SecurityUtil.getSignInMemberId();
 
         try {
-            Reservation reservation = reservationRepository.findByIdAndMemberId(reservationId, userId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+            Reservation reservation = getReservation(reservationId, userId);
 
             // 취소 가능 여부 확인
             if (!isCancellable(reservation)) {
@@ -205,5 +203,10 @@ public class ReservationHistoryService {
         seat.assignReservation(null);
         seat.assignTo(null);
         seat.setStatusTo(availableStatus);
+    }
+
+    private Reservation getReservation(Long reservationId, Long userId) {
+        return reservationRepository.findByIdAndMemberId(reservationId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
     }
 }
