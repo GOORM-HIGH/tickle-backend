@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.time.Instant;
+import com.profect.tickle.global.security.util.JwtUtil;
 
 /**
  * STOMP 프로토콜 기반 채팅 메시지 컨트롤러
@@ -25,6 +26,7 @@ public class StompChatController {
     private final ChatMessageService chatMessageService;
     private final SimpMessagingTemplate messagingTemplate; // STOMP 메시지 전송용
     private final com.profect.tickle.domain.member.repository.MemberRepository memberRepository; // 🎯 추가
+    private final JwtUtil jwtUtil; // 🎯 추가
 
     /**
      * 채팅방 참여 처리
@@ -190,76 +192,123 @@ public class StompChatController {
     }
 
     /**
-     * JWT 토큰에서 사용자 ID 추출
+     * JWT 토큰에서 사용자 ID 추출 (개선된 버전)
      */
     private Long extractUserIdFromToken(SimpMessageHeaderAccessor headerAccessor) {
         try {
-            // 🎯 모든 헤더 로깅
             log.info("🎯 모든 헤더: {}", headerAccessor.toNativeHeaderMap());
-            
-            // JWT 토큰에서 사용자 정보 추출
-            String token = headerAccessor.getFirstNativeHeader("Authorization");
-            log.info("🎯 Authorization 헤더: {}", token);
-            
-            if (token != null && token.startsWith("Bearer ")) {
-                token = token.substring(7);
-                
-                log.info("🎯 JWT 토큰 (처리 후): {}", token.substring(0, Math.min(50, token.length())) + "...");
-                
-                // JWT 토큰 파싱
-                String[] parts = token.split("\\.");
-                log.info("🎯 JWT parts.length: {}", parts.length);
-                
-                if (parts.length == 3) {
-                    String payload = parts[1];
-                    log.info("🎯 JWT payload (원본): {}", payload);
+
+            // 🎯 먼저 인터셉터에서 보존된 JWT 토큰 확인
+            String token = (String) headerAccessor.getHeader("JWT_TOKEN");
+
+            if (token == null) {
+                // 🎯 보존된 토큰이 없으면 네이티브 헤더에서 추출
+                token = headerAccessor.getFirstNativeHeader("Authorization");
+                if (token != null && token.startsWith("Bearer ")) {
+                    token = token.substring(7);
+                }
+            }
+
+            log.info("🎯 추출된 JWT 토큰: {}", token != null ? token.substring(0, Math.min(50, token.length())) + "..." : "null");
+
+            if (token != null) {
+                // 🎯 JWT 토큰 검증
+                if (!jwtUtil.validateToken(token)) {
+                    log.warn("🎯 유효하지 않은 JWT 토큰");
+                    return 1L;
+                }
+
+                // 🎯 JWT에서 직접 userId 추출 시도
+                try {
+                    Long userId = jwtUtil.getUserId(token);
+                    log.info("🎯 JwtUtil.getUserId() 결과: {}", userId);
                     
-                    // Base64 디코딩 (패딩 추가)
-                    while (payload.length() % 4 != 0) {
-                        payload += "=";
+                    if (userId != null) {
+                        log.info("🎯 JWT에서 직접 추출한 userId: {}", userId);
+                        return userId;
+                    } else {
+                        log.warn("🎯 JWT에 userId가 없음, 이메일로 조회 시도");
+                        // fallback: 이메일로 조회
+                        String email = jwtUtil.getEmail(token);
+                        log.info("🎯 JWT에서 추출한 이메일: {}", email);
+                        return getUserIdByEmail(email);
                     }
-                    log.info("🎯 JWT payload (패딩 후): {}", payload);
-                    
-                    String decodedPayload = new String(java.util.Base64.getDecoder().decode(payload));
-                    log.info("🎯 JWT 페이로드 (디코딩 후): {}", decodedPayload);
-                    
-                    // Jackson을 사용한 안전한 JSON 파싱
-                    try {
-                        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                        com.fasterxml.jackson.databind.JsonNode jsonNode = mapper.readTree(decodedPayload);
-                        
-                        log.info("🎯 JSON 파싱 성공: {}", jsonNode.toString());
-                        
-                        if (jsonNode.has("sub")) {
-                            String email = jsonNode.get("sub").asText();
-                            log.info("🎯 JWT에서 추출한 이메일: {}", email);
-                            
-                            // 이메일로 사용자 ID 조회
-                            return getUserIdByEmail(email);
-                        } else {
-                            log.warn("🎯 JWT 페이로드에 'sub' 필드가 없습니다. 사용 가능한 필드: {}", jsonNode.fieldNames());
-                        }
-                    } catch (Exception jsonException) {
-                        log.error("🎯 JSON 파싱 실패: {}", jsonException.getMessage(), jsonException);
-                        // 기존 방식으로 fallback
-                        if (decodedPayload.contains("\"sub\":")) {
-                            String email = extractEmailFromPayload(decodedPayload);
-                            log.info("🎯 Fallback - JWT에서 추출한 이메일: {}", email);
-                            return getUserIdByEmail(email);
-                        }
-                    }
-                } else {
-                    log.warn("🎯 JWT 토큰 형식이 올바르지 않습니다. parts.length={}", parts.length);
+                } catch (Exception e) {
+                    log.error("🎯 JwtUtil 사용 실패: {}", e.getMessage(), e);
+                    // 기존 방식으로 fallback
+                    return extractUserIdFromTokenFallback(token);
                 }
             } else {
-                log.warn("🎯 Authorization 헤더가 없거나 Bearer 형식이 아닙니다: {}", token);
+                log.warn("🎯 JWT 토큰을 찾을 수 없습니다");
             }
         } catch (Exception e) {
             log.error("🎯 JWT 토큰에서 사용자 ID 추출 실패: {}", e.getMessage(), e);
         }
-        
+
         // 기본값 반환 (임시)
         log.warn("🎯 JWT 토큰에서 사용자 ID 추출 실패, 기본값 1 사용");
+        return 1L;
+    }
+
+    /**
+     * 기존 방식으로 JWT에서 사용자 ID 추출 (fallback)
+     */
+    private Long extractUserIdFromTokenFallback(String token) {
+        try {
+            // JWT 토큰 파싱
+            String[] parts = token.split("\\.");
+            log.info("🎯 JWT parts.length: {}", parts.length);
+
+            if (parts.length == 3) {
+                String payload = parts[1];
+                log.info("🎯 JWT payload (원본): {}", payload);
+
+                // Base64 디코딩 (패딩 추가)
+                while (payload.length() % 4 != 0) {
+                    payload += "=";
+                }
+                log.info("🎯 JWT payload (패딩 후): {}", payload);
+
+                String decodedPayload = new String(java.util.Base64.getDecoder().decode(payload));
+                log.info("🎯 JWT 페이로드 (디코딩 후): {}", decodedPayload);
+
+                // Jackson을 사용한 안전한 JSON 파싱
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    com.fasterxml.jackson.databind.JsonNode jsonNode = mapper.readTree(decodedPayload);
+
+                    log.info("🎯 JSON 파싱 성공: {}", jsonNode.toString());
+
+                    // 🎯 userId 클레임 확인
+                    if (jsonNode.has("userId")) {
+                        Long userId = jsonNode.get("userId").asLong();
+                        log.info("🎯 JWT에서 직접 추출한 userId: {}", userId);
+                        return userId;
+                    }
+
+                    // 🎯 이메일로 조회 (기존 방식)
+                    if (jsonNode.has("sub")) {
+                        String email = jsonNode.get("sub").asText();
+                        log.info("🎯 JWT에서 추출한 이메일: {}", email);
+                        return getUserIdByEmail(email);
+                    } else {
+                        log.warn("🎯 JWT 페이로드에 'sub' 필드가 없습니다. 사용 가능한 필드: {}", jsonNode.fieldNames());
+                    }
+                } catch (Exception jsonException) {
+                    log.error("🎯 JSON 파싱 실패: {}", jsonException.getMessage(), jsonException);
+                    // 기존 방식으로 fallback
+                    if (decodedPayload.contains("\"sub\":")) {
+                        String email = extractEmailFromPayload(decodedPayload);
+                        log.info("🎯 Fallback - JWT에서 추출한 이메일: {}", email);
+                        return getUserIdByEmail(email);
+                    }
+                }
+            } else {
+                log.warn("🎯 JWT 토큰 형식이 올바르지 않습니다. parts.length={}", parts.length);
+            }
+        } catch (Exception e) {
+            log.error("🎯 JWT 토큰 파싱 실패: {}", e.getMessage(), e);
+        }
         return 1L;
     }
 
@@ -288,18 +337,32 @@ public class StompChatController {
      */
     private Long getUserIdByEmail(String email) {
         try {
+            log.info("🎯 이메일로 사용자 조회 시작: email={}", email);
+            
             // 🎯 MemberRepository를 사용해서 실제 사용자 ID 조회
             var member = memberRepository.findByEmail(email);
+            
             if (member.isPresent()) {
+                Long memberId = member.get().getId();
+                String nickname = member.get().getNickname();
                 log.info("🎯 이메일로 사용자 조회 성공: email={}, memberId={}, nickname={}", 
-                        email, member.get().getId(), member.get().getNickname());
-                return member.get().getId();
+                        email, memberId, nickname);
+                return memberId;
             } else {
-                log.warn("🎯 이메일로 사용자 조회 실패: email={}", email);
+                log.warn("🎯 이메일로 사용자 조회 실패: email={} - 사용자를 찾을 수 없습니다", email);
+                
+                // 🎯 디버깅: 전체 사용자 목록 조회
+                log.info("🎯 전체 사용자 목록 조회:");
+                var allMembers = memberRepository.findAll();
+                for (var m : allMembers) {
+                    log.info("🎯 사용자: ID={}, email={}, nickname={}", m.getId(), m.getEmail(), m.getNickname());
+                }
             }
         } catch (Exception e) {
-            log.error("이메일로 사용자 ID 조회 실패: {}", e.getMessage(), e);
+            log.error("🎯 이메일로 사용자 ID 조회 중 예외 발생: email={}, error={}", email, e.getMessage(), e);
         }
+        
+        log.warn("🎯 이메일로 사용자 조회 실패, 기본값 1 반환: email={}", email);
         return 1L;
     }
 

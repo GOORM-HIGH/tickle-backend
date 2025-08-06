@@ -1,6 +1,7 @@
 package com.profect.tickle.global.security.config;
 
-import com.profect.tickle.domain.member.entity.MemberRole;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.global.security.filter.CustomAuthenticationFilter;
 import com.profect.tickle.global.security.filter.JwtFilter;
@@ -39,6 +40,8 @@ public class SecurityConfig {
     private final MemberService memberService;
     private final TokenProperties tokenProperties;
     private final JwtUtil jwtUtil;
+    private final MemberRepository memberRepository; // 🎯 추가
+    private final ObjectMapper objectMapper; // 🎯 추가
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -101,7 +104,8 @@ public class SecurityConfig {
     private Filter getAuthenticationFilter() {
         CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter();
         customAuthenticationFilter.setAuthenticationManager(getAuthenticationManager());
-        customAuthenticationFilter.setAuthenticationSuccessHandler(new SignInSuccessHandler(tokenProperties));
+        // 🎯 수정: 필요한 의존성들을 주입하여 SignInSuccessHandler 생성
+        customAuthenticationFilter.setAuthenticationSuccessHandler(new SignInSuccessHandler(tokenProperties, memberRepository, objectMapper));
         customAuthenticationFilter.setAuthenticationFailureHandler(new SignInFailureHandler());
 
         return customAuthenticationFilter;
