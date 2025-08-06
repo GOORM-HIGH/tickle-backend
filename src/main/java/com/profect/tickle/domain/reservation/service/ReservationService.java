@@ -14,6 +14,7 @@ import com.profect.tickle.domain.reservation.dto.response.ReservedSeatInfo;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
+import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -75,7 +76,7 @@ public class ReservationService {
 
             // 6. 포인트 차감 // 아래 로직 추후 리팩터링 예정
             Member member = memberRepository.findById(userId)
-                    .orElseThrow();
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             Point point = member.deductPoint(finalAmount, PointTarget.RESERVATION);
 
@@ -97,7 +98,7 @@ public class ReservationService {
 
             return ReservationCompletionResponse.success(reservation, reservedSeats, remainingPoints);
 
-        } catch (Exception e) {
+        } catch (BusinessException e) {
             log.error("Reservation completion failed", e);
             return ReservationCompletionResponse.failure(e.getMessage());
         }
@@ -107,22 +108,22 @@ public class ReservationService {
         List<Seat> seats = seatRepository.findByPreemptionTokenWithLock(preemptionToken);
 
         if (seats.isEmpty()) {
-            throw new IllegalArgumentException("유효하지 않은 선점 토큰입니다.");
+            throw new BusinessException(ErrorCode.PREEMPTION_TOKEN_INVALID);
         }
 
         Instant now = Instant.now();
 
         for (Seat seat : seats) {
             if (!userId.equals(seat.getPreemptUserId())) {
-                throw new IllegalArgumentException("선점 권한이 없습니다.");
+                throw new BusinessException(ErrorCode.PREEMPTION_PERMISSION_DENIED);
             }
 
             if (seat.getPreemptedUntil() == null || seat.getPreemptedUntil().isBefore(now)) {
-                throw new IllegalArgumentException("선점 시간이 만료되었습니다.");
+                throw new BusinessException(ErrorCode.PREEMPTION_EXPIRED);
             }
 
             if (seat.getReservation() != null) {
-                throw new IllegalArgumentException("이미 예매된 좌석이 포함되어 있습니다.");
+                throw new BusinessException(ErrorCode.RESERVATION_ALREADY_RESERVED);
             }
         }
 
@@ -135,7 +136,7 @@ public class ReservationService {
                 .sum();
 
         if (!calculatedTotal.equals(request.getTotalAmount())) {
-            throw new IllegalArgumentException("총 금액이 일치하지 않습니다.");
+            throw new BusinessException(ErrorCode.RESERVATION_AMOUNT_MISMATCH);
         }
     }
 
@@ -147,7 +148,7 @@ public class ReservationService {
         Performance performance = seats.get(0).getPerformance();
 
         Status paidStatus = statusRepository.findById(ReservationStatus.PAID.getId())
-                .orElseThrow();
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
         Reservation reservation = Reservation.create(
                 member,
@@ -160,8 +161,8 @@ public class ReservationService {
     }
 
     private void updateSeatsToReserved(List<Seat> seats, Reservation reservation) {
-        Status reservedStatus = statusRepository.findById(13L)
-                .orElseThrow(() -> new IllegalStateException("예매완료 상태를 찾을 수 없습니다."));
+        Status reservedStatus = statusRepository.findById(SeatStatus.RESERVED.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
         for (Seat seat : seats) {
             seat.assignReservation(reservation);

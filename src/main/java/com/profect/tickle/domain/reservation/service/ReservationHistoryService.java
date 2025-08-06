@@ -20,6 +20,8 @@ import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
@@ -41,7 +43,6 @@ public class ReservationHistoryService {
     private final ReservationRepository reservationRepository;
     private final SeatRepository seatRepository;
     private final StatusRepository statusRepository;
-    private final CouponRepository couponRepository;
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
 
@@ -55,7 +56,7 @@ public class ReservationHistoryService {
 
     public ReservationDetailResponse getReservationDetail(Long reservationId, Long userId) {
         Reservation reservation = reservationRepository.findByIdAndMemberId(reservationId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("예매 내역을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
 
         // 좌석 정보 조회
         List<Seat> seats = seatRepository.findByReservationId(reservationId);
@@ -70,9 +71,8 @@ public class ReservationHistoryService {
         Long userId = SecurityUtil.getSignInMemberId();
 
         try {
-            Reservation reservation = reservationRepository.findByIdAndMemberId(reservationId,
-                            userId)
-                    .orElseThrow(() -> new IllegalArgumentException("예매 내역을 찾을 수 없습니다."));
+            Reservation reservation = reservationRepository.findByIdAndMemberId(reservationId, userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
 
             // 취소 가능 여부 확인
             if (!isCancellable(reservation)) {
@@ -85,7 +85,7 @@ public class ReservationHistoryService {
 
             // 예매 상태 변경
             Status canceled = statusRepository.findById(ReservationStatus.CANCELED.getId())
-                    .orElseThrow();
+                    .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
             reservation.changeStatusTo(canceled);
 
@@ -95,7 +95,7 @@ public class ReservationHistoryService {
             Integer refundAmount = reservation.getPrice();
 
             Member member = memberRepository.findById(userId)
-                    .orElseThrow();
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             Point point = Point.refund(member, refundAmount, PointTarget.REFUND);
             pointRepository.save(point);
@@ -104,7 +104,7 @@ public class ReservationHistoryService {
 
             return ReservationCancelResponse.success(refundAmount);
 
-        } catch (Exception e) {
+        } catch (BusinessException e) {
             return ReservationCancelResponse.failure(e.getMessage());
         }
     }
@@ -192,7 +192,7 @@ public class ReservationHistoryService {
 
     private void updateSeatsToAvailable(List<Seat> seats) {
         Status availableStatus = statusRepository.findById(SeatStatus.AVAILABLE.getId())
-                .orElseThrow(() -> new IllegalStateException("예매가능 상태를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
         for (Seat seat : seats) {
             cancelSeatsOfReservation(seat, availableStatus);

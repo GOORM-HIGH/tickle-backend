@@ -3,6 +3,8 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequest;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,9 +25,7 @@ public class SeatPreemptionValidator {
         int requestedCount = request.getSeatIds().size();
 
         if (currentPreemptedCount + requestedCount > 5) {
-            throw new IllegalArgumentException(
-                    String.format("좌석은 최대 5개까지 선점할 수 있습니다. (현재: %d개, 요청: %d개)",
-                            currentPreemptedCount, requestedCount));
+            throw new BusinessException(ErrorCode.PREEMPTION_LIMIT_EXCEEDED);
         }
 
         // 2. 중복 선점 확인
@@ -33,7 +33,7 @@ public class SeatPreemptionValidator {
                 .findPreemptedSeatIdsByUserAndSeatIds(userId, request.getSeatIds());
 
         if (!alreadyPreemptedByUser.isEmpty()) {
-            throw new IllegalArgumentException("이미 선점한 좌석이 포함되어 있습니다.");
+            throw new BusinessException(ErrorCode.PREEMPTION_DUPLICATE_SEAT);
         }
     }
 

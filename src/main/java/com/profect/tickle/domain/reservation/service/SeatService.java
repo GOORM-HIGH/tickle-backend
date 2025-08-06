@@ -9,6 +9,8 @@ import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.entity.SeatTemplate;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import java.time.Instant;
@@ -25,8 +27,6 @@ public class SeatService {
     private final SeatTemplateRepository seatTemplateRepository;
     private final StatusRepository statusRepository;
     private final SeatRepository seatRepository;
-
-    private static final Long SEAT_AVAILABLE_STATUS_ID = 11L;
 
     public void createSeatsForPerformance(Long performanceId) {
 
@@ -56,8 +56,7 @@ public class SeatService {
 
     private Performance findPerformanceById(Long performanceId) {
         return performanceRepository.findById(performanceId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("ID가 %d인 공연을 찾을 수 없습니다.", performanceId)));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
     }
 
     /**
@@ -66,8 +65,7 @@ public class SeatService {
     private HallType findHallTypeByPerformanceId(Long performanceId) {
         HallType hallType = performanceRepository.findHallTypeById(performanceId);
         if (hallType == null) {
-            throw new IllegalStateException(
-                    String.format("공연 ID %d에 대한 홀 타입을 찾을 수 없습니다.", performanceId));
+            throw new BusinessException(ErrorCode.HALL_TYPE_NOT_FOUND);
         }
         return hallType;
     }
@@ -78,8 +76,7 @@ public class SeatService {
     private List<SeatTemplate> findSeatTemplatesByHallType(HallType hallType) {
         List<SeatTemplate> seatTemplates = seatTemplateRepository.findByHallType(hallType);
         if (seatTemplates.isEmpty()) {
-            throw new IllegalStateException(
-                    String.format("홀 타입 %s에 대한 좌석 템플릿을 찾을 수 없습니다.", hallType));
+            throw new BusinessException(ErrorCode.SEAT_TEMPLATE_NOT_FOUND);
         }
         return seatTemplates;
     }
@@ -89,9 +86,7 @@ public class SeatService {
      */
     private Status findAvailableStatus() {
         return statusRepository.findById(SeatStatus.AVAILABLE.getId())
-                .orElseThrow(() -> new IllegalStateException(
-                        String.format("ID가 %d인 좌석 예매 가능 상태를 찾을 수 없습니다.",
-                                SeatStatus.AVAILABLE.getId())));
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
 
     /**
