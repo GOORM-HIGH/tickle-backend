@@ -34,6 +34,9 @@
                  LEFT JOIN member m ON c.member_id = m.member_id
         WHERE c.chat_room_id = #{roomId}
           AND c.chat_is_deleted = false
+          <if test="lastMessageId != null">
+              AND c.chat_id &lt; #{lastMessageId}
+          </if>
         ORDER BY c.chat_created_at DESC
             LIMIT #{size} OFFSET #{offset}
     </select>
@@ -46,7 +49,7 @@
         AND c.chat_is_deleted = false
 
         <if test="lastMessageId != null">
-            AND c.chat_id > #{lastMessageId}
+            AND c.chat_id &lt; #{lastMessageId}
         </if>
     </select>
 

@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.repository.MemberRepository;
 
 @Component
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private final OnlineUserService onlineUserService;
     private final WebSocketSessionManager sessionManager;
     private final ObjectMapper objectMapper;
+    private final MemberRepository memberRepository;
 
     // 채팅 전용 세션 관리 (roomId -> sessionId -> WebSocketSession)
     private final ConcurrentMap<Long, ConcurrentMap<String, WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
@@ -304,14 +307,36 @@ public class ChatWebSocketHandler implements WebSocketHandler {
 
                 // 🎯 각 세션별로 isMyMessage 개별 계산
                 Long targetUserId = sessionToUserId.get(sessionId);
-                boolean isMyMessage = requestDto.getSenderId().equals(targetUserId);
+                // 🎯 실제 발신자 ID 사용 (savedMessage에서 가져오기)
+                Long actualSenderId = savedMessage.getMemberId();
+                boolean isMyMessage = actualSenderId.equals(targetUserId);
 
-                // 🎯 올바른 닉네임 사용 (savedMessage에서 가져오기)
+                // 🎯 올바른 닉네임 사용
                 String senderNickname = savedMessage.getSenderNickname();
-                if (senderNickname == null || senderNickname.isEmpty()) {
-                    // 백업: requestDto에서 가져오기 (이메일이 아닌 닉네임이어야 함)
-                    senderNickname = requestDto.getSenderNickname();
-                    log.warn("savedMessage에서 senderNickname이 null입니다. requestDto에서 가져옵니다: {}", senderNickname);
+                
+                // senderNickname이 null이거나 이메일인 경우 Member 엔티티에서 조회
+                if (senderNickname == null || senderNickname.isEmpty() || senderNickname.contains("@")) {
+                    try {
+                        Member sender = memberRepository.findById(actualSenderId).orElse(null);
+                        if (sender != null && sender.getNickname() != null && !sender.getNickname().isEmpty()) {
+                            senderNickname = sender.getNickname();
+                            log.info("Member 엔티티에서 닉네임 조회 성공: senderId={}, nickname={}", actualSenderId, senderNickname);
+                        } else {
+                            // Member가 없거나 닉네임이 없는 경우
+                            if (sender == null) {
+                                log.warn("Member를 찾을 수 없음: senderId={}", actualSenderId);
+                                senderNickname = "알 수 없는 사용자";
+                            } else {
+                                log.warn("Member의 닉네임이 비어있음: senderId={}, nickname={}", actualSenderId, sender.getNickname());
+                                senderNickname = "닉네임 없음";
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("Member 조회 중 오류: senderId={}, error={}", actualSenderId, e.getMessage());
+                        senderNickname = "알 수 없는 사용자";
+                    }
+                } else {
+                    log.info("savedMessage에서 닉네임 사용: senderId={}, nickname={}", actualSenderId, senderNickname);
                 }
 
                 // 개별 응답 DTO 생성
@@ -319,7 +344,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .type("MESSAGE")
                         .messageId(savedMessage.getId())
                         .chatRoomId(requestDto.getChatRoomId())
-                        .senderId(requestDto.getSenderId())
+                        .senderId(actualSenderId) // 🎯 실제 발신자 ID 사용
                         .senderNickname(senderNickname) // 🎯 올바른 닉네임 사용
                         .messageType(requestDto.getMessageType())
                         .content(requestDto.getContent())
@@ -335,8 +360,8 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                 String messageJson = objectMapper.writeValueAsString(response);
                 targetSession.sendMessage(new TextMessage(messageJson));
 
-                log.debug("메시지 전송 완료: sessionId={}, userId={}, isMyMessage={}, senderNickname={}",
-                        sessionId, targetUserId, isMyMessage, senderNickname);
+                log.debug("메시지 전송 완료: sessionId={}, targetUserId={}, actualSenderId={}, isMyMessage={}, senderNickname={}",
+                        sessionId, targetUserId, actualSenderId, isMyMessage, senderNickname);
 
             } catch (Exception e) {
                 log.error("메시지 전송 실패: sessionId={}, error={}", entry.getKey(), e.getMessage());
