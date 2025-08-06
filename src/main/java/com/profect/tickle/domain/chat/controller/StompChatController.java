@@ -194,29 +194,41 @@ public class StompChatController {
      */
     private Long extractUserIdFromToken(SimpMessageHeaderAccessor headerAccessor) {
         try {
+            // 🎯 모든 헤더 로깅
+            log.info("🎯 모든 헤더: {}", headerAccessor.toNativeHeaderMap());
+            
             // JWT 토큰에서 사용자 정보 추출
             String token = headerAccessor.getFirstNativeHeader("Authorization");
+            log.info("🎯 Authorization 헤더: {}", token);
+            
             if (token != null && token.startsWith("Bearer ")) {
                 token = token.substring(7);
                 
-                log.info("🎯 JWT 토큰: {}", token.substring(0, Math.min(50, token.length())) + "...");
+                log.info("🎯 JWT 토큰 (처리 후): {}", token.substring(0, Math.min(50, token.length())) + "...");
                 
                 // JWT 토큰 파싱
                 String[] parts = token.split("\\.");
+                log.info("🎯 JWT parts.length: {}", parts.length);
+                
                 if (parts.length == 3) {
                     String payload = parts[1];
+                    log.info("🎯 JWT payload (원본): {}", payload);
+                    
                     // Base64 디코딩 (패딩 추가)
                     while (payload.length() % 4 != 0) {
                         payload += "=";
                     }
-                    String decodedPayload = new String(java.util.Base64.getDecoder().decode(payload));
+                    log.info("🎯 JWT payload (패딩 후): {}", payload);
                     
-                    log.info("🎯 JWT 페이로드: {}", decodedPayload);
+                    String decodedPayload = new String(java.util.Base64.getDecoder().decode(payload));
+                    log.info("🎯 JWT 페이로드 (디코딩 후): {}", decodedPayload);
                     
                     // Jackson을 사용한 안전한 JSON 파싱
                     try {
                         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                         com.fasterxml.jackson.databind.JsonNode jsonNode = mapper.readTree(decodedPayload);
+                        
+                        log.info("🎯 JSON 파싱 성공: {}", jsonNode.toString());
                         
                         if (jsonNode.has("sub")) {
                             String email = jsonNode.get("sub").asText();
@@ -225,10 +237,10 @@ public class StompChatController {
                             // 이메일로 사용자 ID 조회
                             return getUserIdByEmail(email);
                         } else {
-                            log.warn("🎯 JWT 페이로드에 'sub' 필드가 없습니다: {}", decodedPayload);
+                            log.warn("🎯 JWT 페이로드에 'sub' 필드가 없습니다. 사용 가능한 필드: {}", jsonNode.fieldNames());
                         }
                     } catch (Exception jsonException) {
-                        log.error("🎯 JSON 파싱 실패: {}", jsonException.getMessage());
+                        log.error("🎯 JSON 파싱 실패: {}", jsonException.getMessage(), jsonException);
                         // 기존 방식으로 fallback
                         if (decodedPayload.contains("\"sub\":")) {
                             String email = extractEmailFromPayload(decodedPayload);
@@ -240,8 +252,7 @@ public class StompChatController {
                     log.warn("🎯 JWT 토큰 형식이 올바르지 않습니다. parts.length={}", parts.length);
                 }
             } else {
-                log.warn("🎯 Authorization 헤더가 없거나 Bearer 형식이 아닙니다: {}", 
-                        headerAccessor.getFirstNativeHeader("Authorization"));
+                log.warn("🎯 Authorization 헤더가 없거나 Bearer 형식이 아닙니다: {}", token);
             }
         } catch (Exception e) {
             log.error("🎯 JWT 토큰에서 사용자 ID 추출 실패: {}", e.getMessage(), e);
