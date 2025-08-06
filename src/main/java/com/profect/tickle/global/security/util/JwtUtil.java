@@ -49,7 +49,7 @@ public class JwtUtil {
     /* 넘어온 AccessToken으로 인증 객체 추출 */
     public Authentication getAuthentication(String token) {
         /* 토큰을 들고 왔던 들고 오지 않았던(로그인 시) 동일하게 security가 관리 할 UserDetails 타입을 정의 */
-        UserDetails userDetails = memberService.loadUserByUsername(this.getUserId(token));
+        UserDetails userDetails = memberService.loadUserByUsername(this.getEmail(token));
 
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
@@ -59,8 +59,33 @@ public class JwtUtil {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
     }
 
-    /* Token에서 사용자의 id(subject 클레임) 추출 */
-    public String getUserId(String token) {
+    /* Token에서 사용자의 이메일(subject 클레임) 추출 */
+    public String getEmail(String token) {
         return parseClaims(token).getSubject();
+    }
+
+    /* Token에서 사용자의 ID(userId 클레임) 추출 */
+    public Long getUserId(String token) {
+        Claims claims = parseClaims(token);
+        log.info("🎯 JWT 클레임 전체: {}", claims);
+        log.info("🎯 JWT 클레임 키들: {}", claims.keySet());
+        
+        if (claims.containsKey("userId")) {
+            Long userId = claims.get("userId", Long.class);
+            log.info("🎯 JWT에서 userId 클레임 발견: {}", userId);
+            return userId;
+        } else {
+            log.warn("🎯 JWT에 userId 클레임이 없습니다. 사용 가능한 클레임: {}", claims.keySet());
+        }
+        return null;
+    }
+
+    /* Token에서 사용자의 닉네임(nickname 클레임) 추출 */
+    public String getNickname(String token) {
+        Claims claims = parseClaims(token);
+        if (claims.containsKey("nickname")) {
+            return claims.get("nickname", String.class);
+        }
+        return null;
     }
 }
