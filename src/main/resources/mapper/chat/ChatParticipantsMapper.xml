@@ -22,7 +22,10 @@
             (SELECT COUNT(*)
              FROM chat c
              WHERE c.chat_room_id = #{roomId}
-               AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
+               AND c.chat_id > CASE 
+                 WHEN cp.chat_participants_last_read_message_id > 1000000000000 THEN 0  -- 타임스탬프인 경우 0으로 처리
+                 ELSE COALESCE(cp.chat_participants_last_read_message_id, 0)
+               END
                AND c.chat_is_deleted = false) as unreadMessageCount
 
         FROM chat_participants cp
@@ -51,7 +54,8 @@
                      FROM chat c
                      WHERE c.chat_room_id = #{roomId}
                        AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
-                       AND c.chat_is_deleted = false), 0
+                       AND c.chat_is_deleted = false
+                       AND c.member_id != #{memberId}), 0  -- ✅ 내가 보낸 메시지 제외
             ) as unread_count,
             cp.chat_participants_last_read_message_id,
             cp.chat_participants_last_read_at
@@ -88,7 +92,8 @@
              FROM chat c
              WHERE c.chat_room_id = cp.chat_room_id
                AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
-               AND c.chat_is_deleted = false) as unreadMessageCount
+               AND c.chat_is_deleted = false
+               AND c.member_id != #{memberId}) as unreadMessageCount  -- ✅ 내가 보낸 메시지 제외
 
         FROM chat_participants cp
                  INNER JOIN chat_room cr ON cp.chat_room_id = cr.chat_room_id
@@ -102,7 +107,8 @@
                         FROM chat c
                         WHERE c.chat_room_id = cp.chat_room_id
                           AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
-                          AND c.chat_is_deleted = false) > 0 THEN 0 ELSE 1 END),
+                          AND c.chat_is_deleted = false
+                          AND c.member_id != #{memberId}) > 0 THEN 0 ELSE 1 END),  -- ✅ 내가 보낸 메시지 제외
             cr.chat_room_updated_at DESC
     </select>
 
@@ -116,6 +122,5 @@
           AND cp.member_id = #{memberId}
           AND cp.chat_participants_status = true
     </select>
-
 
 </mapper>

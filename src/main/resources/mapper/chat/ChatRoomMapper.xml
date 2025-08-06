@@ -29,16 +29,17 @@
                AND cp.chat_participants_status = true) as isParticipant,
 
             -- 읽지않은 메시지 개수 (참여 중인 경우에만)
-            COALESCE(
-                    (SELECT COUNT(*)
-                     FROM chat c
-                              INNER JOIN chat_participants cp ON cp.chat_room_id = c.chat_room_id
-                     WHERE c.chat_room_id = cr.chat_room_id
-                       AND cp.member_id = #{currentMemberId}
-                       AND cp.chat_participants_status = true
-                       AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
-                       AND c.chat_is_deleted = false), 0
-            ) as unreadCount
+                                COALESCE(
+                                (SELECT COUNT(*)
+                                 FROM chat c
+                                          INNER JOIN chat_participants cp ON cp.chat_room_id = c.chat_room_id
+                                 WHERE c.chat_room_id = cr.chat_room_id
+                                   AND cp.member_id = #{currentMemberId}
+                                   AND cp.chat_participants_status = true
+                                             AND c.chat_id > COALESCE(cp.chat_participants_last_read_message_id, 0)
+                                   AND c.chat_is_deleted = false
+                                   AND c.member_id != #{currentMemberId}), 0  -- ✅ 내가 보낸 메시지 제외
+                    ) as unreadCount
 
         FROM chat_room cr
         WHERE cr.performance_id = #{performanceId}
