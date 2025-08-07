@@ -6,7 +6,7 @@ import lombok.AccessLevel;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Entity
@@ -32,13 +32,13 @@ public class SettlementDetail {
     private String performanceTitle;
 
     @Column(name = "performance_end_date", nullable = false)
-    private LocalDateTime performanceEndDate;
+    private Instant performanceEndDate;
 
     @Column(name = "reservation_code", length = 15, nullable = false)
     private String reservationCode;
 
     @Column(name = "settlement_detail_created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "settlement_detail_sales_amount", nullable = false)
     private Long salesAmount;

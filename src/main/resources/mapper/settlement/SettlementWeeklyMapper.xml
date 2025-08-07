@@ -8,7 +8,7 @@
     * 일간정산 집계하여 주간정산
     * 매일 00:00:01에 전날의 일간정산을 해당 주차에 집계
     -->
-    <select id="findByDate" parameterType="java.time.LocalDateTime"
+    <select id="findByDate" parameterType="map"
             resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto">
         SELECT
             host_biz_name AS hostBizName,
@@ -19,9 +19,9 @@
             settlement_daily_commission AS dailyCommission,
             settlement_daily_net_amount AS dailyNetAmount
         FROM settlement_daily
-        WHERE settlement_year = TO_CHAR(#{now}::TIMESTAMP, 'YYYY')
-        AND settlement_month = TO_CHAR(#{now}::TIMESTAMP, 'MM')
-        AND settlement_day = TO_CHAR(#{now}::TIMESTAMP, 'DD')
+        WHERE settlement_year = #{year}
+        AND settlement_month = #{month}
+        AND settlement_day = #{day}
     </select>
 
     <!-- 주간 정산 누적 집계 upsert -->
@@ -31,7 +31,7 @@
             settlement_weekly_sales_amount, settlement_weekly_refund_amount, settlement_weekly_gross_amount,
             settlement_weekly_commission, settlement_weekly_net_amount, settlement_weekly_created_at
         ) VALUES (
-            15, #{dto.hostBizName}, #{dto.performanceTitle}, #{dto.year}, #{dto.month}, #{dto.day}, #{dto.dailySalesAmount},
+            15, #{dto.hostBizName}, #{dto.performanceTitle}, #{year}, #{month}, #{week}, #{dto.dailySalesAmount},
             #{dto.dailyRefundAmount}, #{dto.dailyGrossAmount}, #{dto.dailyCommission}, #{dto.dailyNetAmount}, #{now}
         )
         ON CONFLICT (host_biz_name, performance_title, settlement_year, settlement_month, settlement_week)

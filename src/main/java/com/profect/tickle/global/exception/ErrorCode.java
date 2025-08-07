@@ -96,6 +96,14 @@ public enum ErrorCode {
     HALL_TYPE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "홀 타입을 찾을 수 없습니다."),
     SEAT_TEMPLATE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "좌석 템플릿을 찾을 수 없습니다."),
 
+    // 정산 배치
+    SETTLEMENT_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "정산 대상 데이터가 존재하지 않습니다."),
+    SETTLEMENT_TARGET_DB_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "정산 대상 조회 중 DB 오류가 발생했습니다."),
+    SETTLEMENT_COMMISSION_CALCULATION_ERROR(HttpStatus.BAD_REQUEST, "수수료 계산 중 오류가 발생했습니다."),
+    SETTLEMENT_INVALID_RESERVATION_STATUS(HttpStatus.BAD_REQUEST, "예매 상태코드가 올바르지 않습니다."),
+    SETTLEMENT_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "건별 정산 데이터 저장에 실패했습니다."),
+    SETTLEMENT_UPSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "정산 데이터 저장 또는 업데이트에 실패했습니다."),
+    SETTLEMENT_STATUS_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "정산 상태 업데이트에 실패했습니다."),
     ;
 
     private final HttpStatus status;
