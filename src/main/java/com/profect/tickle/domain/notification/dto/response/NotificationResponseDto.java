@@ -18,11 +18,13 @@ public class NotificationResponseDto {
     private Instant createdAt;
 
     /** Entity → DTO 변환 */
-    public static NotificationResponseDto fromEntity(Notification entity) {
-        return NotificationResponseDto.builder()
-                .id(entity.getId())
-                .isRead(entity.getStatus().getDescription().equals("read"))
-                .createdAt(entity.getCreatedAt())
-                .build();
-    }
+//    public static NotificationResponseDto fromEntity(Notification entity) {
+//        return NotificationResponseDto.builder()
+//                .id(entity.getId())
+//                .title(entity.getTitle())
+//                .content(entity.getContent())
+//                .isRead(entity.getStatus().getDescription().equals(""))
+//                .createdAt(entity.getCreatedAt())
+//                .build();
+//    }
 }

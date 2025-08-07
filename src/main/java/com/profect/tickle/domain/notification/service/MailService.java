@@ -30,6 +30,7 @@ public class MailService {
             log.info("메일 발송 성공");
         } catch (Exception e) {
             log.error("메일 발송 실패");
+            log.error(e.getMessage());
             throw new RuntimeException("메일 발송 실패", e);
         }
     }

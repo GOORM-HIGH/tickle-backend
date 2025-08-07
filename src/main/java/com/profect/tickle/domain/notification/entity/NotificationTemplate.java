@@ -10,6 +10,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "notification_template")
+@ToString
 public class NotificationTemplate {
 
     @Id
@@ -21,9 +22,9 @@ public class NotificationTemplate {
     @JoinColumn(name = "notification_template_maker_id", nullable = false)
     private Member maker;  // 알림 양식 작성자
 
-    @Column(name = "notification_template_title", length = 20, nullable = false)
+    @Column(name = "notification_template_title", length = 50, nullable = false)
     private String title;  // 알림 제목
 
-    @Column(name = "notification_template_content", length = 100, nullable = false)
+    @Column(name = "notification_template_content", length = 255, nullable = false)
     private String content;  // 알림 내용
 }

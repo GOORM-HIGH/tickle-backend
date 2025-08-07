@@ -2,10 +2,10 @@ package com.profect.tickle.domain.member.service;
 
 import com.profect.tickle.domain.contract.service.ContractService;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
-import com.profect.tickle.domain.member.entity.EmailValidationCode;
+import com.profect.tickle.domain.member.entity.EmailAuthenticationCode;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
-import com.profect.tickle.domain.member.repository.EmailValidationCodeRepository;
+import com.profect.tickle.domain.member.repository.EmailAuthenticationCodeRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
 import com.profect.tickle.domain.notification.entity.NotificationTemplateId;
@@ -15,6 +15,7 @@ import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -25,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MemberService implements UserDetailsService {
 
     private final PasswordEncoder passwordEncoder;
@@ -42,7 +45,7 @@ public class MemberService implements UserDetailsService {
 
     private final MemberMapper memberMapper;
     private final MemberRepository memberRepository;
-    private final EmailValidationCodeRepository emailValidationCodeRepository;
+    private final EmailAuthenticationCodeRepository emailAuthenticationRepository;
 
 
     @Transactional
@@ -59,6 +62,10 @@ public class MemberService implements UserDetailsService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 4. 신규 계약 생성
+        if (createUserRequest.getHostContractCharge() == null || createUserRequest.getHostContractCharge().compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+
         contractService.createContract(member, createUserRequest.getHostContractCharge());
     }
 
@@ -83,40 +90,47 @@ public class MemberService implements UserDetailsService {
     }
 
     @Transactional
-    public void createEmailValidationCode(String email) {
+    public void createEmailAuthenticationCode(String email) {
         // 1. 이미 가입된 회원인지 확인
+        log.info("이미 가입된 회원인지 확인");
         Member member = memberRepository.findByEmail(email).orElse(null);
         if (member != null && member.getDeletedAt() == null) {
             throw new BusinessException(ErrorCode.MEMBER_ALREADY_REGISTERED);
         }
 
         // 2. 인증번호 생성
-        String newValidationCode = createAuthenticationCode();
+        log.info("새로운 인증번호 생성");
+        String newAuthenticationCode = createAuthenticationCode();
 
         // 3. 기존 인증코드 확인
-        EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email)
+        EmailAuthenticationCode emailAuthencationCode = emailAuthenticationRepository.findByEmail(email)
                 .orElse(null);
 
-        if (emailValidationCode != null) {
+        if (emailAuthencationCode != null) {
             // 쿨타임 체크: 최근 생성 1분 이내 요청이면 차단
-            if (emailValidationCode.getCreatedAt().isAfter(Instant.now().minus(1, ChronoUnit.MINUTES))) {
+            if (emailAuthencationCode.getCreatedAt().isAfter(Instant.now().minus(1, ChronoUnit.MINUTES))) {
+                log.info("최신의 인증코드가 존재합니다.");
                 throw new BusinessException(ErrorCode.VALIDATION_CODE_REQUEST_TOO_SOON);
             }
-            emailValidationCode.regenerateCode(newValidationCode);
+            log.info("인증코드 갱신");
+            emailAuthencationCode.regenerateCode(newAuthenticationCode);
         } else {
-            emailValidationCode = EmailValidationCode.builder()
+            emailAuthencationCode = EmailAuthenticationCode.builder()
                     .email(email)
-                    .validationCode(newValidationCode)
+                    .validationCode(newAuthenticationCode)
                     .build();
         }
 
-        emailValidationCodeRepository.save(emailValidationCode);
+        log.info("인증코드 DB 저장");
+        emailAuthenticationRepository.save(emailAuthencationCode);
 
         // 4. 메일 발송
+        log.info("인증코드 이메일 발송 준비");
         NotificationTemplate template = notificationTemplateService.getNotificationTemplateById(NotificationTemplateId.AUTH_CODE_SENT.getId());
         String title = template.getTitle();
-        String content = String.format(template.getContent(), newValidationCode);
+        String content = String.format(template.getContent(), newAuthenticationCode);
         mailService.sendSimpleMailMessage(email, title, content);
+        log.info("인증코드 발송 완료");
     }
 
     // 랜덤 인증번호 생성 함수
@@ -129,19 +143,19 @@ public class MemberService implements UserDetailsService {
     @Transactional(readOnly = true)
     public void verifyEmailCode(String email, String code) {
         // 1. 인증코드 조회
-        EmailValidationCode emailValidationCode = emailValidationCodeRepository.findByEmail(email)
+        EmailAuthenticationCode emailAuthenticationCode = emailAuthenticationRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.MEMBER_NOT_FOUND.getMessage(),
                         ErrorCode.MEMBER_NOT_FOUND
                 ));
 
         // 2. 만료 여부 확인
-        if (emailValidationCode.getExpiresAt().isBefore(Instant.now())) {
+        if (emailAuthenticationCode.getExpiresAt().isBefore(Instant.now())) {
             throw new BusinessException(ErrorCode.VALIDATION_CODE_EXPIRED); // 400
         }
 
         // 3. 코드 일치 여부 확인
-        if (!emailValidationCode.getValidationCode().equals(code)) {
+        if (!emailAuthenticationCode.getValidationCode().equals(code)) {
             throw new BusinessException(ErrorCode.VALIDATION_CODE_MISMATCH); // 404
         }
 

@@ -87,7 +87,7 @@ public class NotificationService {
         }
 
         if (!lastEventId.isEmpty()) {
-            resendMissedEvents(emitter, lastEventId);
+            resendMissedSseEvents(emitter, lastEventId);
         }
         return emitter;
     }
@@ -95,7 +95,7 @@ public class NotificationService {
     /**
      * 알림 전송
      */
-    public void sendNotification(String id, String message) {
+    public void sendSseNotification(String id, String message) {
         SseEmitter emitter = sseRepository.get(id);
         if (emitter == null) return;
 
@@ -111,7 +111,7 @@ public class NotificationService {
     /**
      * 유실 이벤트 재전송
      */
-    private void resendMissedEvents(SseEmitter emitter, String lastEventId) {
+    private void resendMissedSseEvents(SseEmitter emitter, String lastEventId) {
         sseRepository.getEventCache().forEach((eventId, event) -> {
             if (Long.parseLong(eventId) > Long.parseLong(lastEventId)) {
                 try {
@@ -133,7 +133,7 @@ public class NotificationService {
         String title = String.format(template.getTitle(), couponName);
         String message = String.format(template.getContent(), couponName, expiryDate.toString(), now);
 
-        sendAndSaveNotification(memberEmail, template, title, message, now);
+        sendSseAndSaveNotification(memberEmail, template, title, message, now);
     }
 
     /**
@@ -169,16 +169,16 @@ public class NotificationService {
         String message = String.format(template.getContent(), performance.getDate(),
                 performance.getHall().getAddress(), seatCodes, now);
 
-        sendAndSaveNotification(receiver.getEmail(), template, title, message, now);
+        sendSseAndSaveNotification(receiver.getEmail(), template, title, message, now);
     }
 
     /**
      * 알림 전송 + 저장 + 메일 발송
      */
-    private void sendAndSaveNotification(String memberEmail, NotificationTemplate template,
-                                         String title, String message, Instant createdAt) {
+    private void sendSseAndSaveNotification(String memberEmail, NotificationTemplate template,
+                                            String title, String message, Instant createdAt) {
         // SSE 전송
-        sendNotification(memberEmail, String.valueOf(NotificationSseResponseDto.builder().title(title).message(message).build()));
+        sendSseNotification(memberEmail, String.valueOf(NotificationSseResponseDto.builder().title(title).message(message).build()));
         // 메일 발송
         mailService.sendSimpleMailMessage(memberEmail, title, message);
         // DB 저장
@@ -186,6 +186,8 @@ public class NotificationService {
         notificationRepository.save(Notification.builder()
                 .receivedMember(member)
                 .template(template)
+                .title(title)
+                .content(message)
                 .status(statusService.getReadYetStatusForNotification())
                 .createdAt(createdAt)
                 .build());
