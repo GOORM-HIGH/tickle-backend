@@ -40,7 +40,7 @@ public class PerformanceFavoriteController {
         return ResultResponse.ok(ResultCode.PERFORMANCE_SCRAP_CANCEL_SUCCESS);
     }
 
-    @GetMapping("scrap")
+    @GetMapping("/scrap")
     public ResponseEntity<List<PerformanceScrapDto>> getMyScraps() {
         Long memberId = SecurityUtil.getSignInMemberId();
         List<PerformanceScrapDto> scrapList = performanceFavoriteService.getScrappedPerformances(memberId);
