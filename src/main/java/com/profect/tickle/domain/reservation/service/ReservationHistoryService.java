@@ -85,6 +85,7 @@ public class ReservationHistoryService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
             reservation.changeStatusTo(canceled);
+            reservation.markUpdated();
 
             reservationRepository.save(reservation);
 

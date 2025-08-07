@@ -50,7 +50,7 @@ public class Reservation {
     @Column(name = "reservation_created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "reservation_updated_at", nullable = false)
+    @Column(name = "reservation_updated_at")
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -75,6 +75,10 @@ public class Reservation {
 
     public void changeStatusTo(Status status) {
         this.status = status;
+    }
+
+    public void markUpdated() {
+        this.updatedAt = Instant.now();
     }
 
     private static String generateReservationCode() {
