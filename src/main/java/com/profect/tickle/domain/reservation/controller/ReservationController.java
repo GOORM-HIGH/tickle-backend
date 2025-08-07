@@ -54,7 +54,12 @@ public class ReservationController {
 
         Long userId = SecurityUtil.getSignInMemberId();
         SeatPreemptionResponseDto response = seatPreemptionService.preemptSeats(request, userId);
-        return ResultResponse.of(ResultCode.RESERVATION_SEAT_PREEMPTION_SUCCESS, response);
+
+        ResultCode resultCode = response.isSuccess()
+                ? ResultCode.RESERVATION_SEAT_PREEMPTION_SUCCESS
+                : ResultCode.RESERVATION_SEAT_PREEMPTION_FAILURE;
+
+        return ResultResponse.of(resultCode, response);
     }
 
     @Operation(summary = "결제 정보 조회", description = "선점된 좌석의 결제 정보를 조회합니다.")

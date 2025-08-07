@@ -18,12 +18,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class SeatPreemptionService {
 
     private final SeatRepository seatRepository;
@@ -89,6 +91,9 @@ public class SeatPreemptionService {
         seat.setStatusTo(preempted);
 
         seatRepository.save(seat);
+
+        // 선점된 좌석들 로그 찍기
+        log.info("🪑좌석이 선점됨!! 선점된 좌석 : {}", seat);
     }
 
     private String generatePreemptionToken() {
