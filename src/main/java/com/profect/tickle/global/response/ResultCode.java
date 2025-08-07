@@ -34,6 +34,7 @@ public enum ResultCode {
     PERFORMANCE_DELETE_SUCCESS(HttpStatus.OK,"공연 삭제 성공"),
     PERFORMANCE_SCRAP_SUCCESS(HttpStatus.CREATED,"공연 스크랩 성공"),
     PERFORMANCE_SCRAP_CANCEL_SUCCESS(HttpStatus.OK,"공연 스크랩 취소 성공"),
+    PERFORMANCE_HOST_SUCCESS(HttpStatus.OK,"해당 호스트가 작성한 공연 조회 성공"),
 
     //RESERVATION
     RESERVATION_SEATS_INFO_SUCCESS(HttpStatus.OK, "공연 좌석 정보 조회 성공"),
