@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -29,20 +29,22 @@ public class SettlementWeeklyService {
         HashMap<String, Object> map = new HashMap<>();
 
         // 정산 생성 시간
-        LocalDateTime settlementDate = LocalDateTime.now();
+        Instant settlementDate = Instant.now();
 
         // 날짜 유틸 yyyy, m, week
-        LocalDate today = LocalDate.now();
-        SettlementPeriod period = SettlementPeriod.get(today);
+        // 00시00분30초에 전날의 정산내역 집계 (yesterday)
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        SettlementPeriod period = SettlementPeriod.get(yesterday);
         map.put("year", period.yearStr());
         map.put("month", period.monthStr());
+        map.put("day", period.dayOfMonthStr());
         map.put("week", period.weekOfMonthStr());
-        map.put("now", settlementDate.minusDays(1));
+        map.put("now", settlementDate);
 
         // 오늘 날짜 기준 연월일로 일간정산 리스트 추출
         List<SettlementDailyDto> getDailyList;
         try {
-            getDailyList = settlementWeeklyMapper.findByDate(settlementDate);
+            getDailyList = settlementWeeklyMapper.findByDate(map);
         } catch (DataAccessException dae) {
             log.error("정산 대상 조회 중 DB 오류 발생", dae);
             throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);

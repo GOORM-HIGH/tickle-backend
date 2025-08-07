@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -27,7 +27,7 @@ public class SettlementDetailService {
      */
     public void getSettlementDetail(){
         // 정산 생성일시
-        LocalDateTime settlementCreatedAt = LocalDateTime.now();
+        Instant settlementCreatedAt = Instant.now();
 
         // 건별정산 집계에 필요한 데이터
         List<SettlementDetailFindTargetDto> settlementTargets;

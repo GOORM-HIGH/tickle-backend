@@ -5,8 +5,7 @@
 <mapper namespace="com.profect.tickle.domain.settlement.mapper.SettlementDailyMapper">
 
     <!-- 일간 정산 데이터 집계 -->
-    <select id="aggregateByDetail" parameterType="java.time.LocalDateTime"
-            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto">
+    <select id="aggregateByDetail" resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto">
         SELECT
             sdt.host_biz_name,
             sdt.performance_title,

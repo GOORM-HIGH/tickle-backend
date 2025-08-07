@@ -6,7 +6,7 @@
 
     <!--
     * 주간정산 집계하여 월간정산
-    * 매일 00:00:01에 전날의 일간정산을 해당 주차에 집계
+    * 매일 00:00:30에 전날의 주간정산을 해당 주차에 집계
     -->
     <select id="findByWeek" parameterType="map"
             resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyDto">

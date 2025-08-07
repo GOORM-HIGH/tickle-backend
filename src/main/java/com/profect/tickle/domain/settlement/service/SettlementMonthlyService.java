@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -26,14 +26,16 @@ public class SettlementMonthlyService {
         HashMap<String, Object> map = new HashMap<>();
 
         // 정산 생성 시간
-        LocalDateTime settlementDate = LocalDateTime.now();
+        Instant settlementDate = Instant.now();
 
         // 날짜 유틸 yyyy, m, week
-        LocalDate today = LocalDate.now();
-        SettlementPeriod period = SettlementPeriod.get(today);
+        // 00시00분30초에 어제 날짜 기준으로 해당 주차에 포함되는 주간 정산 데이터 집계
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        SettlementPeriod period = SettlementPeriod.get(yesterday);
         map.put("year", period.yearStr());
         map.put("month", period.monthStr());
         map.put("week", period.weekOfMonthStr());
+        map.put("now", settlementDate);
 
         // 월간에 upsert할 주간 정산 조회
         List<SettlementWeeklyDto> getWeeklyList;
@@ -49,7 +51,6 @@ public class SettlementMonthlyService {
         }
 
         // 월간에 upsert
-        map.put("now", settlementDate);
         for(SettlementWeeklyDto dto : getWeeklyList){
             map.put("dto", dto);
             try {

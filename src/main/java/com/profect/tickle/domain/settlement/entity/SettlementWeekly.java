@@ -6,7 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Entity
@@ -65,6 +65,6 @@ public class SettlementWeekly {
     private Long weeklyNetAmount;
 
     @Column(name = "settlement_weekly_created_at", nullable = false)
-    private LocalDateTime weeklyCreatedAt;
+    private Instant weeklyCreatedAt;
 
 }

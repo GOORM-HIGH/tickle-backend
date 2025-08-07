@@ -32,7 +32,7 @@
                   ELSE r.reservation_updated_at
                END)
          &gt; (
-                SELECT COALESCE(MAX(settlement_detail_created_at), '1970-01-01'::TIMESTAMP)
+                SELECT COALESCE(MAX(settlement_detail_created_at), '1970-01-01'::TIMESTAMPTZ)
                 FROM settlement_detail
             )
             AND NOW() BETWEEN p.performance_start_date
@@ -71,10 +71,10 @@
     </insert>
 
     <!-- 건별정산 정산 집계 N > Y 업데이트 -->
-    <update id="updateSettlementDetail" parameterType="java.time.LocalDateTime">
-        UPDATE settlement_detail
-        SET settled_flag = 'Y'
-        WHERE performance_end_date &lt; #{now}
-        AND settled_flag = 'N'
-    </update>
+<!--    <update id="updateSettlementDetail" parameterType="java.time.LocalDateTime">-->
+<!--        UPDATE settlement_detail-->
+<!--        SET settled_flag = 'Y'-->
+<!--        WHERE performance_end_date &lt; #{now}-->
+<!--        AND settled_flag = 'N'-->
+<!--    </update>-->
 </mapper>

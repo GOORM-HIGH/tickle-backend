@@ -35,7 +35,7 @@ public class BatchScheduler {
         jobLauncher.run(settlementDetailDailyJob, jobParameters);
     }
 
-    // 매일 00시 00분 01초에 job 호출(주간, 월간)
+    // 매일 00시 00분 10초에 job 호출(주간, 월간)
     @Scheduled(cron ="10 0 0 * * *")
     // 테스트용 매 분 1초에 호출
 //    @Scheduled(cron = "10 * * * * *")
