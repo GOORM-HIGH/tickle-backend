@@ -1,28 +1,34 @@
 package com.profect.tickle.domain.chat.service;
 
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
-import com.profect.tickle.domain.chat.dto.common.PaginationDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
+import com.profect.tickle.domain.chat.dto.websocket.WebSocketMessageResponseDto;
 import com.profect.tickle.domain.chat.entity.Chat;
-import com.profect.tickle.domain.chat.entity.ChatMessageType;
 import com.profect.tickle.domain.chat.entity.ChatRoom;
-import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
-import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
+import com.profect.tickle.domain.chat.entity.ChatParticipants;
+import com.profect.tickle.domain.chat.entity.ChatMessageType;
+import com.profect.tickle.global.exception.ChatExceptions;
 import com.profect.tickle.domain.chat.repository.ChatRepository;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
+import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
+import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
 import com.profect.tickle.domain.file.service.FileService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.global.exception.ChatExceptions;
+import com.profect.tickle.domain.chat.dto.common.PaginationDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +42,7 @@ public class ChatMessageService {
     private final MemberRepository memberRepository;
     private final ChatMessageMapper chatMessageMapper; // MyBatis
     private final FileService fileService;
+    private final SimpMessagingTemplate simpMessagingTemplate; // WebSocket 템플릿
 
     // ✅ ChatParticipantsService 의존성 제거
     // private final ChatParticipantsService chatParticipantsService;
@@ -93,11 +100,17 @@ public class ChatMessageService {
         updateChatRoomTimestamp(chatRoom);
 
         // 8. DTO 변환 및 반환
-        return ChatMessageResponseDto.fromEntityWithDetails(
+        ChatMessageResponseDto response = ChatMessageResponseDto.fromEntityWithDetails(
                 savedMessage,
                 sender.getNickname(),
                 true
         );
+
+        log.info("메시지 전송 완료: messageId={}, senderId={}, senderNickname={}, actualNickname={}", 
+                savedMessage.getId(), savedMessage.getMember().getId(), 
+                response.getSenderNickname(), sender.getNickname());
+
+        return response;
     }
 
     /**
@@ -105,37 +118,46 @@ public class ChatMessageService {
      */
     public ChatMessageListResponseDto getMessages(Long chatRoomId, Long currentMemberId,
                                                   int page, int size, Long lastMessageId) {
-        log.info("메시지 목록 조회: chatRoomId={}, memberId={}, page={}, size={}",
-                chatRoomId, currentMemberId, page, size);
+        log.info("메시지 목록 조회: chatRoomId={}, memberId={}, page={}, size={}, lastMessageId={}",
+                chatRoomId, currentMemberId, page, size, lastMessageId);
 
-        // 1. 채팅방 존재 확인
-        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // ✅ 수정
+        try {
+            // 1. 채팅방 존재 확인
+            ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                    .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
 
-        // 2. 회원 확인
-        Member member = memberRepository.findById(currentMemberId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(currentMemberId)); // ✅ 수정
+            // 2. 회원 확인
+            Member member = memberRepository.findById(currentMemberId)
+                    .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(currentMemberId));
 
-        // 3. 참여 여부 확인
-        boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
-        if (!isParticipant) {
-            throw ChatExceptions.chatNotParticipant(); // ✅ 수정
+            // 3. 참여 여부 확인
+            boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
+            if (!isParticipant) {
+                log.warn("사용자가 채팅방에 참여하지 않음: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
+                return ChatMessageListResponseDto.of(List.of(), PaginationDto.of(page, size, 0));
+            }
+
+            // 4. MyBatis로 복잡한 메시지 조회 (페이징)
+            int offset = page * size;
+            List<ChatMessageResponseDto> messages = chatMessageMapper.findMessagesByRoomId(
+                    chatRoomId, currentMemberId, offset, size, lastMessageId);
+
+            // 5. 전체 메시지 개수 조회
+            int totalMessages = chatMessageMapper.countTotalMessages(chatRoomId, lastMessageId);
+
+            // 6. 페이징 정보 생성
+            PaginationDto pagination = PaginationDto.of(page, size, totalMessages);
+
+            log.info("메시지 조회 완료: chatRoomId={}, 조회된 메시지 {} 건, 전체 {} 건", 
+                    chatRoomId, messages.size(), totalMessages);
+
+            return ChatMessageListResponseDto.of(messages, pagination);
+
+        } catch (Exception e) {
+            log.error("메시지 목록 조회 중 오류 발생: chatRoomId={}, memberId={}, error={}", 
+                    chatRoomId, currentMemberId, e.getMessage(), e);
+            return ChatMessageListResponseDto.of(List.of(), PaginationDto.of(page, size, 0));
         }
-
-        // 4. MyBatis로 복잡한 메시지 조회 (페이징)
-        int offset = page * size;
-        List<ChatMessageResponseDto> messages = chatMessageMapper.findMessagesByRoomId(
-                chatRoomId, currentMemberId, offset, size, lastMessageId);
-
-        // 5. 전체 메시지 개수 조회
-        int totalMessages = chatMessageMapper.countTotalMessages(chatRoomId, lastMessageId);
-
-        // 6. 페이징 정보 생성
-        PaginationDto pagination = PaginationDto.of(page, size, totalMessages);
-
-        log.info("메시지 조회 완료: {} 건", messages.size());
-
-        return ChatMessageListResponseDto.of(messages, pagination);
     }
 
     /**
@@ -196,6 +218,23 @@ public class ChatMessageService {
         message.markAsDeleted();
 
         log.info("메시지 삭제 완료: messageId={}", messageId);
+
+        // 5. WebSocket을 통해 삭제 이벤트 전송
+        try {
+            WebSocketMessageResponseDto deleteEvent = WebSocketMessageResponseDto.builder()
+                    .type(WebSocketMessageResponseDto.MessageType.DELETE)
+                    .messageId(messageId)
+                    .chatRoomId(message.getChatRoomId())
+                    .senderId(message.getMember().getId())
+                    .senderNickname(message.getMember().getNickname())
+                    .build();
+
+            simpMessagingTemplate.convertAndSend("/topic/chat/" + message.getChatRoomId(), deleteEvent);
+            log.info("🗑️ 삭제 이벤트 WebSocket 전송 완료: messageId={}, chatRoomId={}", messageId, message.getChatRoomId());
+        } catch (Exception e) {
+            log.error("❌ 삭제 이벤트 WebSocket 전송 실패: messageId={}, error={}", messageId, e.getMessage());
+            // WebSocket 전송 실패해도 삭제는 성공으로 처리
+        }
     }
 
     /**
@@ -220,9 +259,38 @@ public class ChatMessageService {
      * 읽지않은 메시지 개수 조회 (MyBatis 사용)
      */
     public int getUnreadCount(Long chatRoomId, Long memberId, Long lastReadMessageId) {
-        log.info("읽지않은 메시지 개수 조회: chatRoomId={}, memberId={}", chatRoomId, memberId);
+        log.info("읽지않은 메시지 개수 조회: chatRoomId={}, memberId={}, lastReadMessageId={}", 
+                chatRoomId, memberId, lastReadMessageId);
 
-        return chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
+        try {
+            // 1. 채팅방 존재 확인
+            ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                    .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+
+            // 2. 회원 확인
+            Member member = memberRepository.findById(memberId)
+                    .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId));
+
+            // 3. 참여 여부 확인
+            boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
+            if (!isParticipant) {
+                log.warn("사용자가 채팅방에 참여하지 않음: chatRoomId={}, memberId={}", chatRoomId, memberId);
+                return 0; // 참여하지 않으면 읽지 않은 메시지 0개
+            }
+
+            // 4. MyBatis로 읽지 않은 메시지 개수 조회
+            int unreadCount = chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
+
+            log.info("읽지않은 메시지 개수 조회 결과: chatRoomId={}, memberId={}, lastReadMessageId={}, unreadCount={}", 
+                    chatRoomId, memberId, lastReadMessageId, unreadCount);
+
+            return unreadCount;
+
+        } catch (Exception e) {
+            log.error("읽지않은 메시지 개수 조회 중 오류 발생: chatRoomId={}, memberId={}, error={}", 
+                    chatRoomId, memberId, e.getMessage(), e);
+            return 0; // 오류 발생 시 0개 반환
+        }
     }
 
     // ===== Private 헬퍼 메서드들 =====

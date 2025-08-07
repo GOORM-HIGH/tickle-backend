@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReservationCompletionRequest {
+public class ReservationCompletionRequestDto {
 
     @NotBlank
     private String preemptionToken;     // 선점 토큰

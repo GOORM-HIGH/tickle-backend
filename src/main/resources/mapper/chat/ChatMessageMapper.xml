@@ -11,13 +11,17 @@
             c.chat_room_id as chatRoomId,
             c.member_id as memberId,
             c.chat_message_type as messageType, -- ✅ 중요: alias 추가
-            c.chat_content as content,          -- ✅ 중요: alias 추가
+            CASE
+                WHEN c.chat_is_deleted = true THEN '삭제된 메시지입니다'
+                ELSE c.chat_content
+                END as content,                 -- ✅ 삭제된 메시지 처리
             c.chat_created_at as createdAt,     -- ✅ 중요: alias 추가
             c.chat_sender_status as senderStatus,
             c.chat_file_path as filePath,
             c.chat_file_name as fileName,
             c.chat_file_size as fileSize,
             c.chat_file_type as fileType,
+            c.chat_is_deleted as isDeleted,     -- ✅ 삭제 상태 추가
 
             CASE
                 WHEN c.chat_sender_status = false THEN '탈퇴한 회원입니다'
@@ -33,7 +37,9 @@
         FROM chat c
                  LEFT JOIN member m ON c.member_id = m.member_id
         WHERE c.chat_room_id = #{roomId}
-          AND c.chat_is_deleted = false
+          <if test="lastMessageId != null">
+              AND c.chat_id &lt; #{lastMessageId}
+          </if>
         ORDER BY c.chat_created_at DESC
             LIMIT #{size} OFFSET #{offset}
     </select>
@@ -43,10 +49,9 @@
         SELECT COUNT(*)
         FROM chat c
         WHERE c.chat_room_id = #{roomId}
-        AND c.chat_is_deleted = false
 
         <if test="lastMessageId != null">
-            AND c.chat_id > #{lastMessageId}
+            AND c.chat_id &lt; #{lastMessageId}
         </if>
     </select>
 
@@ -57,6 +62,7 @@
         WHERE c.chat_room_id = #{roomId}
           AND c.chat_is_deleted = false
           AND c.chat_id > COALESCE(#{lastReadMessageId}, 0)
+          AND c.member_id != #{currentMemberId}  -- ✅ 내가 보낸 메시지 제외
     </select>
 
     <!-- 채팅방의 마지막 메시지 조회 (완전 수정 버전) -->
@@ -66,13 +72,17 @@
             c.chat_room_id as chatRoomId,
             c.member_id as memberId,
             c.chat_message_type as messageType,
-            c.chat_content as content,
+            CASE
+                WHEN c.chat_is_deleted = true THEN '삭제된 메시지입니다'
+                ELSE c.chat_content
+                END as content,
             c.chat_created_at as createdAt,
             c.chat_sender_status as senderStatus,
             c.chat_file_path as filePath,
             c.chat_file_name as fileName,
             c.chat_file_size as fileSize,
             c.chat_file_type as fileType,
+            c.chat_is_deleted as isDeleted,     -- ✅ 삭제 상태 추가
 
             -- 발신자 닉네임
             CASE
@@ -90,9 +100,7 @@
         FROM chat c
                  LEFT JOIN member m ON c.member_id = m.member_id
         WHERE c.chat_room_id = #{roomId}
-          AND c.chat_is_deleted = false
         ORDER BY c.chat_created_at DESC
             LIMIT 1
     </select>
-
 </mapper>

@@ -1,25 +1,26 @@
 package com.profect.tickle.domain.reservation.service;
 
-import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
-import com.profect.tickle.domain.reservation.dto.response.PaymentInfo;
-import com.profect.tickle.domain.reservation.dto.response.PerformanceInfo;
-import com.profect.tickle.domain.reservation.dto.response.ReservationCancelResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationDetailResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationHistoryResponse;
-import com.profect.tickle.domain.reservation.dto.response.ReservationInfo;
-import com.profect.tickle.domain.reservation.dto.response.ReservedSeatDetail;
+import com.profect.tickle.domain.reservation.dto.response.reservation.PaymentInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.PerformanceInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCancelResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDetailResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationHistoryResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDetail;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
@@ -41,11 +42,10 @@ public class ReservationHistoryService {
     private final ReservationRepository reservationRepository;
     private final SeatRepository seatRepository;
     private final StatusRepository statusRepository;
-    private final CouponRepository couponRepository;
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
 
-    public List<ReservationHistoryResponse> getReservationHistory(Long userId, Pageable pageable) {
+    public List<ReservationHistoryResponseDto> getReservationHistory(Long userId, Pageable pageable) {
         Page<Reservation> reservations = reservationRepository.findByMemberIdOrderByCreatedAtDesc(userId, pageable);
 
         return reservations.getContent().stream()
@@ -53,9 +53,8 @@ public class ReservationHistoryService {
                 .collect(Collectors.toList());
     }
 
-    public ReservationDetailResponse getReservationDetail(Long reservationId, Long userId) {
-        Reservation reservation = reservationRepository.findByIdAndMemberId(reservationId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("예매 내역을 찾을 수 없습니다."));
+    public ReservationDetailResponseDto getReservationDetail(Long reservationId, Long userId) {
+        Reservation reservation = getReservation(reservationId, userId);
 
         // 좌석 정보 조회
         List<Seat> seats = seatRepository.findByReservationId(reservationId);
@@ -65,18 +64,16 @@ public class ReservationHistoryService {
 
 
     @Transactional
-    public ReservationCancelResponse cancelReservation(Long reservationId) {
+    public ReservationCancelResponseDto cancelReservation(Long reservationId) {
 
         Long userId = SecurityUtil.getSignInMemberId();
 
         try {
-            Reservation reservation = reservationRepository.findByIdAndMemberId(reservationId,
-                            userId)
-                    .orElseThrow(() -> new IllegalArgumentException("예매 내역을 찾을 수 없습니다."));
+            Reservation reservation = getReservation(reservationId, userId);
 
             // 취소 가능 여부 확인
             if (!isCancellable(reservation)) {
-                return ReservationCancelResponse.failure("취소할 수 없는 예매입니다.");
+                return ReservationCancelResponseDto.failure("취소할 수 없는 예매입니다.");
             }
 
             // 좌석 상태 변경 (예매완료 → 예매가능)
@@ -85,9 +82,10 @@ public class ReservationHistoryService {
 
             // 예매 상태 변경
             Status canceled = statusRepository.findById(ReservationStatus.CANCELED.getId())
-                    .orElseThrow();
+                    .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
             reservation.changeStatusTo(canceled);
+            reservation.markUpdated();
 
             reservationRepository.save(reservation);
 
@@ -95,28 +93,28 @@ public class ReservationHistoryService {
             Integer refundAmount = reservation.getPrice();
 
             Member member = memberRepository.findById(userId)
-                    .orElseThrow();
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             Point point = Point.refund(member, refundAmount, PointTarget.REFUND);
             pointRepository.save(point);
 
             member.addPoint(refundAmount);
 
-            return ReservationCancelResponse.success(refundAmount);
+            return ReservationCancelResponseDto.success(refundAmount);
 
-        } catch (Exception e) {
-            return ReservationCancelResponse.failure(e.getMessage());
+        } catch (BusinessException e) {
+            return ReservationCancelResponseDto.failure(e.getMessage());
         }
     }
 
-    private ReservationHistoryResponse convertToHistoryResponse(Reservation reservation) {
+    private ReservationHistoryResponseDto convertToHistoryResponse(Reservation reservation) {
         List<Seat> seats = seatRepository.findByReservationId(reservation.getId());
 
         List<String> seatNumbers = seats.stream()
                 .map(Seat::getSeatNumber)
                 .collect(Collectors.toList());
 
-        return ReservationHistoryResponse.builder()
+        return ReservationHistoryResponseDto.builder()
                 .reservationId(reservation.getId())
                 .reservationNumber(reservation.getCode())
                 .performanceTitle(reservation.getPerformance().getTitle())
@@ -131,7 +129,7 @@ public class ReservationHistoryService {
                 .build();
     }
 
-    private ReservationDetailResponse  convertToDetailResponse(Reservation reservation, List<Seat> seats) {
+    private ReservationDetailResponseDto convertToDetailResponse(Reservation reservation, List<Seat> seats) {
 
         // 공연 정보
         Performance performance = reservation.getPerformance();
@@ -168,7 +166,7 @@ public class ReservationHistoryService {
                 .cancellable(isCancellable(reservation))
                 .build();
 
-        return ReservationDetailResponse.builder()
+        return ReservationDetailResponseDto.builder()
                 .reservationId(reservation.getId())
                 .reservationNumber(reservation.getCode())
                 .performance(performanceInfo)
@@ -192,7 +190,7 @@ public class ReservationHistoryService {
 
     private void updateSeatsToAvailable(List<Seat> seats) {
         Status availableStatus = statusRepository.findById(SeatStatus.AVAILABLE.getId())
-                .orElseThrow(() -> new IllegalStateException("예매가능 상태를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
         for (Seat seat : seats) {
             cancelSeatsOfReservation(seat, availableStatus);
@@ -205,5 +203,10 @@ public class ReservationHistoryService {
         seat.assignReservation(null);
         seat.assignTo(null);
         seat.setStatusTo(availableStatus);
+    }
+
+    private Reservation getReservation(Long reservationId, Long userId) {
+        return reservationRepository.findByIdAndMemberId(reservationId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
     }
 }

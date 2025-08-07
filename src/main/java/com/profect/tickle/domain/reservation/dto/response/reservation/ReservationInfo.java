@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.reservation.dto.response;
+package com.profect.tickle.domain.reservation.dto.response.reservation;
 
 import com.profect.tickle.global.status.Status;
 import lombok.AllArgsConstructor;

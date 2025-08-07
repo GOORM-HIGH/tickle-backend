@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.settlement.mapper.SettlementWeeklyMapper">
+
+    <!--
+    * 일간정산 집계하여 주간정산
+    * 매일 00:00:01에 전날의 일간정산을 해당 주차에 집계
+    -->
+    <select id="findByDate" parameterType="java.time.LocalDateTime"
+            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto">
+        SELECT
+            host_biz_name AS hostBizName,
+            performance_title AS performanceTitle,
+            settlement_daily_sales_amount AS dailySalesAmount,
+            settlement_daily_refund_amount AS dailyRefundAmount,
+            settlement_daily_gross_amount AS dailyGrossAmount,
+            settlement_daily_commission AS dailyCommission,
+            settlement_daily_net_amount AS dailyNetAmount
+        FROM settlement_daily
+        WHERE settlement_year = TO_CHAR(#{now}::TIMESTAMP, 'YYYY')
+        AND settlement_month = TO_CHAR(#{now}::TIMESTAMP, 'MM')
+        AND settlement_day = TO_CHAR(#{now}::TIMESTAMP, 'DD')
+    </select>
+
+    <!-- 주간 정산 누적 집계 upsert -->
+    <insert id="upsertSettlementWeekly" parameterType="map">
+        INSERT INTO settlement_weekly (
+            status_id, host_biz_name, performance_title, settlement_year, settlement_month, settlement_week,
+            settlement_weekly_sales_amount, settlement_weekly_refund_amount, settlement_weekly_gross_amount,
+            settlement_weekly_commission, settlement_weekly_net_amount, settlement_weekly_created_at
+        ) VALUES (
+            15, #{dto.hostBizName}, #{dto.performanceTitle}, #{dto.year}, #{dto.month}, #{dto.day}, #{dto.dailySalesAmount},
+            #{dto.dailyRefundAmount}, #{dto.dailyGrossAmount}, #{dto.dailyCommission}, #{dto.dailyNetAmount}, #{now}
+        )
+        ON CONFLICT (host_biz_name, performance_title, settlement_year, settlement_month, settlement_week)
+        DO UPDATE SET
+            settlement_weekly_sales_amount = settlement_weekly.settlement_weekly_sales_amount + EXCLUDED.settlement_weekly_sales_amount,
+            settlement_weekly_refund_amount = settlement_weekly.settlement_weekly_refund_amount + EXCLUDED.settlement_weekly_refund_amount,
+            settlement_weekly_gross_amount = settlement_weekly.settlement_weekly_gross_amount + EXCLUDED.settlement_weekly_gross_amount,
+            settlement_weekly_commission = settlement_weekly.settlement_weekly_commission + EXCLUDED.settlement_weekly_commission,
+            settlement_weekly_net_amount = settlement_weekly.settlement_weekly_net_amount + EXCLUDED.settlement_weekly_net_amount,
+            settlement_weekly_created_at = EXCLUDED.settlement_weekly_created_at
+    </insert>
+</mapper>

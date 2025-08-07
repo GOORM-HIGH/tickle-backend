@@ -191,8 +191,18 @@ public class ChatParticipantsService {
      * 내가 참여한 채팅방 목록 조회 (MyBatis 사용)
      */
     public List<ChatParticipantsResponseDto> getMyChatRooms(Long memberId) {
-        log.info("내 채팅방 목록 조회: memberId={}", memberId);
-
-        return chatParticipantsMapper.findMyChatRooms(memberId);
+        log.info("🔍 getMyChatRooms 호출: memberId={}", memberId);
+        
+        List<ChatParticipantsResponseDto> result = chatParticipantsMapper.findMyChatRooms(memberId);
+        
+        log.info("🔍 getMyChatRooms 결과: {}개 채팅방", result.size());
+        for (ChatParticipantsResponseDto room : result) {
+            log.info("🔍 채팅방 {}: unreadMessageCount={}, lastReadMessageId={}", 
+                    room.getChatRoomId(), room.getUnreadMessageCount(), room.getLastReadMessageId());
+        }
+        
+        return result;
     }
+    
+
 }

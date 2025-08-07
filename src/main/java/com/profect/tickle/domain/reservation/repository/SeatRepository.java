@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -39,4 +40,17 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     List<Seat> findByPreemptionTokenWithLock(@Param("token") String preemptionToken);
 
     List<Seat> findByReservationId(Long reservationId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        UPDATE Seat s
+        SET s.preemptUserId = null,
+            s.preemptionToken = null,
+            s.preemptedAt = null,
+            s.preemptedUntil = null,
+            s.status.id = 11L
+        WHERE s.preemptedUntil IS NOT NULL
+          AND s.preemptedUntil < :now
+    """)
+    int clearExpiredPreemptionsBulk(@Param("now") Instant now);
 }

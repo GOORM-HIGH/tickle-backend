@@ -14,7 +14,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class WebSocketMessageResponseDto {
 
-    private String type;  // "MESSAGE", "USER_JOIN", "USER_LEAVE", "TYPING", "ERROR"
+    private String type;  // "MESSAGE", "USER_JOIN", "USER_LEAVE", "TYPING", "ERROR", "DELETE"
     private Long messageId;
     private Long chatRoomId;
     private Long senderId;
@@ -29,4 +29,14 @@ public class WebSocketMessageResponseDto {
     private Boolean isMyMessage;
     private Integer onlineCount;  // 현재 온라인 사용자 수
     private String message;  // 시스템 메시지용
+
+    // 메시지 타입 상수
+    public static class MessageType {
+        public static final String MESSAGE = "MESSAGE";
+        public static final String USER_JOIN = "USER_JOIN";
+        public static final String USER_LEAVE = "USER_LEAVE";
+        public static final String TYPING = "TYPING";
+        public static final String ERROR = "ERROR";
+        public static final String DELETE = "DELETE";
+    }
 }

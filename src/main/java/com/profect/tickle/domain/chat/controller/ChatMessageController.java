@@ -224,9 +224,13 @@ public class ChatMessageController {
             @Parameter(description = "마지막으로 읽은 메시지 ID", example = "789")
             @RequestParam(required = false) Long lastReadMessageId) {
 
-        log.info("읽지않은 메시지 개수 조회 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
+        log.info("읽지않은 메시지 개수 조회 API 호출: chatRoomId={}, memberId={}, lastReadMessageId={}", 
+                chatRoomId, currentMemberId, lastReadMessageId);
 
         int unreadCount = chatMessageService.getUnreadCount(chatRoomId, currentMemberId, lastReadMessageId);
+
+        log.info("읽지않은 메시지 개수 조회 결과: chatRoomId={}, memberId={}, unreadCount={}", 
+                chatRoomId, currentMemberId, unreadCount);
 
         return ResponseEntity.ok(ApiResponseDto.success(unreadCount));
     }

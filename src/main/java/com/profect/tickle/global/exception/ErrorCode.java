@@ -78,6 +78,24 @@ public enum ErrorCode {
     VALIDATION_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인증번호가 만료되었습니다."),
     VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다."),
 
+    // 예매 관련
+    RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예매 내역을 찾을 수 없습니다."),
+    RESERVATION_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 예매입니다."),
+    RESERVATION_ALREADY_RESERVED(HttpStatus.CONFLICT, "이미 예매된 좌석이 포함되어 있습니다."),
+    RESERVATION_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "총 금액이 일치하지 않습니다."),
+
+    // 좌석 선점 관련
+    PREEMPTION_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "유효하지 않은 선점 토큰입니다."),
+    PREEMPTION_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "선점 권한이 없습니다."),
+    PREEMPTION_EXPIRED(HttpStatus.BAD_REQUEST, "선점 시간이 만료되었습니다."),
+    PREEMPTION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "좌석은 최대 5개까지 선점할 수 있습니다."),
+    PREEMPTION_DUPLICATE_SEAT(HttpStatus.CONFLICT, "이미 선점한 좌석이 포함되어 있습니다."),
+    SEAT_PREEMPTION_FAILED(HttpStatus.BAD_REQUEST, "선택한 좌석 중 선점할 수 없는 좌석이 있습니다."),
+
+    // 공연장 유형 관련
+    HALL_TYPE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "홀 타입을 찾을 수 없습니다."),
+    SEAT_TEMPLATE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "좌석 템플릿을 찾을 수 없습니다."),
+
     ;
 
     private final HttpStatus status;

@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.reservation.dto.response;
+package com.profect.tickle.domain.reservation.dto.response.reservation;
 
 import com.profect.tickle.domain.reservation.entity.SeatGrade;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class SeatInfoResponse {
+public class SeatInfoResponseDto {
     private Long seatId;
     private String seatNumber;        // 좌석 번호 (A1, B2 등)
     private SeatGrade seatGrade;      // 좌석 등급 (VIP, R, S)
