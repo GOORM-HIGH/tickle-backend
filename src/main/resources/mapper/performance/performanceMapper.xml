@@ -164,6 +164,7 @@
         FROM performance p
             JOIN status s ON p.status_id = s.status_id
         WHERE p.member_id = #{memberId}
+          AND p.performance_deleted_at IS NULL
         ORDER BY p.performance_created_at DESC
     </select>
 
