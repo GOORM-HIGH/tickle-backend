@@ -10,8 +10,8 @@
             resultType="com.profect.tickle.domain.notification.dto.response.NotificationResponseDto">
         SELECT
             n.notification_id              AS id,
-            nt.notification_template_title AS title,
-            nt.notification_template_content AS content,
+            n.notification_title AS title,
+            n.notification_content AS content,
             CASE
                 WHEN s.status_id = 8 THEN FALSE  -- 읽지 않음
                 WHEN s.status_id = 7 THEN TRUE   -- 읽음
