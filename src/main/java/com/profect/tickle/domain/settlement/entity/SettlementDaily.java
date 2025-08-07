@@ -4,7 +4,7 @@ import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Entity
@@ -65,6 +65,6 @@ public class SettlementDaily {
     private Long dailyNetAmount;
 
     @Column(name = "settlement_daily_created_at", nullable = false)
-    private LocalDateTime dailyCreatedAt;
+    private Instant dailyCreatedAt;
 
 }

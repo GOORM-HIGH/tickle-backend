@@ -17,9 +17,13 @@ import java.time.LocalDate;
 public record SettlementPeriod(
         LocalDate today,
         int year,
+        String yearStr,
         int month,
+        String monthStr,
         int weekOfMonth,
+        String weekOfMonthStr,
         int dayOfMonth,
+        String dayOfMonthStr,
         int dayOfWeek,
         int startOfWeek,
         int endOfWeek
@@ -30,14 +34,19 @@ public record SettlementPeriod(
      */
     public static SettlementPeriod get(LocalDate now) {
         int y = now.getYear();
+        String yStr = String.valueOf(y);
         int m = now.getMonthValue();
+        String mStr = String.format("%02d", m);
         int week = weekOfMonth(now);
+        String weekStr = String.format("%02d", week);
         int d = now.getDayOfMonth();
+        String dStr = String.format("%02d", d);
         int dow = now.withDayOfMonth(d).getDayOfWeek().getValue();
         int monday = d - dow + 1;
         int sunday = monday + 6;
 
-        return new SettlementPeriod(now, y, m, week, d, dow, monday, sunday);
+        return new SettlementPeriod(now, y, yStr, m, mStr, week, weekStr,
+                d, dStr, dow, monday, sunday);
     }
 
     /**

@@ -38,6 +38,7 @@ public enum ResultCode {
     //RESERVATION
     RESERVATION_SEATS_INFO_SUCCESS(HttpStatus.OK, "공연 좌석 정보 조회 성공"),
     RESERVATION_SEAT_PREEMPTION_SUCCESS(HttpStatus.OK, "좌석 선점 성공"),
+    RESERVATION_SEAT_PREEMPTION_FAILURE(HttpStatus.CONFLICT, "좌석 선점 실패"),
     RESERVATION_PAYMENT_INFO_SUCCESS(HttpStatus.OK, "결제 정보 조회 성공"),
     RESERVATION_COMPLETE_SUCCESS(HttpStatus.CREATED, "예매 완료 성공"),
     RESERVATION_HISTORY_SUCCESS(HttpStatus.OK, "예매 내역 조회 성공"),

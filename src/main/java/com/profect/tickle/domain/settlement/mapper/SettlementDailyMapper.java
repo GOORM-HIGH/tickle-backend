@@ -3,7 +3,6 @@ package com.profect.tickle.domain.settlement.mapper;
 import com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto;
 import org.apache.ibatis.annotations.Mapper;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -13,7 +12,7 @@ public interface SettlementDailyMapper {
     /**
      * 건별정산 테이블 내역 주최자, 공연별로 일간 합산 리스트
      */
-    List<SettlementDailyDto> aggregateByDetail(LocalDateTime now);
+    List<SettlementDailyDto> aggregateByDetail();
 
     /**
      * 일간정산 테이블 insert + update
