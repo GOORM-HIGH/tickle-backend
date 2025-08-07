@@ -1,8 +1,7 @@
 package com.profect.tickle.batch;
 
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -11,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 
 @Component
+@Slf4j
 public class BatchScheduler {
 
     private final JobLauncher jobLauncher;
@@ -20,15 +20,14 @@ public class BatchScheduler {
     public BatchScheduler(
             JobLauncher jobLauncher,
             @Qualifier("settlementDetailDailyJob") Job settlementDetailDailyJob,
-            @Qualifier("settlementWeeklyMonthlyJob") Job settlementWeeklyMonthlyJob
-    ) {
+            @Qualifier("settlementWeeklyMonthlyJob") Job settlementWeeklyMonthlyJob) {
         this.jobLauncher = jobLauncher;
         this.settlementDetailDailyJob = settlementDetailDailyJob;
         this.settlementWeeklyMonthlyJob = settlementWeeklyMonthlyJob;
     }
 
-    // 매 분 0초에 정산 job 호출(건별, 일간)
-    @Scheduled(cron = "0 * * * * *")
+    // 매 분 30초에 정산 job 호출(건별, 일간)
+    @Scheduled(cron = "30 * * * * *")
     public void runSettlementDetailDailyJob() throws Exception{
         JobParameters jobParameters = new JobParametersBuilder()
                 .addDate("runDate", new Date())
@@ -37,9 +36,9 @@ public class BatchScheduler {
     }
 
     // 매일 00시 00분 01초에 job 호출(주간, 월간)
-//    @Scheduled(cron ="1 0 0 * * *")
+    @Scheduled(cron ="10 0 0 * * *")
     // 테스트용 매 분 1초에 호출
-    @Scheduled(cron = "1 * * * * *")
+//    @Scheduled(cron = "10 * * * * *")
     public void runSettlementWeeklyMonthlyJob() throws Exception{
         JobParameters jobParameters = new JobParametersBuilder()
                 .addDate("runDate", new Date())

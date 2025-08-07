@@ -22,13 +22,18 @@
         JOIN contract c ON m.member_id = c.member_id
         JOIN status sr ON r.status_id = sr.status_id
         JOIN status sp ON p.status_id = sp.status_id
-
         -- 예매내역 테이블의 마지막 업데이트 시점 > 건별정산 테이블의 마지막 배치 시점
         -- 예매내역 테이블의 상태가 결제, 취소인 건 모두
         -- 공연 테이블의 상태가 '공연예정'인 건
         -- 세가지 조건에 부합하는 데이터 집합 우선 추출
-        WHERE r.reservation_created_at &gt; (
-                SELECT COALESCE(MAX(settlement_detail_created_at), '1970-01-01'::TIMESTAMP) FROM settlement_detail
+        WHERE (CASE
+                  WHEN r.reservation_updated_at IS NULL
+                      THEN r.reservation_created_at
+                  ELSE r.reservation_updated_at
+               END)
+         &gt; (
+                SELECT COALESCE(MAX(settlement_detail_created_at), '1970-01-01'::TIMESTAMP)
+                FROM settlement_detail
             )
             AND NOW() BETWEEN p.performance_start_date
                         AND p.performance_end_date
