@@ -151,7 +151,7 @@
         WHERE performance_id = #{performanceId}
     </select>
 
-    <select id="findPerformancesByMemberId" resultType="com.profect.tickle.domain.performance.dto.response.PerformanceHostDto">
+    <select id="findPerformancesByMemberId" resultType="PerformanceHostDto">
         SELECT
             p.performance_id         AS performanceId,
             p.performance_title      AS title,
@@ -167,5 +167,28 @@
         ORDER BY p.performance_created_at DESC
     </select>
 
+    <select id="findScrappedPerformancesByMemberId" resultType="PerformanceScrapDto">
+        SELECT
+            p.performance_id        AS performanceId,
+            p.performance_title     AS title,
+            p.performance_img       AS img,
+            p.performance_date      AS date,
+            s.status_description    AS statusDescription,
+            pf.performance_favorite_created_at AS scrapCreatedAt
+        FROM performance_favorite pf
+            JOIN performance p ON pf.performance_id = p.performance_id
+            JOIN status s ON p.status_id = s.status_id
+        WHERE pf.member_id = #{memberId}
+        ORDER BY pf.performance_favorite_created_at DESC
+    </select>
+
+    <select id="isScrapped" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM performance_favorite
+            WHERE member_id = #{memberId}
+              AND performance_id = #{performanceId}
+        )
+    </select>
 
 </mapper>
