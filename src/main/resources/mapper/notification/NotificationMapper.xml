@@ -7,22 +7,20 @@
 
     <!-- 특정 사용자(memberId)의 최신 알림 조회 -->
     <select id="getRecentNotificationListByMemberId"
-            resultType="NotificationResponseDto">
-        SELECT n.notification_id                AS id,
-               nt.notification_template_title   AS title,
-               nt.notification_template_content AS content,
-               CASE
-                   WHEN s.status_id = 8 THEN TRUE
-                   WHEN s.status_id = 7 THEN FALSE
-                   END                          AS isRead,
-               n.notification_created_at        AS createdAt
-        FROM notification AS n
-                 JOIN notification_template AS nt
-                      ON n.notification_template_id = nt.notification_template_id
-                 JOIN member AS m
-                      ON n.notification_received_member_id = m.member_id
-                 JOIN status AS s
-                      ON n.status_id = s.status_id
+            resultType="com.profect.tickle.domain.notification.dto.response.NotificationResponseDto">
+        SELECT
+            n.notification_id              AS id,
+            nt.notification_template_title AS title,
+            nt.notification_template_content AS content,
+            CASE
+                WHEN s.status_id = 8 THEN FALSE  -- 읽지 않음
+                WHEN s.status_id = 7 THEN TRUE   -- 읽음
+                END AS isRead,
+            n.notification_created_at AS createdAt
+        FROM notification n
+                 JOIN notification_template nt ON n.notification_template_id = nt.notification_template_id
+                 JOIN member m ON n.notification_received_member_id = m.member_id
+                 JOIN status s ON n.status_id = s.status_id
         WHERE m.member_id = #{memberId}
         ORDER BY n.notification_created_at DESC
             LIMIT #{limit}

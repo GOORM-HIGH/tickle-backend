@@ -21,6 +21,8 @@ public class NotificationResponseDto {
     public static NotificationResponseDto fromEntity(Notification entity) {
         return NotificationResponseDto.builder()
                 .id(entity.getId())
+                .title(entity.getTitle())
+                .content(entity.getContent())
                 .isRead(entity.getStatus().getDescription().equals("read"))
                 .createdAt(entity.getCreatedAt())
                 .build();
