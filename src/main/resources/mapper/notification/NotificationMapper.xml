@@ -7,14 +7,14 @@
 
     <!-- 특정 사용자(memberId)의 최신 알림 조회 -->
     <select id="getRecentNotificationListByMemberId"
-            resultType="com.profect.tickle.domain.notification.dto.response.NotificationResponseDto">
+            resultType="NotificationResponseDto">
         SELECT
             n.notification_id              AS id,
             n.notification_title AS title,
             n.notification_content AS content,
             CASE
-                WHEN s.status_id = 8 THEN FALSE  -- 읽지 않음
-                WHEN s.status_id = 7 THEN TRUE   -- 읽음
+                WHEN s.status_id = 7 THEN FALSE  -- 읽지 않음
+                WHEN s.status_id = 8 THEN TRUE   -- 읽음
                 END AS isRead,
             n.notification_created_at AS createdAt
         FROM notification n

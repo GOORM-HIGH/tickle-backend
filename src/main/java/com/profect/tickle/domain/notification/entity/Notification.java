@@ -28,10 +28,10 @@ public class Notification {
     @JoinColumn(name = "notification_template_id", nullable = false)
     private NotificationTemplate template;
 
-    @Column(name = "notification_title")
+    @Column(name = "notification_title", nullable = false, length = 100)
     private String title;
 
-    @Column(name = "notification_content")
+    @Column(name = "notification_content", nullable = false, length = 255)
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
