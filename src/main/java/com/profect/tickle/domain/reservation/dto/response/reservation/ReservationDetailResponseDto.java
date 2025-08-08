@@ -17,7 +17,7 @@ public class ReservationDetailResponseDto {
     private PerformanceInfo performance;
     
     // 좌석 정보
-    private List<ReservedSeatDetail> seats;
+    private List<ReservedSeatDto> seats;
     
     // 결제 정보
     private PaymentInfo payment;

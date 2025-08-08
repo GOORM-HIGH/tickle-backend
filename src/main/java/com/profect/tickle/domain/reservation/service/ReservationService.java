@@ -93,7 +93,7 @@ public class ReservationService {
             updateSeatsToReserved(preemptedSeats, reservation);
 
             // 8. 응답 생성
-            List<ReservedSeatInfo> reservedSeats = preemptedSeats.stream()
+            List<ReservedSeatDto> reservedSeats = preemptedSeats.stream()
                     .map(this::convertToReservedSeatInfo)
                     .collect(Collectors.toList());
 
@@ -180,8 +180,8 @@ public class ReservationService {
         seatRepository.saveAll(seats);
     }
 
-    private ReservedSeatInfo convertToReservedSeatInfo(Seat seat) {
-        return ReservedSeatInfo.builder()
+    private ReservedSeatDto convertToReservedSeatInfo(Seat seat) {
+        return ReservedSeatDto.builder()
                 .seatId(seat.getId())
                 .seatNumber(seat.getSeatNumber())
                 .seatGrade(seat.getSeatGrade())

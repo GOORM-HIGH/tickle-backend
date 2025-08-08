@@ -14,14 +14,14 @@ public class ReservationCompletionResponseDto {
     private boolean success;
     private Long reservationId;                    // 생성된 예매 ID
     private String reservationNumber;              // 예매 번호
-    private List<ReservedSeatInfo> reservedSeats;  // 예매된 좌석 정보
+    private List<ReservedSeatDto> reservedSeats;  // 예매된 좌석 정보
     private Integer price;                         // 결제 포인트
     private Integer remainingPoints;               // 결제 후 잔여 포인트
     private Instant reservedAt;                    // 예매 완료 시간
     private String message;
 
     public static ReservationCompletionResponseDto success(Reservation reservation,
-            List<ReservedSeatInfo> seats,
+            List<ReservedSeatDto> seats,
             Integer remainingPoints) {
         return ReservationCompletionResponseDto.builder()
                 .success(true)
