@@ -1,8 +1,6 @@
 package com.profect.tickle.domain.performance.mapper;
 
-import com.profect.tickle.domain.performance.dto.response.GenreDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
+import com.profect.tickle.domain.performance.dto.response.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.data.repository.query.Param;
 
@@ -45,5 +43,11 @@ public interface PerformanceMapper {
     );
 
     Long findGenreIdByPerformanceId(@Param("performanceId") Long performanceId);
+
+    List<PerformanceHostDto> findPerformancesByMemberId(Long memberId);
+
+    List<PerformanceScrapDto> findScrappedPerformancesByMemberId(Long memberId);
+
+    Boolean isScrapped(Long memberId, Long performanceId);
 
 }

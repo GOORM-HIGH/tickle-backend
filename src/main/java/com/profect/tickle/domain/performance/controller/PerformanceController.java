@@ -2,29 +2,20 @@ package com.profect.tickle.domain.performance.controller;
 
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
-import com.profect.tickle.domain.performance.dto.response.GenreDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceResponseDto;
+import com.profect.tickle.domain.performance.dto.response.*;
+import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.performance.service.PerformanceService;
-import com.profect.tickle.global.exception.BusinessException;
-import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
-import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Tag(name = "공연", description = "공연 API")
@@ -34,6 +25,7 @@ import java.util.List;
 public class PerformanceController {
 
     private final PerformanceService performanceService;
+    private final PerformanceMapper performanceMapper;
 
     @Operation(summary = "장르 목록 조회", description = "모든 공연 장르를 조회합니다.")
     @GetMapping("/genre")
@@ -128,6 +120,14 @@ public class PerformanceController {
         Long memberId = SecurityUtil.getSignInMemberId();
         performanceService.deletePerformance(performanceId, memberId);
         return ResultResponse.ok(ResultCode.PERFORMANCE_DELETE_SUCCESS);
+    }
+
+    @Operation(summary = "생성한 공연 조회", description = "HOST 권한으로 본인이 작성한 공연 목록을 조회합니다.")
+    @GetMapping("/host")
+    public ResultResponse<List<PerformanceHostDto>> getPerformanceHost() {
+        Long memberId = SecurityUtil.getSignInMemberId();
+        List<PerformanceHostDto> hostP = performanceService.getMyPerformances(memberId);
+        return ResultResponse.of(ResultCode.PERFORMANCE_HOST_SUCCESS,hostP);
     }
 
 
