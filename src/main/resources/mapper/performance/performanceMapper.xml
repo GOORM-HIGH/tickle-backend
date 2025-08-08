@@ -151,4 +151,18 @@
         WHERE performance_id = #{performanceId}
     </select>
 
+    <!-- 예매ID로 공연정보 조회 쿼리 -->
+    <select id="findByReservationId"
+            resultMap="PerformanceDto"
+            parameterType="long">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+            p.performance_img AS img
+        FROM performance p
+                 JOIN reservation r ON r.performance_id = p.performance_id
+        WHERE r.reservation_id = #{reservationId}
+    </select>
+
 </mapper>

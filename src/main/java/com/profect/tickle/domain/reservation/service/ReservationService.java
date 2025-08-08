@@ -2,8 +2,12 @@ package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.event.service.CouponService;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
+import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.entity.Performance;
+import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
@@ -22,19 +26,23 @@ import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class ReservationService {
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private final SeatRepository seatRepository;
     private final ReservationRepository reservationRepository;
@@ -43,6 +51,8 @@ public class ReservationService {
     private final PointRepository pointRepository;
     private final PointService pointService;
     private final CouponService couponService;
+    private final PerformanceMapper performanceMapper;
+    private final MemberMapper memberMapper;
 
     public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
 
@@ -95,6 +105,15 @@ public class ReservationService {
                     .collect(Collectors.toList());
 
             Integer remainingPoints = pointService.getCurrentPoint().credit();
+
+            // 9. 이벤트 생성(예매 성공 알림을 보내기 위함)
+            PerformanceDto reservedPerformance = performanceMapper.findByReservationId(); // 예매한 공연
+            Member siginMember = memberRepository.findById(userId) // 예매한 유저
+                    .orElseThrow(() -> new BusinessException(
+                            ErrorCode.MEMBER_NOT_FOUND.getMessage(),
+                            ErrorCode.MEMBER_NOT_FOUND)
+                    );
+            eventPublisher.publishEvent(new ReservationSuccessEvent(reservedPerformance, siginMember, reservation));
 
             return ReservationCompletionResponseDto.success(reservation, reservedSeats, remainingPoints);
 
@@ -183,5 +202,10 @@ public class ReservationService {
                 .seatGrade(seat.getSeatGrade())
                 .seatPrice(seat.getSeatPrice())
                 .build();
+    }
+
+    // 예약Id로 자석정보 조회
+    private List<ReservedSeatInfo> getSeatListByReservationId(Long reservationId) {
+        return List.of(); // TODO: seatService로 실제 구현
     }
 }

@@ -46,4 +46,5 @@ public interface PerformanceMapper {
 
     Long findGenreIdByPerformanceId(@Param("performanceId") Long performanceId);
 
+    PerformanceDto findByReservationId();
 }

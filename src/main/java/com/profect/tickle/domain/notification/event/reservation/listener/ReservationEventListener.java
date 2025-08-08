@@ -30,12 +30,6 @@ public class ReservationEventListener {
         );
 
         notificationService.sendReservationSuccessNotification(event);
-
-        /* TODO: 추후 구현
-         * - 예매 서비스 (ReservationService) 내부에서 예매 완료 시
-         *   ApplicationEventPublisher를 주입받아 publishEvent(new ReservationSuccessEvent(reservation)) 호출
-         * - 현재는 리스너만 구현된 상태
-         */
     }
 
     /**

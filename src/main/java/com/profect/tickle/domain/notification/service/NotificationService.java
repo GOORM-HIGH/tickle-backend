@@ -16,6 +16,7 @@ import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.service.PerformanceService;
 import com.profect.tickle.domain.reservation.entity.Seat;
+import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
@@ -42,6 +43,7 @@ public class NotificationService {
     private final NotificationTemplateService notificationTemplateService;
     private final PerformanceService performanceService;
     private final MailService mailService;
+    private final ReservationService reservationService;
 
     private final NotificationTemplateMapper notificationTemplateMapper;
     private final NotificationMapper notificationMapper;
@@ -140,43 +142,72 @@ public class NotificationService {
      * 예매 성공 알림
      */
     public void sendReservationSuccessNotification(ReservationSuccessEvent event) {
-        sendPerformanceNotification(event.reservation().getMember(),
+        sendPerformanceNotification(
+                event.reservation().getMember(),
                 NotificationTemplateId.RESERVATION_SUCCESS,
-                event.reservation().getPerformance(),
-                getSeatList(event.reservation().getId()));
+                event.reservation().getPerformance()
+        );
     }
 
     /**
      * 공연 수정 알림
      */
     public void sendPerformanceModifiedNotification(PerformanceModifiedEvent event) {
-        sendPerformanceNotification(event.reservation().getMember(),
+        sendPerformanceNotification(
+                event.reservation().getMember(),
                 NotificationTemplateId.PERFORMANCE_MODIFIED,
-                event.reservation().getPerformance(),
-                getSeatList(event.reservation().getId()));
+                event.reservation().getPerformance()
+        );
     }
 
     /**
      * 공통 Performance 알림 전송
      */
-    private void sendPerformanceNotification(Member receiver, NotificationTemplateId templateId,
-                                             Performance performance, List<Seat> seatList) {
+    private void sendPerformanceNotification(
+            Member receiver,
+            NotificationTemplateId templateId,
+            Performance performance
+    ) {
         NotificationTemplate template = getTemplate(templateId);
-        Instant now = Instant.now();
-
         String title = String.format(template.getTitle(), performance.getTitle());
-        String seatCodes = String.join("\n", seatList.stream().map(Seat::getSeatCode).toList());
-        String message = String.format(template.getContent(), performance.getDate(),
-                performance.getHall().getAddress(), seatCodes, now);
 
-        sendSseAndSaveNotification(receiver.getEmail(), template, title, message, now);
+        String message;
+        if (templateId == NotificationTemplateId.RESERVATION_SUCCESS) {
+            // 예매 성공 → 좌석 정보 포함
+//            List<Seat> seatList = reservationService.getSeatListByReservationId();
+            List<Seat> seatList = null;
+            String seatCodes = String.join("\n", seatList.stream().map(Seat::getSeatCode).toList());
+            message = String.format(
+                    template.getContent(),
+                    performance.getDate(),
+                    performance.getHall().getAddress(),
+                    seatCodes
+            );
+        } else if (templateId == NotificationTemplateId.PERFORMANCE_MODIFIED) {
+            // 공연 수정 → 좌석 정보 제외
+            message = String.format(
+                    template.getContent(),
+                    performance.getDate(),
+                    performance.getHall().getAddress()
+            );
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 템플릿입니다: " + templateId);
+        }
+
+        sendSseAndSaveNotification(receiver.getEmail(), template, title, message, Instant.now());
     }
+
 
     /**
      * 알림 전송 + 저장 + 메일 발송
      */
-    private void sendSseAndSaveNotification(String memberEmail, NotificationTemplate template,
-                                            String title, String message, Instant createdAt) {
+    private void sendSseAndSaveNotification(
+            String memberEmail, // 받는 유저 이메일
+            NotificationTemplate template, // 템플릿 유형
+            String title, // 제목
+            String message, // 메시지
+            Instant createdAt // 생성일
+    ) {
         // SSE 전송
         sendSseNotification(memberEmail, String.valueOf(NotificationSseResponseDto.builder().title(title).message(message).build()));
         // 메일 발송
@@ -198,12 +229,5 @@ public class NotificationService {
      */
     private NotificationTemplate getTemplate(NotificationTemplateId templateId) {
         return notificationTemplateService.getNotificationTemplateById(templateId.getId());
-    }
-
-    /**
-     * 자리 리스트 조회
-     */
-    private List<Seat> getSeatList(Long reservationId) {
-        return List.of(); // TODO: seatService로 실제 구현
     }
 }
