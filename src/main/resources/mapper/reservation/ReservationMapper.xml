@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.reservation.mapper.ReservationMapper">
+
+    <select id="findReservedSeatById"
+            resultType="ReservedSeatDto">
+        SELECT
+            s.seat_id,
+            s.seat_number,
+            s.seat_grade,
+            s.seat_price,
+            s.seat_code
+        FROM seat AS s
+        WHERE s.reservation_id = #{reservationId}
+    </select>
+</mapper>

@@ -19,6 +19,7 @@ import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.entity.SeatStatus;
+import com.profect.tickle.domain.reservation.mapper.ReservationMapper;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -59,6 +60,7 @@ public class ReservationService {
     private final CouponService couponService;
     private final PerformanceMapper performanceMapper;
     private final MemberMapper memberMapper;
+    private final ReservationMapper reservationMapper;
 
     public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
 
@@ -212,8 +214,8 @@ public class ReservationService {
     }
 
     // 예약Id로 자석정보 조회
-    private List<ReservedSeatInfo> getSeatListByReservationId(Long reservationId) {
-        return List.of(); // TODO: seatService로 실제 구현
+    public List<ReservedSeatDto> getSeatListByReservationId(Long reservationId) {
+        return reservationMapper.findReservedSeatById(reservationId);
     }
 
     private String generateReservationCode() {

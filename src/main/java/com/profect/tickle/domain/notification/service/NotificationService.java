@@ -15,6 +15,8 @@ import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.service.PerformanceService;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
+import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.global.exception.BusinessException;
@@ -143,7 +145,7 @@ public class NotificationService {
      */
     public void sendReservationSuccessNotification(ReservationSuccessEvent event) {
         sendPerformanceNotification(
-                event.reservation().getMember(),
+                event.reservation(),
                 NotificationTemplateId.RESERVATION_SUCCESS,
                 event.reservation().getPerformance()
         );
@@ -154,7 +156,7 @@ public class NotificationService {
      */
     public void sendPerformanceModifiedNotification(PerformanceModifiedEvent event) {
         sendPerformanceNotification(
-                event.reservation().getMember(),
+                event.reservation(),
                 NotificationTemplateId.PERFORMANCE_MODIFIED,
                 event.reservation().getPerformance()
         );
@@ -164,7 +166,7 @@ public class NotificationService {
      * 공통 Performance 알림 전송
      */
     private void sendPerformanceNotification(
-            Member receiver,
+            Reservation reservation,
             NotificationTemplateId templateId,
             Performance performance
     ) {
@@ -174,9 +176,8 @@ public class NotificationService {
         String message;
         if (templateId == NotificationTemplateId.RESERVATION_SUCCESS) {
             // 예매 성공 → 좌석 정보 포함
-//            List<Seat> seatList = reservationService.getSeatListByReservationId();
-            List<Seat> seatList = null;
-            String seatCodes = String.join("\n", seatList.stream().map(Seat::getSeatCode).toList());
+            List<ReservedSeatDto> seatList = reservationService.getSeatListByReservationId(reservation.getId());
+            String seatCodes = String.join("\n", seatList.stream().map(ReservedSeatDto::getSeatCode).toList());
             message = String.format(
                     template.getContent(),
                     performance.getDate(),
@@ -191,12 +192,11 @@ public class NotificationService {
                     performance.getHall().getAddress()
             );
         } else {
-            throw new IllegalArgumentException("지원하지 않는 템플릿입니다: " + templateId);
+            throw new BusinessException(ErrorCode.NOTIFICATION_TEMPLATE_NOT_FOUND);
         }
 
-        sendSseAndSaveNotification(receiver.getEmail(), template, title, message, Instant.now());
+        sendSseAndSaveNotification(reservation.getMember().getEmail(), template, title, message, Instant.now());
     }
-
 
     /**
      * 알림 전송 + 저장 + 메일 발송
