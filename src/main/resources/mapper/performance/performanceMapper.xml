@@ -74,6 +74,7 @@
             p.performance_title AS title,
             p.performance_img AS img,
             p.performance_date AS date,
+            p.performance_is_event AS isEvent,
         s.status_description AS statusDescription,
         p.performance_runtime AS runtime,
         p.performance_price AS price,
