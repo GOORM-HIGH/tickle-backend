@@ -25,10 +25,10 @@ public class CouponScheduler {
      */
     @Scheduled(cron = "0 0 0 * * *") // 매일 0시 0분 0초
     public void publishExpiringSoonCoupons() {
-        List<ExpiringSoonCouponResponseDto> expiringCoupons = eventService.getCouponsExpiringWithinOneDay();
-        log.info("만료 임박 쿠폰 {}건 조회됨", expiringCoupons.size());
+        List<ExpiringSoonCouponResponseDto> expiringCouponList = eventService.getCouponsExpiringWithinOneDay();
+        log.info("만료 임박 쿠폰 {}건 조회됨", expiringCouponList.size());
 
-        expiringCoupons.forEach(coupon ->
+        expiringCouponList.forEach(coupon ->
                 eventPublisher.publishEvent(
                         new CouponAlmostExpiredEvent(
                                 coupon.memberEmail(),
