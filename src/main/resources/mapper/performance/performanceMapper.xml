@@ -194,7 +194,7 @@
         )
     </select>
 
-    <!-- 예매ID로 공연정보 조회 쿼리 -->
+    <!-- 예매Id로 공연정보 조회 쿼리 -->
     <select id="findByReservationId"
             resultType="PerformanceDto"
             parameterType="long">
@@ -208,4 +208,16 @@
         WHERE r.reservation_id = #{reservationId}
     </select>
 
+    <!-- 공연Id로 공연정보 조회 쿼리-->
+    <select id="findById"
+            resultType="PerformanceDto"
+            parameterType="long">
+        SELECT
+            performance_id AS performanceId,
+            performance_title AS title,
+            performance_date AS date,
+            performance_img AS img
+        FROM performance
+        WHERE performance_id = #{performanceId}
+    </select>
 </mapper>

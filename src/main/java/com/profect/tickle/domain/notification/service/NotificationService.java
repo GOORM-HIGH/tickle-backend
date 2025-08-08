@@ -15,8 +15,10 @@ import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.mapper.NotificationTemplateMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import com.profect.tickle.domain.notification.repository.SseRepository;
+import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.service.PerformanceService;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.service.ReservationService;
@@ -34,6 +36,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -115,7 +118,6 @@ public class NotificationService {
         return emitter;
     }
 
-
     /**
      * 알림 전송
      */
@@ -184,9 +186,10 @@ public class NotificationService {
      */
     public void sendReservationSuccessNotification(ReservationSuccessEvent event) {
         sendPerformanceNotification(
-                event.reservation(),
                 NotificationTemplateId.RESERVATION_SUCCESS,
-                event.reservation().getPerformance()
+                event.performance(),
+                List.of(event.reservation()),
+                event.member().getEmail()
         );
     }
 
@@ -195,9 +198,10 @@ public class NotificationService {
      */
     public void sendPerformanceModifiedNotification(PerformanceModifiedEvent event) {
         sendPerformanceNotification(
-                event.reservation(),
                 NotificationTemplateId.PERFORMANCE_MODIFIED,
-                event.reservation().getPerformance()
+                event.performance(),
+                event.reservationList(),
+                event.member().getEmail()
         );
     }
 
@@ -205,36 +209,55 @@ public class NotificationService {
      * 공통 Performance 알림 전송
      */
     private void sendPerformanceNotification(
-            Reservation reservation,
             NotificationTemplateId templateId,
-            Performance performance
+            PerformanceDto performance,
+            List<ReservationDto> reservationList,
+            String email
     ) {
         NotificationTemplate template = getTemplate(templateId);
         String title = String.format(template.getTitle(), performance.getTitle());
 
-        String message;
         if (templateId == NotificationTemplateId.RESERVATION_SUCCESS) {
-            // 예매 성공 → 좌석 정보 포함
+            // 단일 예약 성공 알림
+            ReservationDto reservation = reservationList.getFirst(); // 또는 reservationList.get(0)
             List<ReservedSeatDto> seatList = reservationService.getSeatListByReservationId(reservation.getId());
-            String seatCodes = String.join("\n", seatList.stream().map(ReservedSeatDto::getSeatCode).toList());
-            message = String.format(
+            String seatCodes = seatList.stream()
+                    .map(ReservedSeatDto::getSeatCode)
+                    .collect(Collectors.joining("\n"));
+
+            String message = String.format(
                     template.getContent(),
+                    performance.getTitle(),
                     performance.getDate(),
-                    performance.getHall().getAddress(),
                     seatCodes
             );
+
+            sendSseAndSaveNotification(email, template, title, message, Instant.now());
+
         } else if (templateId == NotificationTemplateId.PERFORMANCE_MODIFIED) {
-            // 공연 수정 → 좌석 정보 제외
-            message = String.format(
-                    template.getContent(),
-                    performance.getDate(),
-                    performance.getHall().getAddress()
-            );
+            // 공연 정보 수정 시 모든 예매 건에 대해 각각 알림 전송
+            if (reservationList.isEmpty()) {
+                throw new BusinessException(ErrorCode.RESERVATION_NOT_FOUND);
+            }
+
+            for (ReservationDto reservation : reservationList) {
+                String newTitle = "[공연제목]: " + performance.getTitle();
+                String newDate = "[일  자]: " + performance.getDate();
+                String newImg = "[이미지]: " + performance.getImg();
+
+                String newContent = String.join("\n", newTitle, newDate, newImg);
+
+                String message = String.format(
+                        template.getContent(),
+                        newContent
+                );
+
+                sendSseAndSaveNotification(email, template, title, message, Instant.now());
+            }
+
         } else {
             throw new BusinessException(ErrorCode.NOTIFICATION_TEMPLATE_NOT_FOUND);
         }
-
-        sendSseAndSaveNotification(reservation.getMember().getEmail(), template, title, message, Instant.now());
     }
 
     /**

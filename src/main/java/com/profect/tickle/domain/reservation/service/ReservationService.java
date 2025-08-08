@@ -14,6 +14,7 @@ import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
@@ -116,13 +117,7 @@ public class ReservationService {
             Integer remainingPoints = pointService.getCurrentPoint().credit();
 
             // 9. 이벤트 생성(예매 성공 알림을 보내기 위함)
-            PerformanceDto reservedPerformance = performanceMapper.findByReservationId(); // 예매한 공연
-            Member siginMember = memberRepository.findById(userId) // 예매한 유저
-                    .orElseThrow(() -> new BusinessException(
-                            ErrorCode.MEMBER_NOT_FOUND.getMessage(),
-                            ErrorCode.MEMBER_NOT_FOUND)
-                    );
-            eventPublisher.publishEvent(new ReservationSuccessEvent(reservedPerformance, siginMember, reservation));
+            publishReservationSuccessEvent(reservation.getId(), userId);
 
             return ReservationCompletionResponseDto.success(reservation, reservedSeats, remainingPoints);
 
@@ -130,6 +125,18 @@ public class ReservationService {
             log.error("Reservation completion failed", e);
             return ReservationCompletionResponseDto.failure(e.getMessage());
         }
+    }
+
+    // 예매 성공 이벤트 발행 메서드
+    private void publishReservationSuccessEvent(long reservationId, long userId) {
+        PerformanceDto reservedPerformance = performanceMapper.findByReservationId(reservationId); // 예매 공연 정보
+        ReservationDto reservation = reservationMapper.findById(reservationId).orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND)); // 예매 정보
+        Member siginMember = memberRepository.findById(userId) // 예매 유저 정보
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.MEMBER_NOT_FOUND.getMessage(),
+                        ErrorCode.MEMBER_NOT_FOUND)
+                );
+        eventPublisher.publishEvent(new ReservationSuccessEvent(reservedPerformance, reservation, siginMember));
     }
 
     private List<Seat> validatePreemptedSeats(String preemptionToken, Long userId) {

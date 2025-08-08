@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 @Mapper
 public interface PerformanceMapper {
@@ -50,5 +51,7 @@ public interface PerformanceMapper {
 
     Boolean isScrapped(Long memberId, Long performanceId);
 
-    PerformanceDto findByReservationId();
+    PerformanceDto findByReservationId(Long reservationId);
+
+    Optional<PerformanceDto> findById(@Param("performanceId") Long performanceId);
 }

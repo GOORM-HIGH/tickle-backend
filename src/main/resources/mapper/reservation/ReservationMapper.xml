@@ -15,4 +15,34 @@
         FROM seat AS s
         WHERE s.reservation_id = #{reservationId}
     </select>
+
+    <!-- 예매Id로 예매정보 조회 쿼리-->
+    <select id="findById"
+            resultType="ReservationDto"
+            parameterType="long">
+        SELECT
+            reservation_id AS id,
+            reservation_code AS code,
+            reservation_price AS totalPrice,
+            reservation_is_notify AS isNotify
+        FROM reservation
+        WHERE reservation_id = #{reservationId}
+    </select>
+
+    <!-- 공연Id로 예매정보 조회 쿼리 -->
+    <!-- 취소된 예매는 조회 X -->
+    <!-- 알림 설정된 것만 조회 -->
+    <select id="findByPerformanceId"
+            resultType="ReservationDto"
+            parameterType="long">
+        SELECT
+            reservation_id AS id,
+            reservation_code AS code,
+            reservation_price AS totalPrice,
+            reservation_is_notify AS isNotify
+        FROM reservation
+        WHERE performance_id = #{performanceId}
+          AND reservation_updated_at IS NULL
+          AND reservation_is_notify = true
+    </select>
 </mapper>
