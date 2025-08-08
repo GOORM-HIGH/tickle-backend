@@ -96,4 +96,8 @@ public class Seat {
     public void setStatusTo(Status status){
         this.status = status;
     }
+
+    public void assignSeatCode(String seatCode) {
+        this.seatCode = seatCode;
+    }
 }

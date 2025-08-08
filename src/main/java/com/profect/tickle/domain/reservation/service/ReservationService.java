@@ -10,7 +10,7 @@ import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -23,7 +23,10 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -171,6 +174,7 @@ public class ReservationService {
             seat.assignPreemptedAt(null);
             seat.assignPreemptedUntil(null);
             seat.setStatusTo(reservedStatus);
+            seat.assignSeatCode(generateReservationCode());
         }
 
         seatRepository.saveAll(seats);
@@ -183,5 +187,11 @@ public class ReservationService {
                 .seatGrade(seat.getSeatGrade())
                 .seatPrice(seat.getSeatPrice())
                 .build();
+    }
+
+    private String generateReservationCode() {
+        String uuidPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return uuidPart + dateTime;
     }
 }
