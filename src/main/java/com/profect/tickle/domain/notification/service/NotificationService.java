@@ -17,7 +17,6 @@ import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.service.PerformanceService;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
-import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
@@ -31,7 +30,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -130,7 +128,11 @@ public class NotificationService {
      * 쿠폰 만료 임박 알림
      */
     @Transactional
-    public void sendCouponAlmostExpiredNotification(String memberEmail, String couponName, LocalDate expiryDate) {
+    public void sendCouponAlmostExpiredNotification(
+            String memberEmail, // 알림는 유저 이메일
+            String couponName, // 쿠폰 이름
+            Instant expiryDate // 만료 일자
+    ) {
         NotificationTemplate template = getTemplate(NotificationTemplateId.COUPON_ALMOST_EXPIRED);
         Instant now = Instant.now();
 
@@ -211,7 +213,8 @@ public class NotificationService {
         // SSE 전송
         sendSseNotification(memberEmail, String.valueOf(NotificationSseResponseDto.builder().title(title).message(message).build()));
         // 메일 발송
-        mailService.sendSimpleMailMessage(memberEmail, title, message);
+        // TODO: 테스트 단계입니다. 메일은 전송되는 거 확인했습니다. 배포 할때, 주석 해제해야 됩니다.
+//        mailService.sendSimpleMailMessage(memberEmail, title, message);
         // DB 저장
         Member member = memberService.getMemberByEmail(memberEmail);
         notificationRepository.save(Notification.builder()

@@ -33,7 +33,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -247,7 +249,11 @@ public class EventServiceImpl implements EventService {
 
     public List<ExpiringSoonCouponResponseDto> getCouponsExpiringWithinOneDay() {
         // 오늘 날짜 + 1일 (내일 날짜)
-        LocalDate targetDate = LocalDate.now().plusDays(1);
+        Instant targetDate = LocalDate.now()
+                .plusDays(1) // 내일
+                .atStartOfDay(ZoneId.systemDefault()) // 자정 기준 ZonedDateTime
+                .toInstant(); // Instant 변환
+
         return couponMapper.findCouponsExpiringBefore(targetDate);
     }
 }

@@ -118,7 +118,9 @@
             p.performance_date AS date,
         p.performance_img AS img
         FROM performance p
+            JOIN status s ON p.status_id = s.status_id
         WHERE p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
+          AND s.status_code != 102
         ORDER BY p.performance_date ASC
             LIMIT #{limit} OFFSET #{offset}
     </select>
@@ -194,7 +196,7 @@
 
     <!-- 예매ID로 공연정보 조회 쿼리 -->
     <select id="findByReservationId"
-            resultMap="PerformanceDto"
+            resultType="PerformanceDto"
             parameterType="long">
         SELECT
             p.performance_id AS performanceId,
