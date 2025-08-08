@@ -56,8 +56,7 @@ public class CouponScheduler {
     /**
      * 매일 자정에 실행 (00:00)
      */
-    // TODO: 테스트 30초마다 실행
-    @Scheduled(cron = "0/30 * * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void runDaily() {
         publishExpiringSoonCoupons();
     }

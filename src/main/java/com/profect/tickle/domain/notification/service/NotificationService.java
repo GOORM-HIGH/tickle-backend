@@ -1,5 +1,7 @@
 package com.profect.tickle.domain.notification.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
@@ -23,6 +25,7 @@ import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.service.StatusService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
     private static final Long TIME_OUT = 60 * 60 * 1000L;
@@ -76,39 +80,72 @@ public class NotificationService {
      */
     public SseEmitter sseConnect(String lastEventId) {
         String emitterId = SecurityUtil.getSignInMemberEmail();
+        log.info("📡 SSE 연결 요청 - emitterId: {}", emitterId);
+
+        if (emitterId == null || emitterId.isBlank()) {
+            log.warn("❌ emitterId가 null이거나 공백입니다. 인증된 사용자 정보가 없습니다.");
+        }
+
         SseEmitter emitter = new SseEmitter(TIME_OUT);
         sseRepository.save(emitterId, emitter);
+        log.info("✅ SSE emitter 저장 완료 - ID: {}", emitterId);
 
-        emitter.onCompletion(() -> sseRepository.deleteById(emitterId));
-        emitter.onTimeout(() -> sseRepository.deleteById(emitterId));
+        emitter.onCompletion(() -> {
+            log.info("🧹 SSE 연결 종료 (onCompletion) - ID: {}", emitterId);
+            sseRepository.deleteById(emitterId);
+        });
+
+        emitter.onTimeout(() -> {
+            log.warn("⏱️ SSE 타임아웃 발생 - ID: {}", emitterId);
+            sseRepository.deleteById(emitterId);
+        });
 
         try {
             emitter.send(SseEmitter.event().name("sse connect").data("connected"));
+            log.info("✅ SSE 초기 메시지 전송 완료 - ID: {}", emitterId);
         } catch (IOException e) {
+            log.error("❌ SSE 초기 메시지 전송 실패 - ID: {}, 오류: {}", emitterId, e.getMessage());
             sseRepository.deleteById(emitterId);
         }
 
         if (!lastEventId.isEmpty()) {
             resendMissedSseEvents(emitter, lastEventId);
         }
+
         return emitter;
     }
+
 
     /**
      * 알림 전송
      */
     public void sendSseNotification(String id, String message) {
         SseEmitter emitter = sseRepository.get(id);
-        if (emitter == null) return;
+        if (emitter == null) {
+            log.warn("❗ SSE Emitter not found for ID: {}", id);
+            return;
+        }
 
         String eventId = String.valueOf(System.currentTimeMillis());
+
         try {
-            emitter.send(SseEmitter.event().name("notification").data(message, MediaType.APPLICATION_JSON).id(eventId));
+            log.info("📤 SSE 알림 전송 시작 - ID: {}, EventID: {}, Message: {}", id, eventId, message);
+
+            emitter.send(SseEmitter.event()
+                    .name("notification")
+                    .data(message, MediaType.APPLICATION_JSON)
+                    .id(eventId));
+
             sseRepository.saveEvent(eventId, message);
+
+            log.info("✅ SSE 알림 전송 완료 - ID: {}, EventID: {}", id, eventId);
+
         } catch (IOException e) {
+            log.error("❌ SSE 전송 실패 - ID: {}, 오류: {}", id, e.getMessage());
             sseRepository.deleteById(id);
         }
     }
+
 
     /**
      * 유실 이벤트 재전송
@@ -211,10 +248,16 @@ public class NotificationService {
             Instant createdAt // 생성일
     ) {
         // SSE 전송
-        sendSseNotification(memberEmail, String.valueOf(NotificationSseResponseDto.builder().title(title).message(message).build()));
+        NotificationSseResponseDto dto = NotificationSseResponseDto.builder()
+                .title(title)
+                .message(message)
+                .build();
+
+        String json = convertToJson(dto);
+        sendSseNotification(memberEmail, json);
+
         // 메일 발송
-        // TODO: 테스트 단계입니다. 메일은 전송되는 거 확인했습니다. 배포 할때, 주석 해제해야 됩니다.
-//        mailService.sendSimpleMailMessage(memberEmail, title, message);
+        mailService.sendSimpleMailMessage(memberEmail, title, message);
         // DB 저장
         Member member = memberService.getMemberByEmail(memberEmail);
         notificationRepository.save(Notification.builder()
@@ -233,4 +276,15 @@ public class NotificationService {
     private NotificationTemplate getTemplate(NotificationTemplateId templateId) {
         return notificationTemplateService.getNotificationTemplateById(templateId.getId());
     }
+
+    // Json으로 변환하는 메서드
+    private String convertToJson(Object obj) {
+        try {
+            return new ObjectMapper().writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.error("❌ JSON 직렬화 실패", e);
+            return "{}";
+        }
+    }
+
 }
