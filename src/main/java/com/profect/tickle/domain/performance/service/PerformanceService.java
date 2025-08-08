@@ -4,10 +4,7 @@ import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
-import com.profect.tickle.domain.performance.dto.response.GenreDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceResponseDto;
+import com.profect.tickle.domain.performance.dto.response.*;
 import com.profect.tickle.domain.performance.entity.Genre;
 import com.profect.tickle.domain.performance.entity.Hall;
 import com.profect.tickle.domain.performance.entity.Performance;
@@ -177,6 +174,11 @@ public class PerformanceService {
 
         performance.markAsDeleted();
     }
+
+    public List<PerformanceHostDto> getMyPerformances(Long memberId) {
+        return performanceMapper.findPerformancesByMemberId(memberId);
+    }
+
 
 
 }

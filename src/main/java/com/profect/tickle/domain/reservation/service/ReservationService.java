@@ -14,7 +14,7 @@ import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatInfo;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -26,6 +26,12 @@ import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -100,7 +106,7 @@ public class ReservationService {
             updateSeatsToReserved(preemptedSeats, reservation);
 
             // 8. 응답 생성
-            List<ReservedSeatInfo> reservedSeats = preemptedSeats.stream()
+            List<ReservedSeatDto> reservedSeats = preemptedSeats.stream()
                     .map(this::convertToReservedSeatInfo)
                     .collect(Collectors.toList());
 
@@ -190,13 +196,14 @@ public class ReservationService {
             seat.assignPreemptedAt(null);
             seat.assignPreemptedUntil(null);
             seat.setStatusTo(reservedStatus);
+            seat.assignSeatCode(generateReservationCode());
         }
 
         seatRepository.saveAll(seats);
     }
 
-    private ReservedSeatInfo convertToReservedSeatInfo(Seat seat) {
-        return ReservedSeatInfo.builder()
+    private ReservedSeatDto convertToReservedSeatInfo(Seat seat) {
+        return ReservedSeatDto.builder()
                 .seatId(seat.getId())
                 .seatNumber(seat.getSeatNumber())
                 .seatGrade(seat.getSeatGrade())
@@ -207,5 +214,11 @@ public class ReservationService {
     // 예약Id로 자석정보 조회
     private List<ReservedSeatInfo> getSeatListByReservationId(Long reservationId) {
         return List.of(); // TODO: seatService로 실제 구현
+    }
+
+    private String generateReservationCode() {
+        String uuidPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return uuidPart + dateTime;
     }
 }
