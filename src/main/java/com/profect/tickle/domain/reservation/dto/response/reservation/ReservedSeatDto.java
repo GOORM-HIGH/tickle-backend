@@ -8,9 +8,10 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class ReservedSeatDetail {
+public class ReservedSeatDto {
     private Long seatId;
-    private String seatNumber;                  // 좌석 번호
-    private SeatGrade seatGrade;               // 좌석 등급
-    private Integer seatPrice;                  // 좌석 가격
+    private String seatNumber;
+    private SeatGrade seatGrade;
+    private Integer seatPrice;
+    private String seatCode;
 }

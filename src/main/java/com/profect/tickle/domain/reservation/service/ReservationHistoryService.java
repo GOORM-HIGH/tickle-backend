@@ -12,7 +12,7 @@ import com.profect.tickle.domain.reservation.dto.response.reservation.Reservatio
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDetailResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationHistoryResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationInfo;
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDetail;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -143,8 +143,8 @@ public class ReservationHistoryService {
                 .build();
 
         // 좌석 정보
-        List<ReservedSeatDetail> seatDetails = seats.stream()
-                .map(seat -> ReservedSeatDetail.builder()
+        List<ReservedSeatDto> seatDetails = seats.stream()
+                .map(seat -> ReservedSeatDto.builder()
                         .seatId(seat.getId())
                         .seatNumber(seat.getSeatNumber())
                         .seatGrade(seat.getSeatGrade())
@@ -181,8 +181,8 @@ public class ReservationHistoryService {
             return false;
         }
 
-        // 공연 시작일까지만 취소 가능
-        Instant performanceStartDate = reservation.getPerformance().getStartDate();
+        // 공연 예매 종료일까지만 취소 가능
+        Instant performanceStartDate = reservation.getPerformance().getEndDate();
         Instant today = Instant.now();
 
         return today.isBefore(performanceStartDate);
