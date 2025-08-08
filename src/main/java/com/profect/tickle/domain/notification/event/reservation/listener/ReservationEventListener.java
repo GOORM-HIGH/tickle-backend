@@ -15,11 +15,7 @@ public class ReservationEventListener {
 
     private final NotificationService notificationService;
 
-    /**
-     * 예매 성공 시 알림 전송
-     * 현재는 ReservationSuccessEvent 수신 시 동작.
-     * 추후: 예매 도메인 서비스에서 예매 성공 시점에 eventPublisher.publishEvent()로 발행 필요.
-     */
+    // 예매 성공 시 알림 전송
     @Async
     @EventListener
     public void handleReservationSuccess(ReservationSuccessEvent event) {
