@@ -4,10 +4,10 @@ import com.profect.tickle.domain.event.dto.response.ExpiringSoonCouponResponseDt
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 @Mapper
 public interface CouponMapper {
-    List<ExpiringSoonCouponResponseDto> findCouponsExpiringBefore(@Param("targetDate") LocalDate targetDate);
+    List<ExpiringSoonCouponResponseDto> findCouponsExpiringBefore(@Param("targetDate") Instant targetDate);
 }

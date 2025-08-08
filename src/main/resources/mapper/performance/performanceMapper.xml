@@ -74,7 +74,6 @@
             p.performance_title AS title,
             p.performance_img AS img,
             p.performance_date AS date,
-            p.performance_is_event AS isEvent,
         s.status_description AS statusDescription,
         p.performance_runtime AS runtime,
         p.performance_price AS price,
@@ -119,7 +118,9 @@
             p.performance_date AS date,
         p.performance_img AS img
         FROM performance p
+            JOIN status s ON p.status_id = s.status_id
         WHERE p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
+          AND s.status_code != 102
         ORDER BY p.performance_date ASC
             LIMIT #{limit} OFFSET #{offset}
     </select>
@@ -193,4 +194,30 @@
         )
     </select>
 
+    <!-- 예매Id로 공연정보 조회 쿼리 -->
+    <select id="findByReservationId"
+            resultType="PerformanceDto"
+            parameterType="long">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+            p.performance_img AS img
+        FROM performance p
+                 JOIN reservation r ON r.performance_id = p.performance_id
+        WHERE r.reservation_id = #{reservationId}
+    </select>
+
+    <!-- 공연Id로 공연정보 조회 쿼리-->
+    <select id="findById"
+            resultType="PerformanceDto"
+            parameterType="long">
+        SELECT
+            performance_id AS performanceId,
+            performance_title AS title,
+            performance_date AS date,
+            performance_img AS img
+        FROM performance
+        WHERE performance_id = #{performanceId}
+    </select>
 </mapper>
