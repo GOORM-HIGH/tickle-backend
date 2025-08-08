@@ -62,6 +62,7 @@ public class ReservationService {
     private final MemberMapper memberMapper;
     private final ReservationMapper reservationMapper;
 
+    // 예매 생성 메서드
     public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
 
         Long userId = SecurityUtil.getSignInMemberId();
