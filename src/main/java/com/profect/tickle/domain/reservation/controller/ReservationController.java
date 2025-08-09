@@ -2,9 +2,9 @@ package com.profect.tickle.domain.reservation.controller;
 
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequestDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.HallTypeAndSeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationInfoResponseDto;
-import com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.preemption.SeatPreemptionResponseDto;
 import com.profect.tickle.domain.reservation.service.ReservationInfoService;
 import com.profect.tickle.domain.reservation.service.ReservationService;
@@ -16,8 +16,8 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @Tag(name = "예매", description = "공연 예매 관련 API")
 @RestController
 @RequiredArgsConstructor
@@ -39,11 +40,12 @@ public class ReservationController {
 
     @Operation(summary = "공연 좌석 조회", description = "해당 공연의 좌석 정보를 조회합니다.")
     @GetMapping("/{performanceId}/seats")
-    public ResultResponse<List<SeatInfoResponseDto>> getPerformanceSeats(
+    public ResultResponse<HallTypeAndSeatInfoResponseDto> getPerformanceSeats(
             @PathVariable Long performanceId) {
 
-        List<SeatInfoResponseDto> seats = seatService.getSeatInfoListByPerformance(performanceId);
-        return ResultResponse.of(ResultCode.RESERVATION_SEATS_INFO_SUCCESS, seats);
+        HallTypeAndSeatInfoResponseDto seatInfo = seatService.getSeatInfoByPerformance(
+                performanceId);
+        return ResultResponse.of(ResultCode.RESERVATION_SEATS_INFO_SUCCESS, seatInfo);
     }
 
     @Operation(summary = "좌석 선점", description = "예매를 위한 좌석 선점을 수행합니다.")

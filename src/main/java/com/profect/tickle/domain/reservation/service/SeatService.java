@@ -3,6 +3,7 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.performance.entity.HallType;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
+import com.profect.tickle.domain.reservation.dto.response.reservation.HallTypeAndSeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.entity.SeatStatus;
@@ -15,7 +16,6 @@ import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -46,12 +46,18 @@ public class SeatService {
         seatRepository.saveAll(seats);
     }
 
-    public List<SeatInfoResponseDto> getSeatInfoListByPerformance(Long performanceId) {
+    public HallTypeAndSeatInfoResponseDto getSeatInfoByPerformance(Long performanceId) {
         List<Seat> seats = seatRepository.findByPerformanceIdOrderBySeatNumber(performanceId);
 
-        return seats.stream()
+        List<SeatInfoResponseDto> seatInfos = seats.stream()
                 .map(this::convertToSeatStatusResponse)
-                .collect(Collectors.toList());
+                .toList();
+
+        HallType hallType = findPerformanceById(performanceId)
+                .getHall()
+                .getType();
+
+        return new HallTypeAndSeatInfoResponseDto(hallType, seatInfos);
     }
 
     private Performance findPerformanceById(Long performanceId) {
@@ -63,7 +69,11 @@ public class SeatService {
      * 공연 ID로 홀 타입을 조회합니다.
      */
     private HallType findHallTypeByPerformanceId(Long performanceId) {
-        HallType hallType = performanceRepository.findHallTypeById(performanceId);
+        Performance performance = performanceRepository.findById(performanceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
+
+        HallType hallType = performance.getHall().getType();
+
         if (hallType == null) {
             throw new BusinessException(ErrorCode.HALL_TYPE_NOT_FOUND);
         }
