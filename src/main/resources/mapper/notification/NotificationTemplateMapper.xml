@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.profect.tickle.domain.notification.mapper.NotificationTemplateMapper">
+
+    <select id="findById" parameterType="long" resultType="com.profect.tickle.domain.notification.entity.NotificationTemplate">
+        SELECT
+            notification_template_id AS id,
+            notification_template_title AS title,
+            notification_template_content AS content,
+            notification_template_maker_id AS maker
+        FROM notification_template
+        WHERE notification_template_id = #{id}
+    </select>
+
+</mapper>

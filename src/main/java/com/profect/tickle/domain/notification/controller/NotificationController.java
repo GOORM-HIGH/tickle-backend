@@ -63,12 +63,11 @@ public class NotificationController {
         );
     }
 
-    @Operation(summary = "SSE 통신 연결 요청", description = "이벤트 내용을 전달하기 위한 SSE 통신을 연결을 요청합니다.")
+    @Operation(summary = "SSE 통신 연결 요청", description = "이벤트 내용을 전달하기 위한 SSE 통신을 연결합니다.")
     @GetMapping(value = "/sse-connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResultResponse<SseEmitter> connect(@RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") final String lastEventId) {
-        return ResultResponse.of(
-                ResultCode.SSE_CONNECTION_SUCCESS,
-                notificationService.sseConnect(lastEventId)
-        );
+    public SseEmitter connect(
+            @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") final String lastEventId) {
+        log.info("SSE 통신 연결 요청");
+        return notificationService.sseConnect(lastEventId);
     }
 }

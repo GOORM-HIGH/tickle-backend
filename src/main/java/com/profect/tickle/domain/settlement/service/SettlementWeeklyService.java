@@ -3,12 +3,15 @@ package com.profect.tickle.domain.settlement.service;
 import com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto;
 import com.profect.tickle.domain.settlement.mapper.SettlementWeeklyMapper;
 import com.profect.tickle.domain.settlement.util.SettlementPeriod;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -23,33 +26,45 @@ public class SettlementWeeklyService {
      * 주간정산 테이블 insert+update_tasklet 구조
      */
     public void getSettlementWeekly(){
-        // 일일정산 생성 시간
-        LocalDateTime settlementDate = LocalDateTime.now();
+        HashMap<String, Object> map = new HashMap<>();
 
-        // yyyy, m, week, d(monday, sunday)
-        LocalDate today = LocalDate.now();
-        SettlementPeriod period = SettlementPeriod.get(today);
-        int year = period.year();
-        int month = period.month();
-        int week = period.weekOfMonth();
-        int monday = period.startOfWeek();
-        int sunday = period.endOfWeek();
-        log.info("회차 및 시작일, 종료일 ::: " + year + "-" + month + "월-" + week + "회차(" + monday + "일, " + sunday + "일)");
+        // 정산 생성 시간
+        Instant settlementDate = Instant.now();
+
+        // 날짜 유틸 yyyy, m, week
+        // 00시00분30초에 전날의 정산내역 집계 (yesterday)
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        SettlementPeriod period = SettlementPeriod.get(yesterday);
+        map.put("year", period.yearStr());
+        map.put("month", period.monthStr());
+        map.put("day", period.dayOfMonthStr());
+        map.put("week", period.weekOfMonthStr());
+        map.put("now", settlementDate);
 
         // 오늘 날짜 기준 연월일로 일간정산 리스트 추출
-        List<SettlementDailyDto> getDailyList = settlementWeeklyMapper.findByDate(settlementDate);
+        List<SettlementDailyDto> getDailyList;
+        try {
+            getDailyList = settlementWeeklyMapper.findByDate(map);
+        } catch (DataAccessException dae) {
+            log.error("정산 대상 조회 중 DB 오류 발생", dae);
+            throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
+        }
+
+        if(getDailyList.isEmpty()){
+            log.info("정산 대상 데이터가 존재하지 않습니다.");
+            return;
+        }
 
         // 주최자, 공연, 회차별로 upsert
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("year", String.valueOf(year));
-        map.put("month", String.format("%02d", month));
-        map.put("week", String.format("%02d", week));
-        map.put("now", settlementDate.minusDays(1));
-        log.info("집계조회일 ::: " + settlementDate.minusDays(1));
         for(SettlementDailyDto dto : getDailyList) {
             map.put("dto", dto);
             // 날짜 정보, 일간 dto로 주간 테이블에 upsert
-            settlementWeeklyMapper.upsertSettlementWeekly(map);
+            try {
+                settlementWeeklyMapper.upsertSettlementWeekly(map);
+            } catch (DataAccessException dae) {
+                log.error("SettlementWeekly upsert 오류, DTO={}", dto);
+                throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
+            }
         }
     }
 }

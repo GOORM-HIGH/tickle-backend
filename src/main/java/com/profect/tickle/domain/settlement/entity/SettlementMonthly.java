@@ -6,7 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Entity
@@ -51,6 +51,6 @@ public class SettlementMonthly {
     private Long monthlyNetAmount;
 
     @Column(name = "settlement_monthly_created_at", nullable = false)
-    private LocalDateTime monthlyCreatedAt;
+    private Instant monthlyCreatedAt;
 
 }

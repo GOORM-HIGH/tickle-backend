@@ -118,7 +118,9 @@
             p.performance_date AS date,
         p.performance_img AS img
         FROM performance p
+            JOIN status s ON p.status_id = s.status_id
         WHERE p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
+          AND s.status_code != 102
         ORDER BY p.performance_date ASC
             LIMIT #{limit} OFFSET #{offset}
     </select>
@@ -151,4 +153,71 @@
         WHERE performance_id = #{performanceId}
     </select>
 
+    <select id="findPerformancesByMemberId" resultType="PerformanceHostDto">
+        SELECT
+            p.performance_id         AS performanceId,
+            p.performance_title      AS title,
+            p.performance_date       AS date,
+            p.performance_img        AS img,
+            s.status_description     AS statusDescription,
+            p.performance_look_count AS lookCount,
+            p.performance_created_at AS createdDate,
+            p.performance_deleted_at AS deletedDate
+        FROM performance p
+            JOIN status s ON p.status_id = s.status_id
+        WHERE p.member_id = #{memberId}
+          AND p.performance_deleted_at IS NULL
+        ORDER BY p.performance_created_at DESC
+    </select>
+
+    <select id="findScrappedPerformancesByMemberId" resultType="PerformanceScrapDto">
+        SELECT
+            p.performance_id        AS performanceId,
+            p.performance_title     AS title,
+            p.performance_img       AS img,
+            p.performance_date      AS date,
+            s.status_description    AS statusDescription,
+            pf.performance_favorite_created_at AS scrapCreatedAt
+        FROM performance_favorite pf
+            JOIN performance p ON pf.performance_id = p.performance_id
+            JOIN status s ON p.status_id = s.status_id
+        WHERE pf.member_id = #{memberId}
+        ORDER BY pf.performance_favorite_created_at DESC
+    </select>
+
+    <select id="isScrapped" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM performance_favorite
+            WHERE member_id = #{memberId}
+              AND performance_id = #{performanceId}
+        )
+    </select>
+
+    <!-- 예매Id로 공연정보 조회 쿼리 -->
+    <select id="findByReservationId"
+            resultType="PerformanceDto"
+            parameterType="long">
+        SELECT
+            p.performance_id AS performanceId,
+            p.performance_title AS title,
+            p.performance_date AS date,
+            p.performance_img AS img
+        FROM performance p
+                 JOIN reservation r ON r.performance_id = p.performance_id
+        WHERE r.reservation_id = #{reservationId}
+    </select>
+
+    <!-- 공연Id로 공연정보 조회 쿼리-->
+    <select id="findById"
+            resultType="PerformanceDto"
+            parameterType="long">
+        SELECT
+            performance_id AS performanceId,
+            performance_title AS title,
+            performance_date AS date,
+            performance_img AS img
+        FROM performance
+        WHERE performance_id = #{performanceId}
+    </select>
 </mapper>

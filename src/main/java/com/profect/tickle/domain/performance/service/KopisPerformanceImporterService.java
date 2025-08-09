@@ -124,7 +124,7 @@ public class KopisPerformanceImporterService {
                 // KST ‘일자’ 기준으로 날짜 연산(LDT에서 처리) 후 Instant로 변환
                 Instant performanceDate = kstLdtToInstant(perfLdt);
                 Instant startDate = kstLdtToInstant(perfLdt.minusDays(21));
-                Instant endDateTime = kstLdtToInstant(perfLdt.minusDays(7));
+                Instant endDateTime = kstDateAt(perfLdt.toLocalDate().minusDays(7), 23, 59).plusSeconds(59); // ✅ 23:59:59 (KST)
                 Instant createdAt = kstLdtToInstant(perfLdt.minusDays(28));
 
                 // 중복 검사(엔티티가 Instant이므로 리포지토리 파라미터도 Instant)

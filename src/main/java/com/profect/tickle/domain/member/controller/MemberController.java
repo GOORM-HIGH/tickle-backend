@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +34,7 @@ public class MemberController {
 
         memberService.createMember(createUserRequest);
 
+        log.info("회원가입 성공: {}", createUserRequest.getEmail());
         return new ResultResponse<>(
                 ResultCode.MEMBER_CREATE_SUCCESS,
                 ResultCode.MEMBER_CREATE_SUCCESS.getMessage()
@@ -52,7 +52,7 @@ public class MemberController {
     public ResultResponse<?> emailVerification(@RequestBody EmailValidationCodeCreateRequest email) {
         log.info("인증번호 발송 email: {}", email.email());
 
-        memberService.createEmailValidationCode(email.email());
+        memberService.createEmailAuthenticationCode(email.email());
 
         return new ResultResponse<>(
                 ResultCode.EMAIL_VALIDATION_CODE_CREATE,

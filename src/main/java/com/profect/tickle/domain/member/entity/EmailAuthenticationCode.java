@@ -14,23 +14,23 @@ import java.time.temporal.ChronoUnit;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EmailValidationCode {
+public class EmailAuthenticationCode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "email_validation_id")
+    @Column(name = "email_authentication_code_id")
     private Long id;
 
     @Column(name = "email", unique = true, length = 30, nullable = false)
     private String email;
 
-    @Column(name = "email_validation_code", length = 50, nullable = false)
+    @Column(name = "email_authentication_code", length = 50, nullable = false)
     private String validationCode;
 
-    @Column(name = "email_validation_created_at", nullable = false)
+    @Column(name = "email_authentication_created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "email_expires_at", nullable = false)
+    @Column(name = "email_authentication_code_expires_at", nullable = false)
     private Instant expiresAt;
 
     @PrePersist

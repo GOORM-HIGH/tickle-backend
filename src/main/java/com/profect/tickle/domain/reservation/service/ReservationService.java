@@ -2,19 +2,25 @@ package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.event.service.CouponService;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
+import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.entity.Performance;
+import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.entity.SeatStatus;
+import com.profect.tickle.domain.reservation.mapper.ReservationMapper;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -30,14 +36,21 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class ReservationService {
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private final SeatRepository seatRepository;
     private final ReservationRepository reservationRepository;
@@ -46,7 +59,11 @@ public class ReservationService {
     private final PointRepository pointRepository;
     private final PointService pointService;
     private final CouponService couponService;
+    private final PerformanceMapper performanceMapper;
+    private final MemberMapper memberMapper;
+    private final ReservationMapper reservationMapper;
 
+    // 예매 생성 메서드
     public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
 
         Long userId = SecurityUtil.getSignInMemberId();
@@ -99,12 +116,27 @@ public class ReservationService {
 
             Integer remainingPoints = pointService.getCurrentPoint().credit();
 
+            // 9. 이벤트 생성(예매 성공 알림을 보내기 위함)
+            publishReservationSuccessEvent(reservation.getId(), userId);
+
             return ReservationCompletionResponseDto.success(reservation, reservedSeats, remainingPoints);
 
         } catch (BusinessException e) {
             log.error("Reservation completion failed", e);
             return ReservationCompletionResponseDto.failure(e.getMessage());
         }
+    }
+
+    // 예매 성공 이벤트 발행 메서드
+    private void publishReservationSuccessEvent(long reservationId, long userId) {
+        PerformanceDto reservedPerformance = performanceMapper.findByReservationId(reservationId); // 예매 공연 정보
+        ReservationDto reservation = reservationMapper.findById(reservationId).orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND)); // 예매 정보
+        Member siginMember = memberRepository.findById(userId) // 예매 유저 정보
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.MEMBER_NOT_FOUND.getMessage(),
+                        ErrorCode.MEMBER_NOT_FOUND)
+                );
+        eventPublisher.publishEvent(new ReservationSuccessEvent(reservedPerformance, reservation, siginMember));
     }
 
     private List<Seat> validatePreemptedSeats(String preemptionToken, Long userId) {
@@ -187,6 +219,11 @@ public class ReservationService {
                 .seatGrade(seat.getSeatGrade())
                 .seatPrice(seat.getSeatPrice())
                 .build();
+    }
+
+    // 예약Id로 자석정보 조회
+    public List<ReservedSeatDto> getSeatListByReservationId(Long reservationId) {
+        return reservationMapper.findReservedSeatById(reservationId);
     }
 
     private String generateReservationCode() {

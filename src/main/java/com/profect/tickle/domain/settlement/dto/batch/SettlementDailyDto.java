@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @NoArgsConstructor
@@ -23,5 +23,5 @@ public class SettlementDailyDto {
     private Long dailyGrossAmount;
     private Long dailyCommission;
     private Long dailyNetAmount;
-    private LocalDateTime dailyCreatedAt;
+    private Instant dailyCreatedAt;
 }

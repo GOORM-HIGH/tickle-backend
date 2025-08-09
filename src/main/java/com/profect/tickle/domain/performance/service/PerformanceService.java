@@ -1,13 +1,12 @@
 package com.profect.tickle.domain.performance.service;
 
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.event.reservation.event.PerformanceModifiedEvent;
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
-import com.profect.tickle.domain.performance.dto.response.GenreDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
-import com.profect.tickle.domain.performance.dto.response.PerformanceResponseDto;
+import com.profect.tickle.domain.performance.dto.response.*;
 import com.profect.tickle.domain.performance.entity.Genre;
 import com.profect.tickle.domain.performance.entity.Hall;
 import com.profect.tickle.domain.performance.entity.Performance;
@@ -15,6 +14,9 @@ import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.performance.repository.GenreRepository;
 import com.profect.tickle.domain.performance.repository.HallRepository;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
+import com.profect.tickle.domain.reservation.mapper.ReservationMapper;
 import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
@@ -24,15 +26,17 @@ import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class PerformanceService {
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private final PerformanceRepository performanceRepository;
     private final MemberRepository memberRepository;
@@ -42,6 +46,8 @@ public class PerformanceService {
     private final SeatTemplateRepository seatTemplateRepository;
     //    private final SeatService seatService;
     private final PerformanceMapper performanceMapper;
+    private final MemberMapper memberMapper;
+    private final ReservationMapper reservationMapper;
 
     public List<GenreDto> getAllGenre() {
         return performanceMapper.findAllGenres();
@@ -163,6 +169,9 @@ public class PerformanceService {
 
         performance.updateFrom(dto);
 
+        // 공연정보 변경 이벤트 생성: 알림을 보내기 위함
+        publishPerformanceModifiedEvent(performance.getId());
+
         return PerformanceResponseDto.from(performance);
     }
 
@@ -178,5 +187,28 @@ public class PerformanceService {
         performance.markAsDeleted();
     }
 
+    public List<PerformanceHostDto> getMyPerformances(Long memberId) {
+        return performanceMapper.findPerformancesByMemberId(memberId);
+    }
 
+    // 알림 수정 이벤트 발생 메서드
+    private void publishPerformanceModifiedEvent(Long performanceId) {
+        // 공연 정보 + 유저 정보 => 예약 정보
+        PerformanceDto performance = performanceMapper.findById(performanceId).orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
+
+        // 예매 정보
+        List<ReservationDto> reservationList = reservationMapper.findByPerformanceId(performanceId);
+
+        // 예매별 자리 정보 조회
+        for (ReservationDto reservation : reservationList) {
+            List<ReservedSeatDto> seatList = reservationMapper.findReservedSeatById(reservation.getId());
+
+            reservation.setSeatList(seatList);
+        }
+
+        // 로그인한유저
+        Member signinMember = memberMapper.findByEmail(SecurityUtil.getSignInMemberEmail()).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        eventPublisher.publishEvent(new PerformanceModifiedEvent(performance, reservationList, signinMember));
+    }
 }
