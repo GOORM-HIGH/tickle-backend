@@ -33,14 +33,23 @@ public class Contract {
             nullable = false)
     private BigDecimal charge;  // 계약 수수료
 
-    @Column(name = "contract_created_at", nullable = false, updatable = false)
-    private Instant createdAt;  // 계약 생성일
+    @Column(name = "contract_effective_from", nullable = false, updatable = false)
+    private Instant effectiveFrom;  // 계약 적용시작일
+
+    @Column(name = "contract_effective_to")
+    private Instant effectiveTo;    // 계약 적용종료일
+
+    @PrePersist
+    public void prePersist() {
+        if(this.effectiveFrom == null) {
+            this.effectiveFrom = Instant.now();
+        }
+    }
 
     public static Contract createContract(Member newMember, BigDecimal hostContractCharge) {
         return Contract.builder()
                 .member(newMember)
                 .charge(hostContractCharge)
-                .createdAt(newMember.getCreatedAt())
                 .build();
     }
 }

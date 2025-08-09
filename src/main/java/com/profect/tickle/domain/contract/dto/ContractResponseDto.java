@@ -14,7 +14,8 @@ public class ContractResponseDto {
     private Long contractId;           // 계약 고유번호
     private Long userId;               // 회원 고유번호
     private BigDecimal contractCharge; // 계약 수수료
-    private Instant contractCreatedAt; // 계약 생성일
+    private Instant contractEffectiveFrom; // 계약 생성일
+    private Instant contractEffectiveTo; // 계약 종료일
 
     // Entity → DTO 변환
     public static ContractResponseDto fromEntity(Contract entity) {
@@ -22,7 +23,8 @@ public class ContractResponseDto {
                 .contractId(entity.getContractId())
                 .userId(entity.getMember().getId())
                 .contractCharge(entity.getCharge())
-                .contractCreatedAt(entity.getCreatedAt())
+                .contractEffectiveFrom(entity.getEffectiveFrom())
+                .contractEffectiveTo(entity.getEffectiveTo())
                 .build();
     }
 }
