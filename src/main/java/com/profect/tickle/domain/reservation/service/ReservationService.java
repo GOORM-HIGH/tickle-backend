@@ -117,7 +117,7 @@ public class ReservationService {
         Instant now = Instant.now();
 
         for (Seat seat : seats) {
-            if (!userId.equals(seat.getPreemptUserId())) {
+            if (!userId.equals(seat.getMember().getId())) {
                 throw new BusinessException(ErrorCode.PREEMPTION_PERMISSION_DENIED);
             }
 

@@ -28,7 +28,7 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query("SELECT COUNT(s) FROM Seat s WHERE s.preemptUserId = :userId AND s.preemptedUntil > :now")
     int countByPreemptUserIdAndPreemptedUntilAfter(@Param("userId") Long userId, @Param("now") Instant now);
 
-    @Query("SELECT s.id FROM Seat s WHERE s.preemptUserId = :userId AND s.id IN :seatIds AND s.preemptedUntil > :now")
+    @Query("SELECT s.id FROM Seat s WHERE s.member.id = :userId AND s.id IN :seatIds AND s.preemptedUntil > :now")
     List<Long> findPreemptedSeatIdsByUserAndSeatIds(@Param("userId") Long userId,
             @Param("seatIds") List<Long> seatIds);
 
@@ -44,7 +44,7 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Modifying(clearAutomatically = true)
     @Query("""
         UPDATE Seat s
-        SET s.preemptUserId = null,
+        SET s.member.id = null,
             s.preemptionToken = null,
             s.preemptedAt = null,
             s.preemptedUntil = null,
