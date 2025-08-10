@@ -1,7 +1,10 @@
 package com.profect.tickle.domain.event.dto.response;
 
 import com.profect.tickle.domain.event.entity.Event;
+import com.profect.tickle.domain.performance.entity.Performance;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.Instant;
 
 @Schema(description = "티켓 이벤트 응답 DTO")
 public record TicketEventResponseDto(
@@ -16,19 +19,28 @@ public record TicketEventResponseDto(
         String eventName,
 
         @Schema(description = "좌석 정보", example = "A열 3번")
-        String seatNumber
+        String seatNumber,
+
+        @Schema(description = "시작 일자")
+        Instant startDate,
+
+        @Schema(description = "종료 일자")
+        Instant endDate
 )  {
-    public static TicketEventResponseDto from(Event event, Long performanceId) {
+    public static TicketEventResponseDto from(Event event, Performance performance) {
         String seatNumber = event.getSeat().getSeatNumber(); // ex: "A45"
         String row = seatNumber.replaceAll("[0-9]", "");
         String number = seatNumber.replaceAll("[^0-9]", "");
         String ticketSeat = row + "열 " + number + "번";
 
+
         return new TicketEventResponseDto(
                 event.getId(),
-                performanceId,
+                performance.getId(),
                 event.getName(),
-                ticketSeat
+                ticketSeat,
+                performance.getStartDate(),
+                performance.getEndDate()
         );
     }
 }

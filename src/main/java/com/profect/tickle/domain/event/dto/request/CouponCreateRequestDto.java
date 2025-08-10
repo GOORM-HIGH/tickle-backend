@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Schema(description = "할인쿠폰 이벤트 생성 요청 DTO")
@@ -27,6 +28,6 @@ public record CouponCreateRequestDto(
         Short rate,
 
         @Future(message = "과거, 당일은 유효기간으로 지정될 수 없습니다.")
-        @Schema(description = "유효기간 (만료일)", example = "2025-08-31")
-        LocalDate valid
+        @Schema(description = "유효 기간", example = "2025-08-31T00:00:00+09:00")  // ← 여기 포인트
+        Instant validDate
 ) {}

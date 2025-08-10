@@ -3,6 +3,7 @@ package com.profect.tickle.domain.event.dto.response;
 import com.profect.tickle.domain.reservation.entity.SeatGrade;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 public record TicketEventDetailResponseDto(
@@ -20,7 +21,7 @@ public record TicketEventDetailResponseDto(
         Short performanceRuntime,
 
         @Schema(description = "공연 기간", example = "2025-08-01")
-        LocalDate performanceDate,
+        Instant performanceDate,
 
         @Schema(description = "이벤트 좌석 코드", example = "A12")
         String seatNumber,
