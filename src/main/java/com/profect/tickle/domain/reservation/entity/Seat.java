@@ -61,9 +61,6 @@ public class Seat {
     @Column(name = "seat_created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "preempted_by")
-    private Long preemptUserId;
-
     @Column(name = "preempted_at")
     private Instant preemptedAt;
 

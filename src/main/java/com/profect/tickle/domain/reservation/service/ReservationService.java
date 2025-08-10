@@ -40,10 +40,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -149,7 +145,7 @@ public class ReservationService {
         Instant now = Instant.now();
 
         for (Seat seat : seats) {
-            if (!userId.equals(seat.getPreemptUserId())) {
+            if (!userId.equals(seat.getMember().getId())) {
                 throw new BusinessException(ErrorCode.PREEMPTION_PERMISSION_DENIED);
             }
 
@@ -180,7 +176,7 @@ public class ReservationService {
             Member member,
             Integer price) {
 
-        Performance performance = seats.get(0).getPerformance();
+        Performance performance = seats.getFirst().getPerformance();
 
         Status paidStatus = statusRepository.findById(ReservationStatus.PAID.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
