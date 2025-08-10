@@ -2,15 +2,9 @@ package com.profect.tickle.domain.performance.dto.request;
 
 import com.profect.tickle.domain.performance.entity.HallType;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Getter
 @Schema(description = "공연생성 요청 DTO")

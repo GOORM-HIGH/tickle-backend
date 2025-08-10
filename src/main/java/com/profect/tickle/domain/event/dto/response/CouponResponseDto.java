@@ -3,6 +3,7 @@ package com.profect.tickle.domain.event.dto.response;
 import com.profect.tickle.domain.event.entity.Coupon;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Schema(description = "할인쿠폰 생성 응답 DTO")
@@ -17,7 +18,7 @@ public record CouponResponseDto(
         short couponRate,
 
         @Schema(description = "유효기간")
-        LocalDate couponValid
+        Instant couponValid
 ) {
     public static CouponResponseDto from(Coupon coupon) {
         return new CouponResponseDto(

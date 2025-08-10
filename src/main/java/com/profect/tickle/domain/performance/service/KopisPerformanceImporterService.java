@@ -3,9 +3,14 @@ package com.profect.tickle.domain.performance.service;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.dto.KopisPerformanceDto;
-import com.profect.tickle.domain.performance.entity.*;
+import com.profect.tickle.domain.performance.entity.Genre;
+import com.profect.tickle.domain.performance.entity.Hall;
+import com.profect.tickle.domain.performance.entity.HallType;
+import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.parser.KopisXmlParser;
-import com.profect.tickle.domain.performance.repository.*;
+import com.profect.tickle.domain.performance.repository.GenreRepository;
+import com.profect.tickle.domain.performance.repository.HallRepository;
+import com.profect.tickle.domain.performance.repository.PerformanceRepository;
 import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
@@ -20,7 +25,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 

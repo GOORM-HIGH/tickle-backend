@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +28,7 @@ public class Coupon {
     @Column(name = "coupon_name", length = 10, nullable = false)
     private String name;
 
-    @Column(name = "coupon_content", length = 10, nullable = false)
+    @Column(name = "coupon_content", length = 20, nullable = false)
     private String content;
 
     @Column(name = "coupon_count", nullable = false)
@@ -39,7 +38,7 @@ public class Coupon {
     private Short rate;
 
     @Column(name = "coupon_valid", nullable = false)
-    private LocalDate valid;
+    private Instant valid;
 
     @Column(name = "coupon_created_at", nullable = false)
     private Instant createdAt;
@@ -61,7 +60,7 @@ public class Coupon {
         this.updatedAt = Instant.now();
     }
 
-    private Coupon(String name, String content, Short count, Short rate, LocalDate valid) {
+    private Coupon(String name, String content, Short count, Short rate, Instant valid) {
         this.name = name;
         this.content = content;
         this.count = count;
@@ -69,7 +68,7 @@ public class Coupon {
         this.valid = valid;
     }
 
-    public static Coupon create(String name, String content, Short count, Short rate, LocalDate valid) {
+    public static Coupon create(String name, String content, Short count, Short rate, Instant valid) {
         return new Coupon(name, content, count, rate, valid);
     }
 

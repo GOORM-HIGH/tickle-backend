@@ -5,6 +5,17 @@
 
 <mapper namespace="com.profect.tickle.domain.event.mapper.CouponMapper">
 
+    <resultMap id="CouponListMap" type="com.profect.tickle.domain.event.dto.response.CouponListResponseDto">
+        <constructor>
+            <arg column="id" javaType="java.lang.Long"/>
+            <arg column="name" javaType="java.lang.String"/>
+            <arg column="rate" javaType="short"/>
+            <arg column="eventId" javaType="java.lang.Long"/>
+            <arg column="validDate" javaType="java.time.Instant"/>
+        </constructor>
+    </resultMap>
+
+
     <!-- 만료일이 targetDate 이전인 쿠폰 조회 -->
     <select id="findCouponsExpiringBefore" parameterType="java.time.Instant" resultType="ExpiringSoonCouponResponseDto">
         SELECT
@@ -17,6 +28,19 @@
         JOIN member AS member
             ON received.member_id = member.member_id
         WHERE coupon.coupon_valid &lt;= #{targetDate}
+    </select>
+
+    <select id="findCouponById" resultMap="CouponListMap">
+        SELECT
+            c.coupon_id AS id,
+            c.coupon_name AS name,
+            c.coupon_rate AS rate,
+            e.event_id AS eventId,
+            c.coupon_valid AS validDate
+        FROM coupon c
+                 JOIN event e ON c.coupon_id = e.coupon_id
+        WHERE c.coupon_id = #{couponId}
+            AND c.coupon_valid >= NOW()
     </select>
 
 </mapper>

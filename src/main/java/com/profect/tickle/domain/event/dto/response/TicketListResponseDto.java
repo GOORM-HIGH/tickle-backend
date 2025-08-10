@@ -1,15 +1,20 @@
 package com.profect.tickle.domain.event.dto.response;
 
+import java.time.Instant;
+
 public record TicketListResponseDto(
-        Long id,
+        Long eventId,
         String name,
         Short perPrice,
-        String img
+        String img,
+        Long statusId,
+        Instant startDate,
+        Instant endDate
 ) implements EventListResponseDto {
 
     @Override
     public Long getEventId() {
-        return id;
+        return eventId;
     }
 
     @Override

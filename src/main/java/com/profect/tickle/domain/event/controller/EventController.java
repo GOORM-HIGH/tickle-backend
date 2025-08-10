@@ -4,6 +4,7 @@ import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.entity.EventType;
+import com.profect.tickle.domain.event.service.CouponService;
 import com.profect.tickle.domain.event.service.EventService;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
@@ -27,6 +28,7 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final CouponService couponService;
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @Operation(summary = "쿠폰 이벤트 생성", description = "관리자가 쿠폰 이벤트를 생성합니다.",
@@ -38,6 +40,7 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "이벤트 생성 성공",
                             content = @Content(schema = @Schema(implementation = CouponResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "중복된 쿠폰 이름 등 유효성 예외")})
+
     @PostMapping("/coupon")
     public ResultResponse<CouponResponseDto> createCoupon(@Valid @RequestBody CouponCreateRequestDto request) {
         CouponResponseDto response = eventService.createCouponEvent(request);
@@ -45,7 +48,7 @@ public class EventController {
     }
 
     @PreAuthorize("hasRole('HOST')")
-    @Operation(summary = "티켓 이벤트 생성", description = "주최자가 티켓 이벤트를 생성합니다.",
+    @Operation(summary = "티켓 이벤트 직접 생성", description = "주최자가 티켓 이벤트를 생성합니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "티켓 이벤트 생성 요청 DTO",
                     required = true,
@@ -54,6 +57,7 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "이벤트 생성 성공",
                             content = @Content(schema = @Schema(implementation = TicketEventResponseDto.class))),
                     @ApiResponse(responseCode = "404", description = "존재하지 않는 좌석 또는 상태 ID")})
+
     @PostMapping("/ticket")
     public ResultResponse<TicketEventResponseDto> createTicketEvent(@Valid @RequestBody TicketEventCreateRequestDto request) {
         TicketEventResponseDto response = eventService.createTicketEvent(request);
@@ -65,7 +69,7 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "응모 성공",
                             content = @Content(schema = @Schema(implementation = TicketApplyResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "포인트 부족, 중복 응모 등 예외 발생")})
-    @GetMapping("/ticket/{eventId}")
+    @PostMapping("/ticket/{eventId}")
     public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
         TicketApplyResponseDto response = eventService.applyTicketEvent(eventId);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
@@ -82,12 +86,19 @@ public class EventController {
         return ResultResponse.of(ResultCode.COUPON_ISSUE_SUCCESS, "[이벤트 쿠폰 지급 완료]: eventId = " + eventId);
     }
 
+    @Operation(summary = "쿠폰 이벤트 상세 조회", description = "특정 쿠폰 ID에 해당하는 쿠폰 이벤트 정보를 반환합니다.")
+    @GetMapping("/coupon/{couponId}")
+    public ResultResponse<CouponListResponseDto> getSpecialCouponDetail(@PathVariable Long couponId) {
+        CouponListResponseDto dto = couponService.getSpecialCouponDetailById(couponId);
+        return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, dto);
+    }
+
     @Operation(summary = "이벤트 목록 조회", description = "쿠폰 또는 티켓 이벤트를 페이징으로 조회합니다.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "조회 성공",
                             content = @Content(schema = @Schema(implementation = PagingResponse.class))),
                     @ApiResponse(responseCode = "400", description = "유효하지 않은 이벤트 타입")})
-    @PostMapping
+    @GetMapping
     public ResultResponse<PagingResponse<EventListResponseDto>> getEventList(@RequestParam("type") EventType eventType,
                                                                              @RequestParam("page") int page,
                                                                              @RequestParam("size") int size) {
@@ -99,7 +110,7 @@ public class EventController {
     @Operation(summary = "티켓 이벤트 상세 조회", description = "티켓 이벤트의 상세 정보를 조회합니다.",
             responses = {@ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = TicketEventDetailResponseDto.class)))})
-    @GetMapping("/ticket/detail/{eventId}")
+    @GetMapping("/ticket/{eventId}")
     public ResultResponse<TicketEventDetailResponseDto> getTicketEventDetail(@PathVariable Long eventId) {
         TicketEventDetailResponseDto detail = eventService.getTicketEventDetail(eventId);
         return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, detail);

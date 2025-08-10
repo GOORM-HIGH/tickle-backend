@@ -16,6 +16,9 @@ import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.performance.entity.Performance;
+import com.profect.tickle.domain.performance.repository.PerformanceRepository;
+import com.profect.tickle.domain.performance.service.PerformanceService;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
@@ -57,6 +60,8 @@ public class EventServiceImpl implements EventService {
     private final CouponReceivedMapper couponReceivedMapper;
 
     private final PointTarget eventTarget = PointTarget.EVENT;
+    private final PerformanceService performanceService;
+    private final PerformanceRepository performanceRepository;
 
     @Override
     @Transactional
@@ -68,7 +73,7 @@ public class EventServiceImpl implements EventService {
                 request.content(),
                 request.count(),
                 request.rate(),
-                request.valid()
+                request.validDate()
         );
         couponRepository.save(coupon);
 
@@ -87,10 +92,12 @@ public class EventServiceImpl implements EventService {
         Status status = getStatusOrThrow(4L);
         Seat seat = getSeatOrThrow(request.seatId());
         Event ticketEvent = Event.create(status, seat, request);
+        Performance performance = getPerformanceOrThrow(request);
 
         eventRepository.save(ticketEvent);
+        seat.assignEvent(ticketEvent);
 
-        return TicketEventResponseDto.from(ticketEvent, request.performanceId());
+        return TicketEventResponseDto.from(ticketEvent, performance);
     }
 
     @Override
@@ -206,7 +213,9 @@ public class EventServiceImpl implements EventService {
                             r.eventId(),
                             r.performanceId(),
                             r.eventName(),
-                            formattedSeat
+                            formattedSeat,
+                            r.startDate(),
+                            r.endDate()
                     );
                 })
                 .toList();
@@ -245,6 +254,11 @@ public class EventServiceImpl implements EventService {
         Long memberId = SecurityUtil.getSignInMemberId();
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Performance getPerformanceOrThrow(TicketEventCreateRequestDto request) {
+        return performanceRepository.findById(request.performanceId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
     }
 
     public List<ExpiringSoonCouponResponseDto> getCouponsExpiringWithinOneDay() {
