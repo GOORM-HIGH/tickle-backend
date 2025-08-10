@@ -36,9 +36,9 @@ public class BatchScheduler {
     }
 
     // 10분마다 job 호출(주간, 월간)
-//    @Scheduled(cron ="59 9,19,29,39,49,59 * * * *")
+    @Scheduled(cron ="59 9,19,29,39,49,59 * * * *")
     // 테스트용 매 분 1초에 호출
-    @Scheduled(cron = "10 * * * * *")
+//    @Scheduled(cron = "10 * * * * *")
     public void runSettlementWeeklyMonthlyJob() throws Exception{
         JobParameters jobParameters = new JobParametersBuilder()
                 .addDate("runDate", new Date())
