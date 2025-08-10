@@ -32,4 +32,28 @@
         WHERE member_email = #{email}
     </select>
 
+    <select id="getMemberDtoByEmail"
+            parameterType="string"
+            resultType="MemberResponseDto">
+        SELECT
+            member_id AS id,
+            member_email AS email,
+            member_pw AS password,
+            member_nickname AS nickname,
+            member_birthday AS birthday,
+            member_img AS img,
+            member_point_balance AS pointBalance,
+            member_role AS memberRole,
+            host_biz_number AS hostBizNumber,
+            host_biz_ceo AS hostBizCeo,
+            host_biz_name AS hostBizName,
+            host_biz_address AS hostBizAddress,
+            host_biz_ecommerce_registration_number AS hostBizEcommerceRegistrationNumber,
+            host_biz_bank AS hostBizBank,
+            host_biz_depositor AS hostBizDepositor,
+            host_biz_bank_number AS hostBizBankNumber,
+            member_created_at AS createdAt,
+        FROM member
+        WHERE member_email = #{email}
+    </select>
 </mapper>

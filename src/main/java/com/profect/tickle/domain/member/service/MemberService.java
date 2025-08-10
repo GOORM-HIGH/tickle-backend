@@ -2,6 +2,7 @@ package com.profect.tickle.domain.member.service;
 
 import com.profect.tickle.domain.contract.service.ContractService;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.EmailAuthenticationCode;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
@@ -171,6 +172,12 @@ public class MemberService implements UserDetailsService {
 
     public Member getMemberByEmail(String email) {
         return memberMapper.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("가입된 유저가 압니다.", ErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    // 로그인한 유저의 이메일로 유저를 조회하여 정보 데이터를 반환
+    public MemberResponseDto getMemberDtoByEmail(String email) {
+        return memberMapper.getMemberDtoByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
     }
 }
