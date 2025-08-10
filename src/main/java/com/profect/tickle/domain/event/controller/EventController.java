@@ -40,6 +40,7 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "이벤트 생성 성공",
                             content = @Content(schema = @Schema(implementation = CouponResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "중복된 쿠폰 이름 등 유효성 예외")})
+
     @PostMapping("/coupon")
     public ResultResponse<CouponResponseDto> createCoupon(@Valid @RequestBody CouponCreateRequestDto request) {
         CouponResponseDto response = eventService.createCouponEvent(request);
@@ -56,9 +57,10 @@ public class EventController {
                     @ApiResponse(responseCode = "200", description = "이벤트 생성 성공",
                             content = @Content(schema = @Schema(implementation = TicketEventResponseDto.class))),
                     @ApiResponse(responseCode = "404", description = "존재하지 않는 좌석 또는 상태 ID")})
+
     @PostMapping("/ticket")
     public ResultResponse<TicketEventResponseDto> createTicketEvent(@Valid @RequestBody TicketEventCreateRequestDto request) {
-        TicketEventResponseDto response = eventService.screateTicketEvent(request);
+        TicketEventResponseDto response = eventService.createTicketEvent(request);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
     }
 
