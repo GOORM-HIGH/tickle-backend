@@ -10,6 +10,7 @@ import java.util.List;
 public interface EventMapper {
     List<TicketListResponseDto> findTicketEventList(@Param("size") int size, @Param("offset") int offset);
     List<CouponListResponseDto> findCouponEventList(@Param("size") int size, @Param("offset") int offset);
+
     TicketEventDetailResponseDto findTicketEventDetail(@Param("eventId") Long eventId);
     List<TicketListResponseDto> searchTicketEvents(@Param("keyword") String keyword, @Param("size") int size, @Param("offset") int offset);
     List<SeatProjection> findRandomOngoingEvents(int size, int offset);

@@ -51,8 +51,6 @@ public class CouponService {
     }
 
     public CouponListResponseDto getSpecialCouponDetailById(Long couponId) {
-        if (!List.of(1L, 2L, 3L).contains(couponId)) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
-
         CouponListResponseDto dto = couponMapper.findCouponById(couponId);
         if (dto == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
 

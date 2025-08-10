@@ -47,7 +47,7 @@ public class EventController {
     }
 
     @PreAuthorize("hasRole('HOST')")
-    @Operation(summary = "티켓 이벤트 생성", description = "주최자가 티켓 이벤트를 생성합니다.",
+    @Operation(summary = "티켓 이벤트 직접 생성", description = "주최자가 티켓 이벤트를 생성합니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "티켓 이벤트 생성 요청 DTO",
                     required = true,
@@ -108,7 +108,7 @@ public class EventController {
     @Operation(summary = "티켓 이벤트 상세 조회", description = "티켓 이벤트의 상세 정보를 조회합니다.",
             responses = {@ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = TicketEventDetailResponseDto.class)))})
-    @GetMapping("/ticket/detail/{eventId}")
+    @GetMapping("/ticket/{eventId}")
     public ResultResponse<TicketEventDetailResponseDto> getTicketEventDetail(@PathVariable Long eventId) {
         TicketEventDetailResponseDto detail = eventService.getTicketEventDetail(eventId);
         return ResultResponse.of(ResultCode.EVENT_INFO_SUCCESS, detail);
