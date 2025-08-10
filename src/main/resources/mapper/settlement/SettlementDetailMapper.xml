@@ -77,4 +77,12 @@
         )
         </foreach>
     </insert>
+
+    <!-- 예매종료일시가 n일23시59분59초.999 이하 && 정산상태가 '정산완료'인 건들 업데이트 -->
+    <update id="updateSettlementDetailStatus">
+        UPDATE settlement_detail
+        SET status_id = #{afterStatus.id}
+        WHERE performance_end_date &lt;= #{endOfDay}
+        AND status_id = #{beforeStatus.id}
+    </update>
 </mapper>

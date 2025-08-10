@@ -5,10 +5,12 @@ import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
 import com.profect.tickle.domain.settlement.entity.SettlementDetail;
 import com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper;
+import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -100,6 +102,29 @@ public class SettlementDetailService {
         } catch (DataAccessException dae) {
             log.error("SettlementDetail insert 오류, List={}", insertList);
             throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
+        }
+    }
+
+    /**
+     * 건별 정산 상태 업데이트
+     * 업데이트 대상 <= n일 23시59분59초.999
+     */
+    @Transactional
+    public void updateDetail() {
+        Instant endOfDay = SettlementTimeUtil.getEndOfDay();
+
+        // 정산예정
+        Status beforeStatus = statusRepository.findById(14L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        // 정산완료
+        Status afterStatus = statusRepository.findById(15L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+
+        try {
+            settlementDetailMapper.updateSettlementDetailStatus(beforeStatus, afterStatus, endOfDay);
+        } catch (DataAccessException dae) {
+            log.error("SettlementDetail update status 오류");
+            throw new BusinessException(ErrorCode.SETTLEMENT_STATUS_UPDATE_FAILED);
         }
     }
 }

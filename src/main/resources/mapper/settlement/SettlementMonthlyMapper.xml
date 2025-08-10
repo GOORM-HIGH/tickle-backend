@@ -4,9 +4,7 @@
 
 <mapper namespace="com.profect.tickle.domain.settlement.mapper.SettlementMonthlyMapper">
 
-    <!--
-    * 주간정산 집계하여 월간정산
-    -->
+    <!-- 주간정산 집계하여 월간정산 -->
     <select id="findByWeek" parameterType="map"
             resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementMonthlyFindTargetDto">
         SELECT
@@ -63,4 +61,13 @@
             settlement_monthly_net_amount = EXCLUDED.settlement_monthly_net_amount,
             settlement_monthly_updated_at = EXCLUDED.settlement_monthly_created_at
     </insert>
+
+    <!-- 1일 기준 이전 달의 정산 상태 업데이트 -->
+    <update id="updateSettlementMonthlyStatus">
+        UPDATE settlement_monthly
+        SET status_id = #{afterStatus.id}
+        WHERE settlement_year = #{year}
+        AND settlement_month = #{month}
+        AND status_id = #{beforeStatus.id}
+    </update>
 </mapper>

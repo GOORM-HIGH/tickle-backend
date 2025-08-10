@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -71,6 +72,34 @@ public class SettlementMonthlyService {
         } catch (DataAccessException dae) {
             log.error("SettlementMonthly upsert 오류, list={}", monthlyList);
             throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
+        }
+    }
+
+    /**
+     * 오늘이 1일이면 지난 달 정산 내역 업데이트
+     */
+    @Transactional
+    public void updateMonthly() {
+        // 정산예정
+        Status beforeStatus = statusRepository.findById(14L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        // 정산완료
+        Status afterStatus = statusRepository.findById(15L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+
+        LocalDate now = SettlementTimeUtil.localDate(Instant.now());
+        SettlementTimeUtil period = SettlementTimeUtil.get(now);
+        int today = period.dayOfMonth();
+        String year = period.yearStr();
+        String month = String.format("%02d", period.month()-1);
+
+        if(today == 1) {
+            try {
+                settlementMonthlyMapper.updateSettlementMonthlyStatus(beforeStatus, afterStatus, year, month);
+            } catch (DataAccessException dae) {
+                log.error("SettlementMonthly update status 오류");
+                throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
+            }
         }
     }
 }

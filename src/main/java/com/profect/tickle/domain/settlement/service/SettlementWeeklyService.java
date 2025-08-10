@@ -10,6 +10,7 @@ import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -81,6 +82,37 @@ public class SettlementWeeklyService {
         } catch (DataAccessException dae) {
             log.error("SettlementWeekly upsert 오류, list={}", weeklyList);
             throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
+        }
+    }
+
+    /**
+     * '오늘이 월요일 또는 1일' && '정산예정'인 n-1회차 건들 업데이트
+     */
+    @Transactional
+    public void updateWeekly() {
+        // 정산예정
+        Status beforeStatus = statusRepository.findById(14L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        // 정산완료
+        Status afterStatus = statusRepository.findById(15L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+
+        LocalDate now = SettlementTimeUtil.localDate(Instant.now());
+        SettlementTimeUtil period = SettlementTimeUtil.get(now);
+        int today = period.dayOfMonth();
+        int monday = period.startOfWeek();
+        String year = period.yearStr();
+        String month = period.monthStr();
+        String week = String.format("%02d", period.weekOfMonth()-1);
+
+        if(today == 1 || today == monday) {
+            try {
+                settlementWeeklyMapper.updateSettlementDetailStatus(
+                        beforeStatus, afterStatus,year, month, week);
+            } catch(DataAccessException dae) {
+                log.error("SettlementWeekly update status 오류");
+                throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
+            }
         }
     }
 }
