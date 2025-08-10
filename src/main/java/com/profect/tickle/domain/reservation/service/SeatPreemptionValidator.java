@@ -3,8 +3,6 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequestDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
-import com.profect.tickle.global.exception.BusinessException;
-import com.profect.tickle.global.exception.ErrorCode;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;

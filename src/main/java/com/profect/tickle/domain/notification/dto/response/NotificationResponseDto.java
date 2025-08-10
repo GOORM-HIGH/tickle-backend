@@ -1,11 +1,9 @@
 package com.profect.tickle.domain.notification.dto.response;
 
-import com.profect.tickle.domain.notification.entity.Notification;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Getter
 @Builder
