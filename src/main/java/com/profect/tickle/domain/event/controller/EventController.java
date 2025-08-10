@@ -58,7 +58,7 @@ public class EventController {
                     @ApiResponse(responseCode = "404", description = "존재하지 않는 좌석 또는 상태 ID")})
     @PostMapping("/ticket")
     public ResultResponse<TicketEventResponseDto> createTicketEvent(@Valid @RequestBody TicketEventCreateRequestDto request) {
-        TicketEventResponseDto response = eventService.createTicketEvent(request);
+        TicketEventResponseDto response = eventService.screateTicketEvent(request);
         return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
     }
 
