@@ -1,7 +1,6 @@
 package com.profect.tickle.domain.event.entity;
 
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
-import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
@@ -12,7 +11,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
