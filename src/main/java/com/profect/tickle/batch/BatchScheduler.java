@@ -26,8 +26,8 @@ public class BatchScheduler {
         this.settlementWeeklyMonthlyJob = settlementWeeklyMonthlyJob;
     }
 
-    // 매 분 30초에 정산 job 호출(건별, 일간)
-    @Scheduled(cron = "30 * * * * *")
+    // 매분마다 정산 job 호출(건별, 일간)
+    @Scheduled(cron = "0 * * * * *")
     public void runSettlementDetailDailyJob() throws Exception{
         JobParameters jobParameters = new JobParametersBuilder()
                 .addDate("runDate", new Date())
@@ -35,10 +35,10 @@ public class BatchScheduler {
         jobLauncher.run(settlementDetailDailyJob, jobParameters);
     }
 
-    // 매일 00시 00분 10초에 job 호출(주간, 월간)
-    @Scheduled(cron ="10 0 0 * * *")
+    // 10분마다 job 호출(주간, 월간)
+//    @Scheduled(cron ="59 9,19,29,39,49,59 * * * *")
     // 테스트용 매 분 1초에 호출
-//    @Scheduled(cron = "10 * * * * *")
+    @Scheduled(cron = "10 * * * * *")
     public void runSettlementWeeklyMonthlyJob() throws Exception{
         JobParameters jobParameters = new JobParametersBuilder()
                 .addDate("runDate", new Date())

@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.settlement.util;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
 
 /**
  * 날짜 유틸
@@ -14,7 +14,7 @@ import java.time.LocalDate;
  * @param startOfWeek 월요일의 날짜
  * @param endOfWeek 일요일의 날짜
  */
-public record SettlementPeriod(
+public record SettlementTimeUtil(
         LocalDate today,
         int year,
         String yearStr,
@@ -32,7 +32,7 @@ public record SettlementPeriod(
      * 오늘 또는 파람으로 받은 날짜 기준으로 값 구하기
      * 연도, 월, 주차, 월요일 날짜, 일요일 날짜
      */
-    public static SettlementPeriod get(LocalDate now) {
+    public static SettlementTimeUtil get(LocalDate now) {
         int y = now.getYear();
         String yStr = String.valueOf(y);
         int m = now.getMonthValue();
@@ -45,7 +45,7 @@ public record SettlementPeriod(
         int monday = d - dow + 1;
         int sunday = monday + 6;
 
-        return new SettlementPeriod(now, y, yStr, m, mStr, week, weekStr,
+        return new SettlementTimeUtil(now, y, yStr, m, mStr, week, weekStr,
                 d, dStr, dow, monday, sunday);
     }
 
@@ -59,5 +59,40 @@ public record SettlementPeriod(
         // 예: 1일이 수요(3)이면, offset=2 → (dayOfMonth + offset -1)/7 +1
         int offset = (firstDow - DayOfWeek.MONDAY.getValue() + 7) % 7;
         return (now.getDayOfMonth() + offset - 1) / 7 + 1;
+    }
+
+    /**
+     * 00시 00분일 때, 23시59분59초.999 반환
+     */
+    public static Instant getEndOfDay() {
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+
+        ZonedDateTime startOfDay = LocalDate.now().atStartOfDay().atZone(zone);
+
+        ZonedDateTime endOfDay = startOfDay.minus(1, ChronoUnit.MILLIS);
+
+        return endOfDay.toInstant();
+    }
+
+    /**
+     * 현재 시간이 00시 00분인지
+     */
+    public static boolean isMidnight(Instant now) {
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+
+        LocalTime time = now.atZone(zone).toLocalTime();
+
+        return time.equals(LocalTime.MIDNIGHT);
+    }
+
+    /**
+     * Instant -> LocalDate
+     */
+    public static LocalDate localDate(Instant now) {
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+
+        LocalDate date = now.atZone(zone).toLocalDate();
+
+        return date;
     }
 }
