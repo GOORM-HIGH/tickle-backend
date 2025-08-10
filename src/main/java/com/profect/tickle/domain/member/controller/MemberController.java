@@ -77,19 +77,4 @@ public class MemberController {
                 ResultCode.EMAIL_VERIFICATION_SUCCESS.getMessage()
         );
     }
-
-    @Operation(summary = "사용자 정보 조회", description = "마이페이지에 보여줄 로그인한 사용자의 정보를 조회합니다.")
-    @GetMapping(value = "/my-page")
-    public ResultResponse<?> getMyPage() {
-        String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
-        log.info("{}님의 마이페이지 정보 조회 API요청이 수신되었습니다.", signInMemberEmail);
-
-        // TODO: 서비스 계층에서 사용자 정보 조회 기능 구현
-        MemberResponseDto data = null;
-
-        return new ResultResponse<>(
-                ResultCode.MEMBER_MYPAGE_INFO_SUCCESS,
-                data
-        );
-    }
 }
