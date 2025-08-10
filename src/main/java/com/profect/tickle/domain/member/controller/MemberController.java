@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -77,4 +78,23 @@ public class MemberController {
                 ResultCode.EMAIL_VERIFICATION_SUCCESS.getMessage()
         );
     }
+
+    @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리시킵니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원탈퇴 성공"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping(value = "/users/{userId}/delete")
+    public ResultResponse<?> deleteUser(@PathVariable Long userId) {
+        log.info("{} 인덱스의 계정을 탈퇴처리 합니다.", userId);
+
+        String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
+        memberService.deleteUser(userId, signInMemberEmail);
+        return new ResultResponse<>(
+                ResultCode.MEMBER_DELETE_SUCCESS,
+                ResultCode.MEMBER_DELETE_SUCCESS.getMessage()
+        );
+    }
+
 }

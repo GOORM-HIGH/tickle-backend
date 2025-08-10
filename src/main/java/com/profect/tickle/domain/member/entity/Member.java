@@ -160,4 +160,10 @@ public class Member {
     public void addPoint(int point) {
         pointBalance += point;
     }
+
+    public void deleteMember() {
+        if (this.deletedAt == null) {
+            this.deletedAt = Instant.now();
+        }
+    }
 }

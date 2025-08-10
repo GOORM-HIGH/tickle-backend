@@ -183,12 +183,31 @@ public class MemberService implements UserDetailsService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND))
                 .getMemberRole();
 
-        if(memberRole == MemberRole.HOST) {
+        if (memberRole == MemberRole.HOST) {
             return memberMapper.getHostMemberDtoByEmail(email)
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
         } else { // 유저인 경우
             return memberMapper.getMemberDtoByEmail(email)
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
         }
+    }
+
+    @Transactional
+    public void deleteUser(Long userId, String signInMemberEmail) {
+
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+
+        // 이미 탈퇴된 유저
+        if (member.getDeletedAt() != null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND)
+        }
+
+        // 권한 확인
+        if (member.getEmail().equals(signInMemberEmail)) {
+            throw new BusinessException(ErrorCode.MEMBER_DELETE_FORBIDDEN.getMessage(), ErrorCode.MEMBER_DELETE_FORBIDDEN);
+        }
+
+        member.deleteMember();
     }
 }
