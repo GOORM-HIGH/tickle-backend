@@ -6,41 +6,61 @@
 
     <!--
     * 주간정산 집계하여 월간정산
-    * 매일 00:00:30에 전날의 주간정산을 해당 주차에 집계
     -->
     <select id="findByWeek" parameterType="map"
-            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyDto">
+            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementMonthlyFindTargetDto">
         SELECT
-            host_biz_name AS hostBizName,
+            member_id AS memberId,
             performance_title AS performanceTitle,
-            settlement_weekly_sales_amount AS weeklySalesAmount,
-            settlement_weekly_refund_amount AS weeklyRefundAmount,
-            settlement_weekly_gross_amount AS weeklyGrossAmount,
-            settlement_weekly_commission AS weeklyCommission,
-            settlement_weekly_net_amount AS weeklyNetAmount
+            SUM(settlement_weekly_sales_amount) AS monthlySalesAmount,
+            SUM(settlement_weekly_refund_amount) AS monthlyRefundAmount,
+            SUM(settlement_weekly_gross_amount) AS monthlyGrossAmount,
+            SUM(settlement_weekly_commission) AS monthlyCommission,
+            SUM(settlement_weekly_net_amount) AS monthlyNetAmount
         FROM settlement_weekly
         WHERE settlement_year = #{year}
         AND settlement_month = #{month}
-        AND settlement_week = #{week}
+        GROUP BY member_id,
+                 performance_title
     </select>
 
     <!-- 월간 정산 누적 집계 upsert -->
     <insert id="upsertSettlementMonthly" parameterType="map">
-        INSERT INTO settlement_weekly (
-            status_id, host_biz_name, performance_title, settlement_year, settlement_month,
-            settlement_monthly_sales_amount, settlement_monthly_refund_amount, settlement_monthly_gross_amount,
-            settlement_monthly_commission, settlement_monthly_net_amount, settlement_monthly_created_at
-        ) VALUES (
-            15, #{dto.hostBizName}, #{dto.performanceTitle}, #{year}, #{month}, #{dto.weeklySalesAmount},
-            #{dto.weeklyRefundAmount}, #{dto.weeklyGrossAmount}, #{dto.weeklyCommission}, #{dto.weeklyNetAmount}, #{now}
+        INSERT INTO settlement_monthly (
+            member_id,
+            status_id,
+            performance_title,
+            settlement_year,
+            settlement_month,
+            settlement_monthly_sales_amount,
+            settlement_monthly_refund_amount,
+            settlement_monthly_gross_amount,
+            settlement_monthly_commission,
+            settlement_monthly_net_amount,
+            settlement_monthly_created_at
+        ) VALUES
+        <foreach collection="list" item="monthly" separator=",">
+        (
+            #{monthly.member.id},
+            #{monthly.status.id},
+            #{monthly.performanceTitle},
+            #{monthly.year},
+            #{monthly.month},
+            #{monthly.monthlySalesAmount},
+            #{monthly.monthlyRefundAmount},
+            #{monthly.monthlyGrossAmount},
+            #{monthly.monthlyCommission},
+            #{monthly.monthlyNetAmount},
+            #{monthly.monthlyCreatedAt}
         )
-        ON CONFLICT (host_biz_name, performance_title, settlement_year, settlement_month)
+        </foreach>
+        ON CONFLICT (member_id, performance_title, settlement_year, settlement_month)
         DO UPDATE SET
-            settlement_monthly_sales_amount = settlement_monthly.settlement_monthly_sales_amount + EXCLUDED.settlement_monthly_sales_amount,
-            settlement_monthly_refund_amount = settlement_monthly.settlement_monthly_refund_amount + EXCLUDED.settlement_monthly_refund_amount,
-            settlement_monthly_gross_amount = settlement_monthly.settlement_monthly_gross_amount + EXCLUDED.settlement_monthly_gross_amount,
-            settlement_monthly_commission = settlement_monthly.settlement_monthly_commission + EXCLUDED.settlement_monthly_commission,
-            settlement_monthly_net_amount = settlement_monthly.settlement_monthly_net_amount + EXCLUDED.settlement_monthly_net_amount,
-            settlement_monthly_created_at = EXCLUDED.settlement_monthly_created_at
+            settlement_monthly_sales_amount = EXCLUDED.settlement_monthly_sales_amount,
+            settlement_monthly_refund_amount = EXCLUDED.settlement_monthly_refund_amount,
+            settlement_monthly_gross_amount = EXCLUDED.settlement_monthly_gross_amount,
+            settlement_monthly_commission = EXCLUDED.settlement_monthly_commission,
+            settlement_monthly_net_amount = EXCLUDED.settlement_monthly_net_amount,
+            settlement_monthly_updated_at = EXCLUDED.settlement_monthly_created_at
     </insert>
 </mapper>

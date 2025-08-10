@@ -6,41 +6,63 @@
 
     <!--
     * 일간정산 집계하여 주간정산
-    * 매일 00:00:01에 전날의 일간정산을 해당 주차에 집계
     -->
     <select id="findByDate" parameterType="map"
-            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto">
+            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyFindTargetDto">
         SELECT
-            host_biz_name AS hostBizName,
+            member_id AS memberId,
             performance_title AS performanceTitle,
-            settlement_daily_sales_amount AS dailySalesAmount,
-            settlement_daily_refund_amount AS dailyRefundAmount,
-            settlement_daily_gross_amount AS dailyGrossAmount,
-            settlement_daily_commission AS dailyCommission,
-            settlement_daily_net_amount AS dailyNetAmount
+            SUM(settlement_daily_sales_amount) AS weeklySalesAmount,
+            SUM(settlement_daily_refund_amount) AS weeklyRefundAmount,
+            SUM(settlement_daily_gross_amount) AS weeklyGrossAmount,
+            SUM(settlement_daily_commission) AS weeklyCommission,
+            SUM(settlement_daily_net_amount) AS weeklyNetAmount
         FROM settlement_daily
-        WHERE settlement_year = #{year}
-        AND settlement_month = #{month}
-        AND settlement_day = #{day}
+        WHERE (settlement_year || '-' || lpad(settlement_month, 2, '0') || '-' || lpad(settlement_day, 2, '0'))::date
+            BETWEEN #{from}::date AND #{to}::date
+        GROUP BY member_id,
+                 performance_title
     </select>
 
     <!-- 주간 정산 누적 집계 upsert -->
     <insert id="upsertSettlementWeekly" parameterType="map">
         INSERT INTO settlement_weekly (
-            status_id, host_biz_name, performance_title, settlement_year, settlement_month, settlement_week,
-            settlement_weekly_sales_amount, settlement_weekly_refund_amount, settlement_weekly_gross_amount,
-            settlement_weekly_commission, settlement_weekly_net_amount, settlement_weekly_created_at
-        ) VALUES (
-            15, #{dto.hostBizName}, #{dto.performanceTitle}, #{year}, #{month}, #{week}, #{dto.dailySalesAmount},
-            #{dto.dailyRefundAmount}, #{dto.dailyGrossAmount}, #{dto.dailyCommission}, #{dto.dailyNetAmount}, #{now}
+            member_id,
+            status_id,
+            performance_title,
+            settlement_year,
+            settlement_month,
+            settlement_week,
+            settlement_weekly_sales_amount,
+            settlement_weekly_refund_amount,
+            settlement_weekly_gross_amount,
+            settlement_weekly_commission,
+            settlement_weekly_net_amount,
+            settlement_weekly_created_at
+        ) VALUES
+        <foreach collection="list" item="weekly" separator=",">
+        (
+            #{weekly.member.id},
+            #{weekly.status.id},
+            #{weekly.performanceTitle},
+            #{weekly.year},
+            #{weekly.month},
+            #{weekly.week},
+            #{weekly.weeklySalesAmount},
+            #{weekly.weeklyRefundAmount},
+            #{weekly.weeklyGrossAmount},
+            #{weekly.weeklyCommission},
+            #{weekly.weeklyNetAmount},
+            #{weekly.weeklyCreatedAt}
         )
-        ON CONFLICT (host_biz_name, performance_title, settlement_year, settlement_month, settlement_week)
+        </foreach>
+        ON CONFLICT (member_id, performance_title, settlement_year, settlement_month, settlement_week)
         DO UPDATE SET
-            settlement_weekly_sales_amount = settlement_weekly.settlement_weekly_sales_amount + EXCLUDED.settlement_weekly_sales_amount,
-            settlement_weekly_refund_amount = settlement_weekly.settlement_weekly_refund_amount + EXCLUDED.settlement_weekly_refund_amount,
-            settlement_weekly_gross_amount = settlement_weekly.settlement_weekly_gross_amount + EXCLUDED.settlement_weekly_gross_amount,
-            settlement_weekly_commission = settlement_weekly.settlement_weekly_commission + EXCLUDED.settlement_weekly_commission,
-            settlement_weekly_net_amount = settlement_weekly.settlement_weekly_net_amount + EXCLUDED.settlement_weekly_net_amount,
-            settlement_weekly_created_at = EXCLUDED.settlement_weekly_created_at
+            settlement_weekly_sales_amount = EXCLUDED.settlement_weekly_sales_amount,
+            settlement_weekly_refund_amount = EXCLUDED.settlement_weekly_refund_amount,
+            settlement_weekly_gross_amount = EXCLUDED.settlement_weekly_gross_amount,
+            settlement_weekly_commission = EXCLUDED.settlement_weekly_commission,
+            settlement_weekly_net_amount = EXCLUDED.settlement_weekly_net_amount,
+            settlement_weekly_updated_at = EXCLUDED.settlement_weekly_created_at
     </insert>
 </mapper>
