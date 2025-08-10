@@ -25,8 +25,7 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<Seat> findAllByIdWithLock(@Param("seatIds") List<Long> seatIds);
 
-    @Query("SELECT COUNT(s) FROM Seat s WHERE s.preemptUserId = :userId AND s.preemptedUntil > :now")
-    int countByPreemptUserIdAndPreemptedUntilAfter(@Param("userId") Long userId, @Param("now") Instant now);
+//    int countByPreemptUserIdAndPreemptedUntilAfter(Long userId, Instant now);
 
     @Query("SELECT s.id FROM Seat s WHERE s.member.id = :userId AND s.id IN :seatIds AND s.preemptedUntil > :now")
     List<Long> findPreemptedSeatIdsByUserAndSeatIds(@Param("userId") Long userId,
