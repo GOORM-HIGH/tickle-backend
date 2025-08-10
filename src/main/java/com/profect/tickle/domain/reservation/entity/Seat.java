@@ -74,6 +74,8 @@ public class Seat {
         this.member = member;
     }
 
+    public void assignEvent(Event event) {this.event = event;}
+
     public void assignReservation(Reservation reservation) {
         this.reservation = reservation;
     }
