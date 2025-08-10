@@ -5,6 +5,7 @@ import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.EmailAuthenticationCode;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.EmailAuthenticationCodeRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
@@ -177,7 +178,17 @@ public class MemberService implements UserDetailsService {
 
     // 로그인한 유저의 이메일로 유저를 조회하여 정보 데이터를 반환
     public MemberResponseDto getMemberDtoByEmail(String email) {
-        return memberMapper.getMemberDtoByEmail(email)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+
+        MemberRole memberRole = memberMapper.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND))
+                .getMemberRole();
+
+        if(memberRole == MemberRole.HOST) {
+            return memberMapper.getHostMemberDtoByEmail(email)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+        } else { // 유저인 경우
+            return memberMapper.getMemberDtoByEmail(email)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+        }
     }
 }
