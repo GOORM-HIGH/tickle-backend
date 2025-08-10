@@ -2,9 +2,7 @@ package com.profect.tickle.domain.notification.event.reservation.event;
 
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
-import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
-import com.profect.tickle.domain.reservation.entity.Reservation;
 
 import java.util.List;
 

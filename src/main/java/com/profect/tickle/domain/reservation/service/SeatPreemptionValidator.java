@@ -3,8 +3,6 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequestDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
-import com.profect.tickle.global.exception.BusinessException;
-import com.profect.tickle.global.exception.ErrorCode;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,23 +16,23 @@ public class SeatPreemptionValidator {
     private final SeatRepository seatRepository;
 
     public void validateRequest(SeatPreemptionRequestDto request, Long userId) {
-        // 1. 사용자의 기존 선점 좌석 수 확인
-        int currentPreemptedCount = seatRepository.countByPreemptUserIdAndPreemptedUntilAfter(
-                userId, Instant.now());
-
-        int requestedCount = request.getSeatIds().size();
-
-        if (currentPreemptedCount + requestedCount > 5) {
-            throw new BusinessException(ErrorCode.PREEMPTION_LIMIT_EXCEEDED);
-        }
+//        // 1. 사용자의 기존 선점 좌석 수 확인
+//        int currentPreemptedCount = seatRepository.countByPreemptUserIdAndPreemptedUntilAfter(
+//                userId, Instant.now());
+//
+//        int requestedCount = request.getSeatIds().size();
+//
+//        if (currentPreemptedCount + requestedCount > 5) {
+//            throw new BusinessException(ErrorCode.PREEMPTION_LIMIT_EXCEEDED);
+//        }
 
         // 2. 중복 선점 확인
-        List<Long> alreadyPreemptedByUser = seatRepository
-                .findPreemptedSeatIdsByUserAndSeatIds(userId, request.getSeatIds());
+//        List<Long> alreadyPreemptedByUser = seatRepository
+//                .findPreemptedSeatIdsByUserAndSeatIds(userId, request.getSeatIds());
 
-        if (!alreadyPreemptedByUser.isEmpty()) {
-            throw new BusinessException(ErrorCode.PREEMPTION_DUPLICATE_SEAT);
-        }
+//        if (!alreadyPreemptedByUser.isEmpty()) {
+//            throw new BusinessException(ErrorCode.PREEMPTION_DUPLICATE_SEAT);
+//        }
     }
 
     public List<Seat> filterAvailableSeats(List<Seat> seats, Long performanceId) {

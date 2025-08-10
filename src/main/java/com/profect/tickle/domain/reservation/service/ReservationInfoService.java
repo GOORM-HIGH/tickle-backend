@@ -31,7 +31,7 @@ public class ReservationInfoService {
 
         Long userId = SecurityUtil.getSignInMemberId();
 
-        if (seats.isEmpty() || !userId.equals(seats.get(0).getPreemptUserId())) {
+        if (seats.isEmpty() || !userId.equals(seats.getFirst().getMember().getId())) {
             throw new BusinessException(ErrorCode.PREEMPTION_TOKEN_INVALID);
         }
 
@@ -58,7 +58,7 @@ public class ReservationInfoService {
                 .currentPoints(currentPoints)
                 .sufficientPoints(currentPoints >= totalAmount)
                 .coupons(availableCoupons)
-                .preemptedUntil(seats.get(0).getPreemptedUntil())
+                .preemptedUntil(seats.getFirst().getPreemptedUntil())
                 .build();
     }
 
