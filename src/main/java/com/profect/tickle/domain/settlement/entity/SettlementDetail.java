@@ -1,11 +1,13 @@
 package com.profect.tickle.domain.settlement.entity;
 
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter
@@ -22,11 +24,12 @@ public class SettlementDetail {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status_id", nullable = false)
-    private Status statusId;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-    @Column(name = "host_biz_name", length = 15, nullable = false)
-    private String hostBizName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private Status status;
 
     @Column(name = "performance_title", length = 50, nullable = false)
     private String performanceTitle;
@@ -37,9 +40,6 @@ public class SettlementDetail {
     @Column(name = "reservation_code", length = 15, nullable = false)
     private String reservationCode;
 
-    @Column(name = "settlement_detail_created_at", nullable = false)
-    private Instant createdAt;
-
     @Column(name = "settlement_detail_sales_amount", nullable = false)
     private Long salesAmount;
 
@@ -49,14 +49,46 @@ public class SettlementDetail {
     @Column(name = "settlement_detail_gross_amount", nullable = false)
     private Long grossAmount;
 
+    @Column(name ="contract_charge",
+            precision = 38,
+            scale = 2,
+            nullable = false)
+    private BigDecimal contractCharge;
+
     @Column(name = "settlement_detail_commission", nullable = false)
     private Long commission;
 
     @Column(name = "settlement_detail_net_amount", nullable = false)
     private Long netAmount;
 
-    @Column(name = "settled_flag", length = 1, nullable = false)
-    @ColumnDefault("'N'")
-    private String flag;
+    @Column(name = "payment_method", length = 20)
+    private String paymentMethod;
 
+    @Column(name = "settlement_detail_created_at", nullable = false)
+    private Instant createdAt;
+
+    public static SettlementDetail create(SettlementDetailFindTargetDto dto,
+                                          Member member,
+                                          Status status,
+                                          Long salesAmount,
+                                          Long refundAmount,
+                                          Long grossAmount,
+                                          Long commission,
+                                          Long netAmount,
+                                          Instant now) {
+        return SettlementDetail.builder()
+                .member(member)
+                .status(status)
+                .performanceTitle(dto.getPerformanceTitle())
+                .performanceEndDate(dto.getPerformanceEndDate())
+                .reservationCode(dto.getReservationCode())
+                .salesAmount(salesAmount)
+                .refundAmount(refundAmount)
+                .grossAmount(grossAmount)
+                .contractCharge(dto.getContractCharge())
+                .commission(commission)
+                .netAmount(netAmount)
+                .createdAt(now)
+                .build();
+    }
 }

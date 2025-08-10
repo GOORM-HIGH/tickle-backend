@@ -16,11 +16,12 @@ import java.time.Instant;
 @AllArgsConstructor
 public class SettlementDetailFindTargetDto {
 
-    private String hostBizName; // 주최자 상호명
+    private Long memberId;
+    private Long reservationStatusId;
     private String performanceTitle; // 공연 제목
     private Instant performanceEndDate; // 공연 예매 종료일시
     private String reservationCode; // 예매 코드
-    private Long reservationPrice; // 예매 가격
-    private Integer reservationStatusCode; // 예매 상태
-    private BigDecimal contractCharge; // 주최자 수수료율
+    private Long reservationPrice; // 예매 금액
+    private BigDecimal contractCharge; // 정산 적용 수수료율
+    private String paymentMethod; // 결제 수단(추후 고도화용)
 }

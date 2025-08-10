@@ -1,66 +1,72 @@
 package com.profect.tickle.domain.settlement.service;
 
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto;
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.settlement.dto.batch.SettlementDailyFindTargetDto;
+import com.profect.tickle.domain.settlement.entity.SettlementDaily;
 import com.profect.tickle.domain.settlement.mapper.SettlementDailyMapper;
-import com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SettlementDailyService {
 
-    private final SettlementDetailMapper settlementDetailMapper;
     private final SettlementDailyMapper settlementDailyMapper;
+    private final MemberRepository memberRepository;
+    private final StatusRepository statusRepository;
 
     /**
      * 일간정산 테이블 insert+update_tasklet 구조
      */
     public void getSettlementDaily() {
-        Instant now = Instant.now();
+        // 정산 생성 시간
+        Instant settlementDate = Instant.now();
 
         // 건별정산 데이터 집계 조회
-        List<SettlementDailyDto> aggregates;
-        try {
-            aggregates = settlementDailyMapper.aggregateByDetail();
-        } catch (DataAccessException dae) {
-            log.error("정산 대상 조회 중 DB 오류 발생", dae);
-            throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
-        }
+        List<SettlementDailyFindTargetDto> aggregates =
+                Optional.ofNullable(settlementDailyMapper.aggregateByDetail())
+                        .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR));
 
         if(aggregates.isEmpty()){
             log.info("정산 대상 데이터가 존재하지 않습니다.");
             return;
         }
 
-        // 일간정산 테이블 upsert
-        HashMap<String, Object> paramsMap = new HashMap<>();
-        paramsMap.put("now", now);
-        for(SettlementDailyDto dto : aggregates) {
-            paramsMap.put("dto", dto);
-            try{
-                settlementDailyMapper.upsertSettlementDaily(paramsMap);
-            } catch (DataAccessException dae){
-                log.error("SettlementDaily upsert 오류, DTO={}", dto);
-                throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
-            }
-        }
+        List<SettlementDaily> dailyList = new ArrayList<>(); // 정산 결과 담을 list 생성
+        for(SettlementDailyFindTargetDto dto : aggregates) {
+            Member member = memberRepository.findById(dto.getMemberId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // 건별정산 테이블 상태 업데이트(정산 집계 완료 상태 N -> Y)
-//        try {
-//            settlementDetailMapper.updateSettlementDetail(now);
-//        } catch (DataAccessException dae){
-//            log.error("정산 상태 업데이트에 실패했습니다.");
-//            throw new BusinessException(ErrorCode.SETTLEMENT_STATUS_UPDATE_FAILED);
-//        }
+            Status settlementStatus = null; // 정산상태 초기화(14=정산예정, 15=정산완료)
+            if(settlementDate.isBefore(dto.getPerformanceEndDate())) {
+                settlementStatus = statusRepository.findById(14L)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+            } else if(settlementDate.isAfter(dto.getPerformanceEndDate())) {
+                settlementStatus = statusRepository.findById(15L)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+            }
+
+            SettlementDaily stlDaily = SettlementDaily.create(dto, member, settlementStatus, settlementDate);
+            dailyList.add(stlDaily); // 결과 리스트에 담고
+        }
+        try {
+            settlementDailyMapper.upsertSettlementDaily(dailyList); // upsert
+        } catch (DataAccessException dae) {
+            log.error("SettlementDaily upsert 오류, List={}", dailyList);
+            throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
+        }
     }
 }

@@ -1,17 +1,29 @@
 package com.profect.tickle.domain.settlement.entity;
 
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.settlement.dto.batch.SettlementMonthlyFindTargetDto;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 
 @Getter
 @Entity
-@Table(name = "settlement_monthly")
+@Table(
+        name = "settlement_monthly",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uniq_settlement_monthly",
+                columnNames = {
+                        "member_id",
+                        "performance_title",
+                        "settlement_year",
+                        "settlement_month"
+                }
+        ))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class SettlementMonthly {
 
     @Id
@@ -20,11 +32,12 @@ public class SettlementMonthly {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status_id", nullable = false)
-    private Status statusId;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-    @Column(name = "host_biz_name", length = 15, nullable = false)
-    private String hostBizName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private Status status;
 
     @Column(name = "performance_title", length = 50, nullable = false)
     private String performanceTitle;
@@ -52,5 +65,29 @@ public class SettlementMonthly {
 
     @Column(name = "settlement_monthly_created_at", nullable = false)
     private Instant monthlyCreatedAt;
+
+    @Column(name = "settlement_monthly_updated_at")
+    private Instant monthlyUpdatedAt;
+
+    public static SettlementMonthly create(SettlementMonthlyFindTargetDto dto,
+                                           Member member,
+                                           Status status,
+                                           String year,
+                                           String month,
+                                           Instant now) {
+        return SettlementMonthly.builder()
+                .member(member)
+                .status(status)
+                .performanceTitle(dto.getPerformanceTitle())
+                .year(year)
+                .month(month)
+                .monthlySalesAmount(dto.getMonthlySalesAmount())
+                .monthlyRefundAmount(dto.getMonthlyRefundAmount())
+                .monthlyGrossAmount(dto.getMonthlyGrossAmount())
+                .monthlyCommission(dto.getMonthlyCommission())
+                .monthlyNetAmount(dto.getMonthlyNetAmount())
+                .monthlyCreatedAt(now)
+                .build();
+    }
 
 }

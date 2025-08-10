@@ -1,27 +1,27 @@
 package com.profect.tickle.domain.settlement.dto.batch;
 
-import com.profect.tickle.global.status.Status;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SettlementDailyDto {
+public class SettlementDailyFindTargetDto {
 
-    private Status statusId;
-    private String hostBizName;
+    private Long memberId;
     private String performanceTitle;
+    private Instant performanceEndDate;
     private String year;
     private String month;
     private String day;
     private Long dailySalesAmount;
     private Long dailyRefundAmount;
     private Long dailyGrossAmount;
+    private BigDecimal contractCharge;
     private Long dailyCommission;
     private Long dailyNetAmount;
-    private Instant dailyCreatedAt;
 }

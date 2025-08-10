@@ -19,11 +19,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 // 스프링배치 작동 시 디폴트로 'transactionManager' 찾아서 주입하려고 함
 // 배치 전용으로 만든 txManager 사용하려면 아래처럼 명시해서 사용
-@EnableBatchProcessing(transactionManagerRef = "batchTxManager")
+@EnableBatchProcessing
 public class SettlementBatchConfig {
 
     private final JobRepository jobRepository;
-    private final PlatformTransactionManager batchTxManager;
+    private final PlatformTransactionManager txManager;
     private final SettlementDetailService settlementDetailService;
     private final SettlementDailyService settlementDailyService;
     private final SettlementWeeklyService settlementWeeklyService;
@@ -31,14 +31,14 @@ public class SettlementBatchConfig {
 
     public SettlementBatchConfig(
             JobRepository jobRepository,
-            @Qualifier("batchTxManager") PlatformTransactionManager batchTxManager,
+            @Qualifier("transactionManager") PlatformTransactionManager txManager,
             SettlementDetailService settlementDetailService,
             SettlementDailyService settlementDailyService,
             SettlementWeeklyService settlementWeeklyService,
             SettlementMonthlyService settlementMonthlyService
     ) {
         this.jobRepository = jobRepository;
-        this.batchTxManager = batchTxManager;
+        this.txManager = txManager;
         this.settlementDetailService = settlementDetailService;
         this.settlementDailyService = settlementDailyService;
         this.settlementWeeklyService = settlementWeeklyService;
@@ -56,14 +56,14 @@ public class SettlementBatchConfig {
                 .tasklet((contribution, chunkContext) -> {
                     settlementDetailService.getSettlementDetail();
                     return RepeatStatus.FINISHED;
-                }, batchTxManager)
+                }, txManager)
                 .build();
         // 일간정산
         Step dailyStep = new StepBuilder("stepSettlementDaily", jobRepository)
                 .tasklet((contribution, chunkContext) -> {
                     settlementDailyService.getSettlementDaily();
                     return RepeatStatus.FINISHED;
-                }, batchTxManager)
+                }, txManager)
                 .build();
 
         // 2) JobBuilder로 Job 구성(순차 실행)
@@ -83,7 +83,7 @@ public class SettlementBatchConfig {
                 .tasklet((contribution, chunkContext) -> {
                     settlementWeeklyService.getSettlementWeekly();
                     return RepeatStatus.FINISHED;
-                }, batchTxManager)
+                }, txManager)
                 .build();
 
         // 월간정산
@@ -91,7 +91,7 @@ public class SettlementBatchConfig {
                 .tasklet((contribution, chunkContext) -> {
                     settlementMonthlyService.getSettlementMonthly();
                     return RepeatStatus.FINISHED;
-                }, batchTxManager)
+                }, txManager)
                 .build();
 
         return new JobBuilder("settlementWeeklyMonthlyJob", jobRepository)

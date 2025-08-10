@@ -1,10 +1,15 @@
 package com.profect.tickle.domain.settlement.service;
 
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDailyDto;
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyFindTargetDto;
+import com.profect.tickle.domain.settlement.entity.SettlementWeekly;
 import com.profect.tickle.domain.settlement.mapper.SettlementWeeklyMapper;
-import com.profect.tickle.domain.settlement.util.SettlementPeriod;
+import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -12,8 +17,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +28,8 @@ import java.util.List;
 public class SettlementWeeklyService {
 
     private final SettlementWeeklyMapper settlementWeeklyMapper;
+    private final MemberRepository memberRepository;
+    private final StatusRepository statusRepository;
 
     /**
      * 주간정산 테이블 insert+update_tasklet 구조
@@ -32,39 +41,46 @@ public class SettlementWeeklyService {
         Instant settlementDate = Instant.now();
 
         // 날짜 유틸 yyyy, m, week
-        // 00시00분30초에 전날의 정산내역 집계 (yesterday)
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        SettlementPeriod period = SettlementPeriod.get(yesterday);
+        // 10분마다 당일의 정산내역 집계 (yesterday)
+        LocalDate today = SettlementTimeUtil.localDate(settlementDate);
+        SettlementTimeUtil period = SettlementTimeUtil.get(today);
         map.put("year", period.yearStr());
         map.put("month", period.monthStr());
         map.put("day", period.dayOfMonthStr());
         map.put("week", period.weekOfMonthStr());
+        map.put("from", period.yearStr() + "-" + period.monthStr() + "-" + period.startOfWeek());
+        map.put("to", period.yearStr() + "-" + period.monthStr() + "-" + period.endOfWeek());
         map.put("now", settlementDate);
 
-        // 오늘 날짜 기준 연월일로 일간정산 리스트 추출
-        List<SettlementDailyDto> getDailyList;
-        try {
-            getDailyList = settlementWeeklyMapper.findByDate(map);
-        } catch (DataAccessException dae) {
-            log.error("정산 대상 조회 중 DB 오류 발생", dae);
-            throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
-        }
+        // 오늘 날짜 기준 해당 주차의 일간정산 합계 추출
+        List<SettlementWeeklyFindTargetDto> aggregates =
+                Optional.ofNullable(settlementWeeklyMapper.findByDate(map))
+                        .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR));
 
-        if(getDailyList.isEmpty()){
+        if(aggregates.isEmpty()){
             log.info("정산 대상 데이터가 존재하지 않습니다.");
             return;
         }
 
         // 주최자, 공연, 회차별로 upsert
-        for(SettlementDailyDto dto : getDailyList) {
-            map.put("dto", dto);
-            // 날짜 정보, 일간 dto로 주간 테이블에 upsert
-            try {
-                settlementWeeklyMapper.upsertSettlementWeekly(map);
-            } catch (DataAccessException dae) {
-                log.error("SettlementWeekly upsert 오류, DTO={}", dto);
-                throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
-            }
+        List<SettlementWeekly> weeklyList = new ArrayList<>();
+        for(SettlementWeeklyFindTargetDto dto : aggregates) {
+            Member member = memberRepository.findById(dto.getMemberId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+            Status settlementStatus = statusRepository.findById(14L)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+
+            SettlementWeekly stlWeekly = SettlementWeekly.create(dto, member, settlementStatus,
+                    period.yearStr(), period.monthStr(), period.weekOfMonthStr(), settlementDate);
+
+            weeklyList.add(stlWeekly);
+        }
+        // 날짜 정보, 일간 dto로 주간 테이블에 upsert
+        try {
+            settlementWeeklyMapper.upsertSettlementWeekly(weeklyList);
+        } catch (DataAccessException dae) {
+            log.error("SettlementWeekly upsert 오류, list={}", weeklyList);
+            throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
         }
     }
 }
