@@ -56,6 +56,9 @@ public enum ResultCode {
     EMAIL_VALIDATION_CODE_CREATE(HttpStatus.CREATED, "이메일 인증코드 생성 성공"),
     EMAIL_VERIFICATION_SUCCESS(HttpStatus.OK, "이메일 인증 성공"),
 
+    // SETTLEMENT
+    SETTLEMENT_LIST_SUCCESS(HttpStatus.OK, "정산 내역 조회 성공"),
+    SETTLEMENT_UNSETTLED_AMOUNT_SUCCESS(HttpStatus.OK, "미정산 내역 조회 성공")
     ;
 
     private final HttpStatus status;
