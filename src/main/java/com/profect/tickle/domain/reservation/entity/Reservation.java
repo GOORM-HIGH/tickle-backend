@@ -38,7 +38,7 @@ public class Reservation {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
-    @Column(name = "reservation_code", length = 255, nullable = false)
+    @Column(name = "reservation_code", length = 30, nullable = false)
     private String code;
 
     @Column(name = "reservation_price", nullable = false)

@@ -103,7 +103,9 @@ public class ReservationService {
             Reservation reservation = createReservation(preemptedSeats, member, finalAmount);
 
             // 7. 좌석들을 예매 완료 상태로 변경
-            updateSeatsToReserved(preemptedSeats, reservation);
+            updateSeatsToReserved(preemptedSeats, reservation, member);
+
+            reservationRepository.save(reservation);
 
             // 8. 응답 생성
             List<ReservedSeatDto> reservedSeats = preemptedSeats.stream()
@@ -191,18 +193,18 @@ public class ReservationService {
         return reservationRepository.save(reservation);
     }
 
-    private void updateSeatsToReserved(List<Seat> seats, Reservation reservation) {
+    private void updateSeatsToReserved(List<Seat> seats, Reservation reservation, Member member) {
         Status reservedStatus = statusRepository.findById(SeatStatus.RESERVED.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
 
         for (Seat seat : seats) {
             seat.assignReservation(reservation);
-            seat.assignTo(null);
+            seat.assignTo(member);
             seat.assignPreemptionToken(null);
             seat.assignPreemptedAt(null);
             seat.assignPreemptedUntil(null);
             seat.setStatusTo(reservedStatus);
-            seat.assignSeatCode(generateReservationCode());
+            seat.assignSeatCode(generateSeatCode());
         }
 
         seatRepository.saveAll(seats);
@@ -222,7 +224,7 @@ public class ReservationService {
         return reservationMapper.findReservedSeatById(reservationId);
     }
 
-    private String generateReservationCode() {
+    private String generateSeatCode() {
         String uuidPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         return uuidPart + dateTime;
