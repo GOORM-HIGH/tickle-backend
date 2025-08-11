@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/reservation")
 @RequiredArgsConstructor
+@Slf4j
 public class ReservationHistoryController {
 
     private final ReservationHistoryService reservationHistoryService;
@@ -37,6 +39,8 @@ public class ReservationHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long statusId) {
+
+        log.info("예매 내역 목록 조회 API 요청이 수신되었습니다.");
 
         Long userId = SecurityUtil.getSignInMemberId();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -65,6 +69,8 @@ public class ReservationHistoryController {
     @PreAuthorize("hasRole('MEMBER')")
     public ResultResponse<ReservationCancelResponseDto> cancelReservation(
             @PathVariable Long reservationId) {
+
+        log.info("{}번 예매를 취소합니다.", reservationId);
 
         ReservationCancelResponseDto response = reservationHistoryService
                 .cancelReservation(reservationId);

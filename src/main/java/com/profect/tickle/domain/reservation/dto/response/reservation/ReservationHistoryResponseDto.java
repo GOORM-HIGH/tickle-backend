@@ -3,6 +3,7 @@ package com.profect.tickle.domain.reservation.dto.response.reservation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.time.Instant;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
+@ToString
 public class ReservationHistoryResponseDto {
     private Long reservationId;
     private String reservationNumber;           // 예매 번호
