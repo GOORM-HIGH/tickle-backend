@@ -3,7 +3,7 @@ package com.profect.tickle.domain.member.controller;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.member.dto.request.EmailValidationCodeCreateRequest;
 import com.profect.tickle.domain.member.dto.request.EmailValidationRequestDto;
-import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
+import com.profect.tickle.domain.member.dto.request.UpdateMemberRequestDto;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -87,7 +86,7 @@ public class MemberController {
     })
     @PostMapping(value = "/users/{userId}/delete")
     public ResultResponse<?> deleteUser(@PathVariable Long userId) {
-        log.info("{} 인덱스의 계정을 탈퇴처리 합니다.", userId);
+        log.info("{}번 인덱스의 계정을 탈퇴처리 합니다.", userId);
 
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
         memberService.deleteUser(userId, signInMemberEmail);
@@ -97,4 +96,22 @@ public class MemberController {
         );
     }
 
+    @Operation(summary = "회원정보수정", description = "회원정보를 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원정보수정 성공"),
+            @ApiResponse(responseCode = "400", description = "유요한 수수료율이 아님"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping(value = "/members/{memberId}")
+    public ResultResponse<?> updateUser(@PathVariable Long memberId, @RequestBody UpdateMemberRequestDto request) {
+        log.info("{}번 인덱스의 계정의 업데이트합니다.", memberId);
+
+        memberService.updateUser(memberId, request);
+
+        return new ResultResponse<>(
+                ResultCode.MEMBER_UPDATE_SUCCESS,
+                ResultCode.MEMBER_UPDATE_SUCCESS.getMessage()
+        );
+    }
 }

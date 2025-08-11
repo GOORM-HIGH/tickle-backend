@@ -2,6 +2,7 @@ package com.profect.tickle.domain.member.service;
 
 import com.profect.tickle.domain.contract.service.ContractService;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.member.dto.request.UpdateMemberRequestDto;
 import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.EmailAuthenticationCode;
 import com.profect.tickle.domain.member.entity.Member;
@@ -15,6 +16,7 @@ import com.profect.tickle.domain.notification.service.MailService;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -200,7 +203,7 @@ public class MemberService implements UserDetailsService {
 
         // 이미 탈퇴된 유저
         if (member.getDeletedAt() != null) {
-            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND)
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND);
         }
 
         // 권한 확인
@@ -209,5 +212,58 @@ public class MemberService implements UserDetailsService {
         }
 
         member.deleteMember();
+    }
+
+    // 맴버정보 업데이트 메서드
+    // 맴버정보 업데이트 메서드
+    @Transactional
+    public void updateUser(Long memberId, UpdateMemberRequestDto request) {
+        Long signInMemberId = SecurityUtil.getSignInMemberId();
+
+        if (!Objects.equals(memberId, signInMemberId)) {
+            throw new BusinessException(
+                    ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED.getMessage(),
+                    ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED
+            );
+        }
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.MEMBER_NOT_FOUND.getMessage(),
+                        ErrorCode.MEMBER_NOT_FOUND
+                ));
+
+        // 닉네임 변경
+        if (request.getNickname() != null && !request.getNickname().trim().isEmpty()) {
+            String nickname = request.getNickname().trim();
+            // (선택) 중복 체크
+            // if (memberRepository.existsByNickname(nickname)) throw new BusinessException(...);
+            member.updateNickname(nickname);
+        }
+
+        // 수수료 변경 (HOST만, 그리고 유효 범위 체크)
+        if (request.getCharge() != null) {
+            if (member.getMemberRole() != MemberRole.HOST) {
+                throw new BusinessException(
+                        ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED.getMessage(),
+                        ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED
+                );
+            }
+
+            BigDecimal charge = request.getCharge();
+
+            // 허용 범위 예: 0% ~ 20%
+            if (charge.compareTo(BigDecimal.ZERO) < 0 ||
+                    charge.compareTo(new BigDecimal("20")) > 0) {
+                throw new BusinessException(
+                        ErrorCode.CONTRACT_CHARGE_INVALID.getMessage(),
+                        ErrorCode.CONTRACT_CHARGE_INVALID
+                );
+            }
+
+            contractService.updateContract(memberId, charge);
+        }
+
+        return;
     }
 }

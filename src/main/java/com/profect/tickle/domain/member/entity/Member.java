@@ -166,4 +166,8 @@ public class Member {
             this.deletedAt = Instant.now();
         }
     }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
 }
