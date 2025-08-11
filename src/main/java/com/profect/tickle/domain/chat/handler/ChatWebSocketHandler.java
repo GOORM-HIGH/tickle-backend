@@ -353,7 +353,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .fileSize(requestDto.getFileSize())
                         .fileType(requestDto.getFileType())
                         .createdAt(savedMessage.getCreatedAt())
-                        .isMyMessage(isMyMessage) // 🎯 개별 계산된 값
+                        // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
                         .onlineCount(onlineUserService.getOnlineCount(requestDto.getChatRoomId()))
                         .build();
 
@@ -396,7 +396,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .content(messageContent)
                         .message(messageContent)
                         .createdAt(java.time.Instant.now())
-                        .isMyMessage(false) // 시스템 메시지는 항상 false
+                        // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
                         .onlineCount(onlineUserService.getOnlineCount(chatRoomId))
                         .build();
 
