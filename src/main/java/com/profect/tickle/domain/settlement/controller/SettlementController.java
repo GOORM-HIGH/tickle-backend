@@ -63,6 +63,7 @@ public class SettlementController {
     /**
      * 엑셀 다운로드
      */
+    @Operation(summary = "정산 내역 엑셀 다운로드", description = "정산 내역을 엑셀 파일로 다운로드 합니다.")
     @GetMapping("/settlements/excel")
     public void downloadExcel(
             @RequestParam(value = "periodType", defaultValue = "DETAIL") SettlementResponseService.PeriodType periodType,
