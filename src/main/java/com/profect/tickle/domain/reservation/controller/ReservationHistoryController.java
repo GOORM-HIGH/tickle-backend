@@ -36,12 +36,12 @@ public class ReservationHistoryController {
     public ResultResponse<List<ReservationHistoryResponseDto>> getReservationHistory(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) Long statusId) {
 
         Long userId = SecurityUtil.getSignInMemberId();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<ReservationHistoryResponseDto> history = reservationHistoryService
-                .getReservationHistory(userId, pageable);
+                .getReservationHistoryWithStatus(userId, statusId, pageable);
 
         return ResultResponse.of(ResultCode.RESERVATION_HISTORY_SUCCESS, history);
     }

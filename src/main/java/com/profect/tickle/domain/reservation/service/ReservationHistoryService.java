@@ -45,10 +45,11 @@ public class ReservationHistoryService {
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
 
-    public List<ReservationHistoryResponseDto> getReservationHistory(Long userId, Pageable pageable) {
+    public List<ReservationHistoryResponseDto> getReservationHistoryWithStatus(Long userId, Long statusId, Pageable pageable) {
         Page<Reservation> reservations = reservationRepository.findByMemberIdOrderByCreatedAtDesc(userId, pageable);
 
         return reservations.getContent().stream()
+                .filter(reservation -> Objects.equals(reservation.getStatus().getId(), statusId))
                 .map(this::convertToHistoryResponse)
                 .collect(Collectors.toList());
     }
@@ -123,7 +124,7 @@ public class ReservationHistoryService {
                 .seatCount(seats.size())
                 .seatNumbers(seatNumbers)
                 .price(reservation.getPrice())
-                .status(reservation.getStatus())
+                .status(reservation.getStatus().getDescription())
                 .reservedAt(reservation.getCreatedAt())
                 .cancellable(isCancellable(reservation))
                 .build();
