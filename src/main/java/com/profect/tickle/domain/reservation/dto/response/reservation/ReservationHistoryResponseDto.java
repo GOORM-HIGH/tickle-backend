@@ -1,6 +1,5 @@
 package com.profect.tickle.domain.reservation.dto.response.reservation;
 
-import com.profect.tickle.global.status.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +19,7 @@ public class ReservationHistoryResponseDto {
     private Integer seatCount;                  // 예매 좌석 수
     private List<String> seatNumbers;          // 좌석 번호들 (간단히)
     private Integer price;                      // 금액
-    private Status status;                      // 예매 상태
+    private String status;                      // 예매 상태
     private Instant reservedAt;                 // 예매 일시
     private boolean cancellable;                // 취소 가능 여부
 }

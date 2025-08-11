@@ -123,7 +123,7 @@ public class ReservationHistoryService {
                 .seatCount(seats.size())
                 .seatNumbers(seatNumbers)
                 .price(reservation.getPrice())
-                .status(reservation.getStatus())
+                .status(reservation.getStatus().getDescription())
                 .reservedAt(reservation.getCreatedAt())
                 .cancellable(isCancellable(reservation))
                 .build();
