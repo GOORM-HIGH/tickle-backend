@@ -105,7 +105,7 @@ public class MemberController {
     })
     @PostMapping(value = "/members/{memberEmail}")
     public ResultResponse<?> updateUser(@PathVariable String memberEmail, @RequestBody UpdateMemberRequestDto request) {
-        log.info("{} 계정을 업데이트합니다.", memberEmail);
+        log.info("{} 계정을 업데이트 요청을 실행합니다.", memberEmail);
 
         memberService.updateUser(memberEmail, request);
 

@@ -220,7 +220,7 @@ public class MemberService implements UserDetailsService {
     public void updateUser(String memberEmail, UpdateMemberRequestDto request) {
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
 
-        if (memberEmail.equals(signInMemberEmail)) {
+        if (!memberEmail.equals(signInMemberEmail)) {
             throw new BusinessException(
                     ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED.getMessage(),
                     ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED
