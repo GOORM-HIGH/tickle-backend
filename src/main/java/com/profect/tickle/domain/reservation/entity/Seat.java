@@ -45,7 +45,7 @@ public class Seat {
     @JoinColumn(name = "reservation_id")
     private Reservation reservation;
 
-    @Column(name = "seat_code", length = 15)
+    @Column(name = "seat_code", length = 30)
     private String seatCode;
 
     @Enumerated(EnumType.STRING)
