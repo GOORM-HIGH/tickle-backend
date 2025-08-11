@@ -18,6 +18,7 @@ import com.profect.tickle.domain.reservation.dto.response.reservation.Reservatio
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.mapper.ReservationMapper;
 import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
+import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
@@ -44,7 +45,7 @@ public class PerformanceService {
     private final HallRepository hallRepository;
     private final StatusRepository statusRepository;
     private final SeatTemplateRepository seatTemplateRepository;
-    //    private final SeatService seatService;
+    private final SeatService seatService;
     private final PerformanceMapper performanceMapper;
     private final MemberMapper memberMapper;
     private final ReservationMapper reservationMapper;
@@ -158,6 +159,8 @@ public class PerformanceService {
 
         Performance performance = Performance.create(dto, member, genre, hall, status, priceRange);
         performanceRepository.save(performance);
+
+        seatService.createSeatsForPerformance(performance.getId());
 
         return PerformanceResponseDto.from(performance);
     }
