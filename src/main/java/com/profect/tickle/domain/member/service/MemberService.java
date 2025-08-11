@@ -236,9 +236,13 @@ public class MemberService implements UserDetailsService {
         // 닉네임 변경
         if (request.getNickname() != null && !request.getNickname().trim().isEmpty()) {
             String nickname = request.getNickname().trim();
-            // (선택) 중복 체크
-            // if (memberRepository.existsByNickname(nickname)) throw new BusinessException(...);
             member.updateNickname(nickname);
+        }
+
+        // 프로필사진 변경
+        if(request.getImg() != null && !request.getImg().trim().isEmpty()) {
+            String img = request.getImg().trim();
+            member.updateImg(img);
         }
 
         // 수수료 변경 (HOST만, 그리고 유효 범위 체크)

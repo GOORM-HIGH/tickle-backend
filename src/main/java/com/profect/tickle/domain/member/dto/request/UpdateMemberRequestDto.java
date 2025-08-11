@@ -8,5 +8,6 @@ import java.math.BigDecimal;
 public class UpdateMemberRequestDto {
 
     String nickname;
+    String img;
     BigDecimal charge;
 }
