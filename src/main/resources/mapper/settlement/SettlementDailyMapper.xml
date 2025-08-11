@@ -97,4 +97,14 @@
             -- 수정 날짜 = 받은 날짜
             settlement_daily_updated_at = EXCLUDED.settlement_daily_created_at
     </insert>
+
+    <!-- 1) 예매 종료일시 <= n일23시59분59초.999 && '정산예정'
+         2) 오늘이 월요일 또는 1일인 경우, 이전 건들 업데이트 -->
+    <update id="updateSettlementDailyStatus">
+        UPDATE settlement_daily
+        SET status_id = #{afterStatus.id}
+        WHERE performance_end_date &lt;= #{endOfDay}
+        AND status_id = #{beforeStatus.id}
+    </update>
+
 </mapper>

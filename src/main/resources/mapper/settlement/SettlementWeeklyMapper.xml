@@ -65,4 +65,14 @@
             settlement_weekly_net_amount = EXCLUDED.settlement_weekly_net_amount,
             settlement_weekly_updated_at = EXCLUDED.settlement_weekly_created_at
     </insert>
+
+    <!-- 월요일 또는 1일인 경우 n-1회차의 정산예정 건들 업데이트-->
+    <update id="updateSettlementDetailStatus">
+        UPDATE settlement_weekly
+        SET status_id = #{afterStatus.id}
+        WHERE settlement_year = #{year}
+        AND settlement_month = #{month}
+        AND settlement_week = #{week}
+        AND status_id = #{beforeStatus.id}
+    </update>
 </mapper>

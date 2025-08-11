@@ -2,7 +2,9 @@ package com.profect.tickle.domain.settlement.mapper;
 
 import com.profect.tickle.domain.settlement.dto.batch.SettlementMonthlyFindTargetDto;
 import com.profect.tickle.domain.settlement.entity.SettlementMonthly;
+import com.profect.tickle.global.status.Status;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,4 +22,11 @@ public interface SettlementMonthlyMapper {
      */
     void upsertSettlementMonthly(List<SettlementMonthly> list);
 
+    /**
+     * 1일 기준 지난 달 정산 상태 업데이트
+     */
+    void updateSettlementMonthlyStatus(@Param("beforeStatus") Status beforeStatus,
+                                       @Param("afterStatus") Status afterStatus,
+                                       @Param("year") String year,
+                                       @Param("month") String month);
 }
