@@ -60,6 +60,7 @@ public enum ErrorCode {
     CHAT_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "채팅 기능에 대한 권한이 없습니다."),
     CHAT_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "채팅방에 참여하지 않은 사용자입니다."),
     CHAT_NOT_MESSAGE_OWNER(HttpStatus.FORBIDDEN, "메시지 작성자만 수정/삭제할 수 있습니다."),
+    MEMBER_UPDATE_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "회원정보 변경 권한이 없습니다."),
 
     // 참여자 관련
     CHAT_PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅방 참여 정보를 찾을 수 없습니다."),
@@ -77,6 +78,7 @@ public enum ErrorCode {
     VALIDATION_CODE_REQUEST_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, "인증번호를 너무 자주 요청했습니다. 잠시 후 다시 시도하세요."),
     VALIDATION_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인증번호가 만료되었습니다."),
     VALIDATION_CODE_MISMATCH(HttpStatus.NOT_FOUND, "인증번호가 일치하지 않습니다."),
+    MEMBER_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "본인만 탈퇴할 수 있습니다."),
 
     // 예매 관련
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예매 내역을 찾을 수 없습니다."),
@@ -104,8 +106,12 @@ public enum ErrorCode {
     SETTLEMENT_INSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "건별 정산 데이터 저장에 실패했습니다."),
     SETTLEMENT_UPSERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "정산 데이터 저장 또는 업데이트에 실패했습니다."),
     SETTLEMENT_STATUS_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "정산 상태 업데이트에 실패했습니다."),
-    ;
 
+    // 계약 관련
+    CONTRACT_NOT_FOUND(HttpStatus.NOT_FOUND, "계약을 찾지 못했습니다."),
+    CONTRACT_CHARGE_INVALID(HttpStatus.BAD_REQUEST, "유요한 수수료율이 아닙니다."),
+
+    ;
     private final HttpStatus status;
     private final String message;
 }

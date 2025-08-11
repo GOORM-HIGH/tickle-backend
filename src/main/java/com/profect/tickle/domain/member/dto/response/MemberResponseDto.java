@@ -3,13 +3,15 @@ package com.profect.tickle.domain.member.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.entity.MemberRole;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MemberResponseDto {
 
@@ -30,32 +32,10 @@ public class MemberResponseDto {
     private String hostBizBank;                         // 정산 계좌 은행명
     private String hostBizDepositor;                    // 정산 계좌 예금주
     private String hostBizBankNumber;                   // 정산 계좌 번호
+    private BigDecimal contractCharge;                  // 정산 수수료
 
     private Instant createdAt;  // 계정 생성일
     private Instant updatedAt;  // 계정 정보 수정일
     private Instant deletedAt;  // 계정 삭제일(논리 삭제)
 
-    /** Entity → DTO 변환 */
-    public static MemberResponseDto fromEntity(Member memberEntity) {
-        return MemberResponseDto.builder()
-                .id(memberEntity.getId())
-                .email(memberEntity.getEmail())
-                .nickname(memberEntity.getNickname())
-                .birthday(memberEntity.getBirthday())
-                .img(memberEntity.getImg())
-                .pointBalance(memberEntity.getPointBalance())
-                .memberRole(memberEntity.getMemberRole())
-                .hostBizNumber(memberEntity.getHostBizNumber())
-                .hostBizCeo(memberEntity.getHostBizCeo())
-                .hostBizName(memberEntity.getHostBizName())
-                .hostBizAddress(memberEntity.getHostBizAddress())
-                .hostBizEcommerceRegistrationNumber(memberEntity.getHostBizEcommerceRegistrationNumber())
-                .hostBizBank(memberEntity.getHostBizBank())
-                .hostBizDepositor(memberEntity.getHostBizDepositor())
-                .hostBizBankNumber(memberEntity.getHostBizBankNumber())
-                .createdAt(memberEntity.getCreatedAt())
-                .updatedAt(memberEntity.getUpdatedAt())
-                .deletedAt(memberEntity.getDeletedAt())
-                .build();
-    }
 }

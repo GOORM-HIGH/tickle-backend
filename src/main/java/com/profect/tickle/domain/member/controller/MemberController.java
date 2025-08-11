@@ -3,9 +3,11 @@ package com.profect.tickle.domain.member.controller;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
 import com.profect.tickle.domain.member.dto.request.EmailValidationCodeCreateRequest;
 import com.profect.tickle.domain.member.dto.request.EmailValidationRequestDto;
+import com.profect.tickle.domain.member.dto.request.UpdateMemberRequestDto;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
+import com.profect.tickle.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -13,10 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(value = "/api/v1")
@@ -76,6 +75,43 @@ public class MemberController {
         return new ResultResponse<> (
                 ResultCode.EMAIL_VERIFICATION_SUCCESS,
                 ResultCode.EMAIL_VERIFICATION_SUCCESS.getMessage()
+        );
+    }
+
+    @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리시킵니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원탈퇴 성공"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping(value = "/members/{memberId}/delete")
+    public ResultResponse<?> deleteUser(@PathVariable Long memberId) {
+        log.info("{}번 인덱스의 계정을 탈퇴처리 합니다.", memberId);
+
+        String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
+        memberService.deleteUser(memberId, signInMemberEmail);
+        return new ResultResponse<>(
+                ResultCode.MEMBER_DELETE_SUCCESS,
+                ResultCode.MEMBER_DELETE_SUCCESS.getMessage()
+        );
+    }
+
+    @Operation(summary = "회원정보수정", description = "회원정보를 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원정보수정 성공"),
+            @ApiResponse(responseCode = "400", description = "유요한 수수료율이 아님"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping(value = "/members/{memberEmail}")
+    public ResultResponse<?> updateUser(@PathVariable String memberEmail, @RequestBody UpdateMemberRequestDto request) {
+        log.info("{} 계정을 업데이트 요청을 실행합니다.", memberEmail);
+
+        memberService.updateUser(memberEmail, request);
+
+        return new ResultResponse<>(
+                ResultCode.MEMBER_UPDATE_SUCCESS,
+                ResultCode.MEMBER_UPDATE_SUCCESS.getMessage()
         );
     }
 }

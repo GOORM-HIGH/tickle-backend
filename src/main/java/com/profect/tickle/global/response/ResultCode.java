@@ -53,8 +53,11 @@ public enum ResultCode {
 
     // MEMBER
     MEMBER_CREATE_SUCCESS(HttpStatus.CREATED, "회원가입 성공"),
+    MEMBER_MYPAGE_INFO_SUCCESS(HttpStatus.OK, "마이페이지 조회 성공"),
     EMAIL_VALIDATION_CODE_CREATE(HttpStatus.CREATED, "이메일 인증코드 생성 성공"),
     EMAIL_VERIFICATION_SUCCESS(HttpStatus.OK, "이메일 인증 성공"),
+    MEMBER_DELETE_SUCCESS(HttpStatus.OK, "회원탈퇴 성공"),
+    MEMBER_UPDATE_SUCCESS(HttpStatus.OK, "회원정보수정 성공"),
 
     ;
 

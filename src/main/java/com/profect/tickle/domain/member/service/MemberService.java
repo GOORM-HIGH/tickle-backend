@@ -2,8 +2,11 @@ package com.profect.tickle.domain.member.service;
 
 import com.profect.tickle.domain.contract.service.ContractService;
 import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.member.dto.request.UpdateMemberRequestDto;
+import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.EmailAuthenticationCode;
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.EmailAuthenticationCodeRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
@@ -13,6 +16,7 @@ import com.profect.tickle.domain.notification.service.MailService;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +35,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -171,6 +176,98 @@ public class MemberService implements UserDetailsService {
 
     public Member getMemberByEmail(String email) {
         return memberMapper.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("가입된 유저가 압니다.", ErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    // 로그인한 유저의 이메일로 유저를 조회하여 정보 데이터를 반환
+    public MemberResponseDto getMemberDtoByEmail(String email) {
+
+        MemberRole memberRole = memberMapper.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND))
+                .getMemberRole();
+
+        if (memberRole == MemberRole.HOST) {
+            return memberMapper.getHostMemberDtoByEmail(email)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+        } else { // 유저인 경우
+            return memberMapper.getMemberDtoByEmail(email)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+        }
+    }
+
+    @Transactional
+    public void deleteUser(Long memberId, String signInMemberEmail) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
+
+        // 이미 탈퇴된 유저
+        if (member.getDeletedAt() != null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        // 권한 확인
+        if (member.getEmail().equals(signInMemberEmail)) {
+            throw new BusinessException(ErrorCode.MEMBER_DELETE_FORBIDDEN.getMessage(), ErrorCode.MEMBER_DELETE_FORBIDDEN);
+        }
+
+        member.deleteMember();
+    }
+
+    // 맴버정보 업데이트 메서드
+    // 맴버정보 업데이트 메서드
+    @Transactional
+    public void updateUser(String memberEmail, UpdateMemberRequestDto request) {
+        String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
+
+        if (!memberEmail.equals(signInMemberEmail)) {
+            throw new BusinessException(
+                    ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED.getMessage(),
+                    ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED
+            );
+        }
+
+        Member member = memberRepository.findByEmail(memberEmail)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.MEMBER_NOT_FOUND.getMessage(),
+                        ErrorCode.MEMBER_NOT_FOUND
+                ));
+
+        // 닉네임 변경
+        if (request.getNickname() != null && !request.getNickname().trim().isEmpty()) {
+            String nickname = request.getNickname().trim();
+            member.updateNickname(nickname);
+        }
+
+        // 프로필사진 변경
+        if(request.getImg() != null && !request.getImg().trim().isEmpty()) {
+            String img = request.getImg().trim();
+            member.updateImg(img);
+        }
+
+        // 수수료 변경 (HOST만, 그리고 유효 범위 체크)
+        if (request.getCharge() != null) {
+            if (member.getMemberRole() != MemberRole.HOST) {
+                throw new BusinessException(
+                        ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED.getMessage(),
+                        ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED
+                );
+            }
+
+            BigDecimal charge = request.getCharge();
+
+            // 허용 범위 예: 0% ~ 20%
+            if (charge.compareTo(BigDecimal.ZERO) < 0 ||
+                    charge.compareTo(new BigDecimal("20")) > 0) {
+                throw new BusinessException(
+                        ErrorCode.CONTRACT_CHARGE_INVALID.getMessage(),
+                        ErrorCode.CONTRACT_CHARGE_INVALID
+                );
+            }
+
+            contractService.updateContract(member.getId(), charge);
+        }
+
+        return;
     }
 }

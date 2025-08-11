@@ -52,4 +52,8 @@ public class Contract {
                 .charge(hostContractCharge)
                 .build();
     }
+
+    public void updateCharge(BigDecimal newCharge) {
+        this.charge = newCharge;
+    }
 }

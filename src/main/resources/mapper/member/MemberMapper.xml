@@ -32,4 +32,38 @@
         WHERE member_email = #{email}
     </select>
 
+    <select id="getHostMemberDtoByEmail"
+            parameterType="string"
+            resultType="MemberResponseDto">
+        SELECT
+            m.member_email AS email,
+            m.member_nickname AS nickname,
+            m.member_img AS img,
+            m.member_point_balance AS pointBalance,
+            m.member_role AS memberRole,
+            m.host_biz_name AS hostBizName,
+            m.host_biz_bank AS hostBizBank,
+            m.host_biz_depositor AS hostBizDepositor,
+            m.host_biz_bank_number AS hostBizBankNumber,
+            c.contract_charge AS contractCharge
+        FROM member AS m
+        JOIN contract AS c
+            ON m.member_id = c.member_id
+        WHERE m.member_email = #{email}
+        ORDER BY c.contract_id DESC
+        LIMIT 1;
+    </select>
+
+    <select id="getMemberDtoByEmail"
+            parameterType="string"
+            resultType="MemberResponseDto">
+        SELECT
+            m.member_email AS email,
+            m.member_nickname AS nickname,
+            m.member_img AS img,
+            m.member_point_balance AS pointBalance,
+            m.member_role AS memberRole
+        FROM member AS m
+        WHERE m.member_email = #{email}
+    </select>
 </mapper>
