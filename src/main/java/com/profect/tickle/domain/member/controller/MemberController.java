@@ -103,11 +103,11 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @PostMapping(value = "/members/{memberId}")
-    public ResultResponse<?> updateUser(@PathVariable Long memberId, @RequestBody UpdateMemberRequestDto request) {
-        log.info("{}번 인덱스의 계정의 업데이트합니다.", memberId);
+    @PostMapping(value = "/members/{memberEmail}")
+    public ResultResponse<?> updateUser(@PathVariable String memberEmail, @RequestBody UpdateMemberRequestDto request) {
+        log.info("{} 계정을 업데이트합니다.", memberEmail);
 
-        memberService.updateUser(memberId, request);
+        memberService.updateUser(memberEmail, request);
 
         return new ResultResponse<>(
                 ResultCode.MEMBER_UPDATE_SUCCESS,

@@ -217,17 +217,17 @@ public class MemberService implements UserDetailsService {
     // 맴버정보 업데이트 메서드
     // 맴버정보 업데이트 메서드
     @Transactional
-    public void updateUser(Long memberId, UpdateMemberRequestDto request) {
-        Long signInMemberId = SecurityUtil.getSignInMemberId();
+    public void updateUser(String memberEmail, UpdateMemberRequestDto request) {
+        String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
 
-        if (!Objects.equals(memberId, signInMemberId)) {
+        if (memberEmail.equals(signInMemberEmail)) {
             throw new BusinessException(
                     ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED.getMessage(),
                     ErrorCode.MEMBER_UPDATE_PERMISSION_DENIED
             );
         }
 
-        Member member = memberRepository.findById(memberId)
+        Member member = memberRepository.findByEmail(memberEmail)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.MEMBER_NOT_FOUND.getMessage(),
                         ErrorCode.MEMBER_NOT_FOUND
@@ -261,7 +261,7 @@ public class MemberService implements UserDetailsService {
                 );
             }
 
-            contractService.updateContract(memberId, charge);
+            contractService.updateContract(member.getId(), charge);
         }
 
         return;
