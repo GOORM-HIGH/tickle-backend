@@ -26,7 +26,7 @@ public class WebSocketMessageResponseDto {
     private Integer fileSize;
     private String fileType;
     private Instant createdAt;
-    private Boolean isMyMessage;
+    // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
     private Integer onlineCount;  // 현재 온라인 사용자 수
     private String message;  // 시스템 메시지용
 
