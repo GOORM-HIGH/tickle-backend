@@ -111,7 +111,7 @@ public class EventServiceImpl implements EventService {
 
         event.accumulate(event.getPerPrice());
 
-        boolean isWinner = (event.getAccrued().equals(event.getGoalPrice()));
+        boolean isWinner = (event.getAccrued() >= event.getGoalPrice());
         if (isWinner) {
             Seat seat = getSeatOrThrow(event.getSeat().getId());
             event.updateStatus(getStatusOrThrow(6L));
@@ -121,7 +121,7 @@ public class EventServiceImpl implements EventService {
                     member,
                     seat.getPerformance(),
                     getStatusOrThrow(9L),
-                    event.getGoalPrice()
+                    event.getAccrued()
             );
 
             reservation.assignSeat(seat);
