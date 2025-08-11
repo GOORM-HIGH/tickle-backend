@@ -1,23 +1,23 @@
 package com.profect.tickle.domain.reservation.dto.response.reservation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
 
 @Getter
-@Builder
+@Setter
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ReservationDto {
 
     private Long id;
     private String code;
     private Integer totalPrice;
-    private boolean isNotify;
+    private Boolean isNotify;
     @Setter
     private List<ReservedSeatDto> seatList;
 

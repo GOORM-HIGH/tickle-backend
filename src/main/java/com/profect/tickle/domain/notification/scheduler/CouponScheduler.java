@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.event.scheduler;
+package com.profect.tickle.domain.notification.scheduler;
 
 import com.profect.tickle.domain.event.dto.response.ExpiringSoonCouponResponseDto;
 import com.profect.tickle.domain.event.service.EventService;

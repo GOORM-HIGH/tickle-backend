@@ -18,4 +18,8 @@ public interface EventMapper {
     int countSearchTicketEvents(@Param("keyword") String keyword);
     long countCouponEvents(); // 페이징처리 시, 전체 쿠폰의 갯수를 알기 위한 메서드
     Integer countTicketEvents(); // 페이징처리 시, 전체 티켓의 갯수를 알기 위한 메서드
+
+    // 스케쥴러 update mapper 추가
+    int markEventsAsOngoing();  // 변경된 행 수 리턴
+    int markEventsAsFinished();
 }
