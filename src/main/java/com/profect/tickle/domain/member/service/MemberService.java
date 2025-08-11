@@ -196,9 +196,9 @@ public class MemberService implements UserDetailsService {
     }
 
     @Transactional
-    public void deleteUser(Long userId, String signInMemberEmail) {
+    public void deleteUser(Long memberId, String signInMemberEmail) {
 
-        Member member = memberRepository.findById(userId)
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND.getMessage(), ErrorCode.MEMBER_NOT_FOUND));
 
         // 이미 탈퇴된 유저

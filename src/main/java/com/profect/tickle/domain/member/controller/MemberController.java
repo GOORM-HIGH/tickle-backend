@@ -84,12 +84,12 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @PostMapping(value = "/users/{userId}/delete")
-    public ResultResponse<?> deleteUser(@PathVariable Long userId) {
-        log.info("{}번 인덱스의 계정을 탈퇴처리 합니다.", userId);
+    @PostMapping(value = "/members/{memberId}/delete")
+    public ResultResponse<?> deleteUser(@PathVariable Long memberId) {
+        log.info("{}번 인덱스의 계정을 탈퇴처리 합니다.", memberId);
 
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
-        memberService.deleteUser(userId, signInMemberEmail);
+        memberService.deleteUser(memberId, signInMemberEmail);
         return new ResultResponse<>(
                 ResultCode.MEMBER_DELETE_SUCCESS,
                 ResultCode.MEMBER_DELETE_SUCCESS.getMessage()
