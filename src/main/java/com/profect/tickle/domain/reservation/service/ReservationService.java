@@ -128,13 +128,16 @@ public class ReservationService {
     // 예매 성공 이벤트 발행 메서드
     private void publishReservationSuccessEvent(long reservationId, long userId) {
         PerformanceDto reservedPerformance = performanceMapper.findByReservationId(reservationId); // 예매 공연 정보
+        log.info("예약된 공연 정보: {}", reservedPerformance.getTitle());
         ReservationDto reservation = reservationMapper.findById(reservationId).orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND)); // 예매 정보
+        log.info("예약ID로 찾은 예약 정보: {}", reservation.getId());
         Member siginMember = memberRepository.findById(userId) // 예매 유저 정보
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.MEMBER_NOT_FOUND.getMessage(),
                         ErrorCode.MEMBER_NOT_FOUND)
                 );
         eventPublisher.publishEvent(new ReservationSuccessEvent(reservedPerformance, reservation, siginMember));
+        log.info("예매 성공 이벤트 발행 완료");
     }
 
     private List<Seat> validatePreemptedSeats(String preemptionToken, Long userId) {
