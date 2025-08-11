@@ -25,6 +25,11 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    poiVersion = '5.2.4'
+    xmlbeansVersion = '5.1.1'
+}
+
 dependencies {
     // ===== Core Spring Boot =====
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -84,6 +89,11 @@ dependencies {
     // 구 버전 JAXB (sardine 라이브러리용)
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
     implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
+
+    // 엑셀 다운로드
+    implementation "org.apache.poi:poi:${poiVersion}"
+    implementation "org.apache.poi:poi-ooxml:${poiVersion}"
+    implementation "org.apache.xmlbeans:xmlbeans:${xmlbeansVersion}"
 }
 
 hibernate {

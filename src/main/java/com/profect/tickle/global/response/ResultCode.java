@@ -59,6 +59,9 @@ public enum ResultCode {
     MEMBER_DELETE_SUCCESS(HttpStatus.OK, "회원탈퇴 성공"),
     MEMBER_UPDATE_SUCCESS(HttpStatus.OK, "회원정보수정 성공"),
 
+    // SETTLEMENT
+    SETTLEMENT_LIST_SUCCESS(HttpStatus.OK, "정산 내역 조회 성공"),
+    SETTLEMENT_UNSETTLED_AMOUNT_SUCCESS(HttpStatus.OK, "미정산 내역 조회 성공")
     ;
 
     private final HttpStatus status;
