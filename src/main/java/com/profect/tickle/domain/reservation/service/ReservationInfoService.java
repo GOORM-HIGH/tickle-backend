@@ -13,9 +13,11 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -44,8 +46,7 @@ public class ReservationInfoService {
         int currentPoints = pointService.getCurrentPoint().credit();
 
         // 4. 사용 가능한 쿠폰들 조회
-        List<CouponResponseDto> availableCoupons = couponService.getAvailableCoupons(userId,
-                totalAmount);
+        List<CouponResponseDto> availableCoupons = couponService.getAvailableCoupons(userId);
 
         // 5. 좌석 정보 변환
         List<PreemptedSeatInfo> seatInfos = seats.stream()

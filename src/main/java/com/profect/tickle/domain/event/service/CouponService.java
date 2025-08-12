@@ -2,10 +2,8 @@ package com.profect.tickle.domain.event.service;
 
 import com.profect.tickle.domain.event.dto.response.CouponListResponseDto;
 import com.profect.tickle.domain.event.dto.response.CouponResponseDto;
-import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.mapper.CouponMapper;
 import com.profect.tickle.domain.event.mapper.CouponReceivedMapper;
-import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -29,9 +27,8 @@ public class CouponService {
     private final CouponReceivedRepository couponReceivedRepository;
     private final StatusRepository statusRepository;
 
-    public List<CouponResponseDto> getAvailableCoupons(Long memberId, Integer totalAmount) {
-        return couponReceivedMapper
-                .findMyCoupons(memberId, totalAmount, Integer.MAX_VALUE);
+    public List<CouponResponseDto> getAvailableCoupons(Long memberId) {
+        return couponReceivedMapper.findMyCoupons(memberId, 10, 0);
     }
 
     @Transactional
