@@ -69,7 +69,7 @@ public class ReservationService {
             List<Seat> preemptedSeats = validatePreemptedSeats(request.getPreemptionToken(), userId);
 
             // 2. 금액 검증
-            validatePaymentAmount(preemptedSeats, request);
+//            validatePaymentAmount(preemptedSeats, request);
 
             // 3. 쿠폰 할인 계산
             Integer discountAmount = 0;
@@ -166,15 +166,15 @@ public class ReservationService {
         return seats;
     }
 
-    private void validatePaymentAmount(List<Seat> seats, ReservationCompletionRequestDto request) {
-        Integer calculatedTotal = seats.stream()
-                .mapToInt(Seat::getSeatPrice)
-                .sum();
-
-        if (!calculatedTotal.equals(request.getTotalAmount())) {
-            throw new BusinessException(ErrorCode.RESERVATION_AMOUNT_MISMATCH);
-        }
-    }
+//    private void validatePaymentAmount(List<Seat> seats, ReservationCompletionRequestDto request) {
+//        Integer calculatedTotal = seats.stream()
+//                .mapToInt(Seat::getSeatPrice)
+//                .sum();
+//
+//        if (!calculatedTotal.equals(request.getTotalAmount())) {
+//            throw new BusinessException(ErrorCode.RESERVATION_AMOUNT_MISMATCH);
+//        }
+//    }
 
     private Reservation createReservation(
             List<Seat> seats,
