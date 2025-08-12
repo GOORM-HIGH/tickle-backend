@@ -4,7 +4,7 @@ import lombok.Getter;
 
 public enum ReservationStatus {
     PAID("결제완료", 9L),
-    CANCELED("취소됨",9L);
+    CANCELED("취소됨",10L);
 
     @Getter
     private final String description;
