@@ -1,3 +1,4 @@
+/*
 package com.profect.tickle.batch;
 
 import lombok.extern.slf4j.Slf4j;
@@ -46,3 +47,4 @@ public class BatchScheduler {
         jobLauncher.run(settlementWeeklyMonthlyJob, jobParameters);
     }
 }
+*/
