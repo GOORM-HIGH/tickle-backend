@@ -1,4 +1,3 @@
-/*
 package com.profect.tickle.batch.settlement;
 
 import com.profect.tickle.domain.settlement.service.SettlementDailyService;
@@ -46,11 +45,10 @@ public class SettlementBatchConfig {
         this.settlementMonthlyService = settlementMonthlyService;
     }
 
-    */
-/**
-     * 건별, 일간 정산 배치
-     *//*
 
+    /**
+     * 건별, 일간 정산 배치
+     */
     @Bean
     public Job settlementDetailDailyJob() {
         // 1) 정산 tasklet 구조 step 생성
@@ -76,11 +74,9 @@ public class SettlementBatchConfig {
                 .build();
     }
 
-    */
-/**
+    /**
      * 주간, 월간 정산 배치
-     *//*
-
+     */
     @Bean
     public Job settlementWeeklyMonthlyJob() {
         // 주간정산
@@ -105,4 +101,3 @@ public class SettlementBatchConfig {
                 .build();
     }
 }
-*/
