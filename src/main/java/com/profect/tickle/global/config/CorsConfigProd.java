@@ -1,3 +1,4 @@
+/*
 package com.profect.tickle.global.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -16,4 +17,4 @@ public class CorsConfigProd implements WebMvcConfigurer {
                 .allowCredentials(true) // 쿠키 인증이면 true
                 .maxAge(3600);
     }
-}
+}*/
