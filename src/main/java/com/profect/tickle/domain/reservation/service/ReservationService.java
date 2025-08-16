@@ -2,7 +2,6 @@ package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.event.service.CouponService;
 import com.profect.tickle.domain.member.entity.Member;
-import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
