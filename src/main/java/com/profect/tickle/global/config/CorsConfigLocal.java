@@ -1,3 +1,4 @@
+/*
 package com.profect.tickle.global.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -21,4 +22,4 @@ public class CorsConfigLocal implements WebMvcConfigurer {
                 .allowCredentials(true)
                 .maxAge(3600);
     }
-}
+}*/
