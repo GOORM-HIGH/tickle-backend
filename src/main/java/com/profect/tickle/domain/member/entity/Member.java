@@ -153,6 +153,12 @@ public class Member {
         return Point.deduct(this, price, target);
     }
 
+    public Point refundPoint(Integer price, PointTarget target) {
+        pointBalance += price;
+
+        return Point.refund(this, price, target);
+    }
+
     public void usePoint(Short perPrice) {
         pointBalance -= perPrice;
     }
