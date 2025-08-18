@@ -69,6 +69,10 @@ public class SettlementDailyService {
             settlementDailyMapper.upsertSettlementDaily(dailyList); // upsert
         } catch (DataAccessException dae) {
             log.error("SettlementDaily upsert 오류, List={}", dailyList);
+            // 에러 정보 상세 출력
+            log.error("에러 메시지: {}", dae.getMessage());
+            log.error("에러 원인: ", dae.getCause());
+            log.error("스택 트레이스:", dae);
             throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
         }
     }
@@ -91,6 +95,10 @@ public class SettlementDailyService {
             settlementDailyMapper.updateSettlementDailyStatus(beforeStatus, afterStatus, endOfDay);
         } catch (DataAccessException dae) {
             log.error("SettlementDaily update status by today 오류");
+            // 에러 정보 상세 출력
+            log.error("에러 메시지: {}", dae.getMessage());
+            log.error("에러 원인: ", dae.getCause());
+            log.error("스택 트레이스:", dae);
             throw new BusinessException(ErrorCode.SETTLEMENT_STATUS_UPDATE_FAILED);
         }
     }
@@ -119,6 +127,10 @@ public class SettlementDailyService {
                 settlementDailyMapper.updateSettlementDailyStatus(beforeStatus, afterStatus, endOfDay);
             } catch(DataAccessException dae) {
                 log.error("SettlementDaily update status by boundary 오류");
+                // 에러 정보 상세 출력
+                log.error("에러 메시지: {}", dae.getMessage());
+                log.error("에러 원인: ", dae.getCause());
+                log.error("스택 트레이스:", dae);
                 throw new BusinessException(ErrorCode.SETTLEMENT_STATUS_UPDATE_FAILED);
             }
         }

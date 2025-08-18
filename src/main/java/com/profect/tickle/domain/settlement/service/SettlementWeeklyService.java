@@ -81,6 +81,10 @@ public class SettlementWeeklyService {
             settlementWeeklyMapper.upsertSettlementWeekly(weeklyList);
         } catch (DataAccessException dae) {
             log.error("SettlementWeekly upsert 오류, list={}", weeklyList);
+            // 에러 정보 상세 출력
+            log.error("에러 메시지: {}", dae.getMessage());
+            log.error("에러 원인: ", dae.getCause());
+            log.error("스택 트레이스:", dae);
             throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
         }
     }
@@ -111,6 +115,10 @@ public class SettlementWeeklyService {
                         beforeStatus, afterStatus,year, month, week);
             } catch(DataAccessException dae) {
                 log.error("SettlementWeekly update status 오류");
+                // 에러 정보 상세 출력
+                log.error("에러 메시지: {}", dae.getMessage());
+                log.error("에러 원인: ", dae.getCause());
+                log.error("스택 트레이스:", dae);
                 throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
             }
         }

@@ -71,6 +71,10 @@ public class SettlementMonthlyService {
             settlementMonthlyMapper.upsertSettlementMonthly(monthlyList);
         } catch (DataAccessException dae) {
             log.error("SettlementMonthly upsert 오류, list={}", monthlyList);
+            // 에러 정보 상세 출력
+            log.error("에러 메시지: {}", dae.getMessage());
+            log.error("에러 원인: ", dae.getCause());
+            log.error("스택 트레이스:", dae);
             throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
         }
     }
@@ -98,6 +102,10 @@ public class SettlementMonthlyService {
                 settlementMonthlyMapper.updateSettlementMonthlyStatus(beforeStatus, afterStatus, year, month);
             } catch (DataAccessException dae) {
                 log.error("SettlementMonthly update status 오류");
+                // 에러 정보 상세 출력
+                log.error("에러 메시지: {}", dae.getMessage());
+                log.error("에러 원인: ", dae.getCause());
+                log.error("스택 트레이스: ", dae);
                 throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
             }
         }

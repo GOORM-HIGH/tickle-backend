@@ -124,6 +124,10 @@ public class SettlementDetailService {
             settlementDetailMapper.updateSettlementDetailStatus(beforeStatus, afterStatus, endOfDay);
         } catch (DataAccessException dae) {
             log.error("SettlementDetail update status 오류");
+            // 에러 정보 상세 출력
+            log.error("에러 메시지: {}", dae.getMessage());
+            log.error("에러 원인: ", dae.getCause());
+            log.error("스택 트레이스:", dae);
             throw new BusinessException(ErrorCode.SETTLEMENT_STATUS_UPDATE_FAILED);
         }
     }
