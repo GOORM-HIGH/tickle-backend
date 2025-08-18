@@ -24,6 +24,7 @@ import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
+import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -96,6 +97,9 @@ public class EventServiceImpl implements EventService {
 
         eventRepository.save(ticketEvent);
         seat.assignEvent(ticketEvent);
+
+        Status reservedStatus = getStatusOrThrow(SeatStatus.RESERVED.getId());
+        seat.setStatusTo(reservedStatus);
 
         return TicketEventResponseDto.from(ticketEvent, performance);
     }
