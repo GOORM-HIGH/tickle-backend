@@ -45,6 +45,7 @@ public class SettlementBatchConfig {
         this.settlementMonthlyService = settlementMonthlyService;
     }
 
+
     /**
      * 건별, 일간 정산 배치
      */

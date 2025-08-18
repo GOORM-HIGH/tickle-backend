@@ -62,7 +62,7 @@ public class StompChatController {
                 .messageType(com.profect.tickle.domain.chat.entity.ChatMessageType.SYSTEM)
                 .content(actualNickname + "님이 채팅방에 참여했습니다.")
                 .createdAt(Instant.now())
-                .isMyMessage(false)
+                // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
                 .build();
 
         log.info("🎯 JOIN 메시지 응답 생성: senderId={}, senderNickname={}", 
@@ -132,7 +132,7 @@ public class StompChatController {
                     .messageType(message.getMessageType())
                     .content(message.getContent())
                     .createdAt(savedMessage.getCreatedAt())
-                    .isMyMessage(false) // 기본값, 프론트엔드에서 계산
+                    // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
                     .build();
 
             log.info("🎯 메시지 응답 생성: senderId={}, senderNickname={}", 
@@ -178,7 +178,7 @@ public class StompChatController {
                 .messageType(com.profect.tickle.domain.chat.entity.ChatMessageType.SYSTEM)
                 .content(actualNickname + "님이 채팅방을 나갔습니다.")
                 .createdAt(Instant.now())
-                .isMyMessage(false)
+                // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
                 .build();
 
         log.info("🎯 LEAVE 메시지 응답 생성: senderId={}, senderNickname={}", 
@@ -385,7 +385,7 @@ public class StompChatController {
                 .messageType(request.getMessageType())
                 .content(request.getContent())
                 .createdAt(savedMessage.getCreatedAt())
-                .isMyMessage(false) // 기본값, 실제로는 각 사용자별로 계산 필요
+                // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
                 .build();
 
         // 🎯 채팅방 전체에 브로드캐스트

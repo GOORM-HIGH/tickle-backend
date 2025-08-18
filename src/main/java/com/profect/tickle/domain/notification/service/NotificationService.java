@@ -174,7 +174,7 @@ public class NotificationService {
         Instant now = Instant.now();
 
         String title = String.format(template.getTitle(), couponName);
-        String message = String.format(template.getContent(), couponName, expiryDate.toString(), now);
+        String message = String.format(template.getContent(), couponName, expiryDate.toString());
 
         sendSseAndSaveNotification(memberEmail, template, title, message, now);
     }

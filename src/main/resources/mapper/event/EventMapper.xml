@@ -53,8 +53,7 @@
         JOIN seat s ON e.seat_id = s.seat_id
         JOIN performance p ON s.performance_id = p.performance_id
         JOIN status st ON e.status_id = st.status_id
-        WHERE p.performance_start_date &lt;= NOW()
-          AND p.performance_end_date &gt;= NOW()
+        WHERE p.performance_end_date &gt;= NOW()
         ORDER BY e.event_created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
@@ -118,8 +117,7 @@
         JOIN status st ON e.status_id = st.status_id
         WHERE e.event_type = 1
         AND e.event_name LIKE '%' || #{keyword} || '%'
-        AND p.performance_start_date &lt;= NOW()
-          AND p.performance_end_date &gt;= NOW()
+        AND p.performance_end_date &gt;= NOW()
         ORDER BY e.event_created_at DESC
         LIMIT #{size}
         OFFSET #{offset}
@@ -153,4 +151,29 @@
         ORDER BY RANDOM()
             LIMIT #{size} OFFSET #{offset}
     </select>
+
+    <!-- 진행 전 -> 진행 중 -->
+    <update id="markEventsAsOngoing">
+        UPDATE event e
+        SET status_id = 5,
+            event_updated_at = NOW()
+        FROM seat s
+        JOIN performance p ON s.performance_id = p.performance_id
+        WHERE e.seat_id = s.seat_id
+          AND e.status_id = 4
+          AND p.performance_start_date &lt;= NOW()
+          AND p.performance_end_date &gt; NOW()
+    </update>
+
+    <!-- 진행 전/중 -> 종료 -->
+    <update id="markEventsAsFinished">
+        UPDATE event e
+        SET status_id = 6,
+            event_updated_at = NOW()
+        FROM seat s
+        JOIN performance p ON s.performance_id = p.performance_id
+        WHERE e.seat_id = s.seat_id
+          AND e.status_id IN (4, 5)
+          AND p.performance_end_date &lt;= NOW()
+    </update>
 </mapper>
