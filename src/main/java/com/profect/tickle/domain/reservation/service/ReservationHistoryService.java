@@ -100,7 +100,7 @@ public class ReservationHistoryService {
             Member member = memberRepository.findById(userId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-            Point point = Point.refund(member, refundAmount, PointTarget.REFUND);
+            Point point = member.refundPoint(refundAmount, PointTarget.REFUND);
             pointRepository.save(point);
 
             member.addPoint(refundAmount);

@@ -56,14 +56,18 @@ public class Point {
     }
 
     public static Point deduct(Member member, int amount, PointTarget target) {
-        return new Point(member, -amount, target, generateInternalOrderId());
+        return new Point(member, -amount, target, generateInternalOrderIdDeduct());
     }
 
     public static Point refund(Member member, int amount, PointTarget target) {
-        return new Point(member, amount, target, generateInternalOrderId());
+        return new Point(member, amount, target, generateInternalOrderIdRefund());
     }
 
-    private static String generateInternalOrderId() {
+    private static String generateInternalOrderIdDeduct() {
         return "deduct_" + System.currentTimeMillis();
+    }
+
+    private static String generateInternalOrderIdRefund() {
+        return "refund_" + System.currentTimeMillis();
     }
 }
