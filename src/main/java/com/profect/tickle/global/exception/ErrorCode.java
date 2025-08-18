@@ -71,6 +71,8 @@ public enum ErrorCode {
     NOTIFICATION_TEMPLATE_NOT_FOUND(HttpStatus.BAD_REQUEST, "알림 템플릿을 찾을 수 없습니다."),
 
     // 상태 관련
+    STATUS_CACHE_INIT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "상태 캐시 초기화에 실패했습니다."),
+    STATUS_ID_NULL(HttpStatus.BAD_REQUEST, "상태 ID는 필수 입니다."),
     STATUS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "상태를 찾을 수 없습니다."), // 전적인 개발자 잘못: 500 에러
 
     // 회원 관련
