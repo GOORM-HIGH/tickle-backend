@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.member.service;
 
 import com.profect.tickle.domain.contract.service.ContractService;
-import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.member.dto.request.CreateMemberServiceRequestDto;
 import com.profect.tickle.domain.member.dto.request.UpdateMemberRequestDto;
 import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.EmailAuthenticationCode;
@@ -53,10 +53,10 @@ public class MemberService implements UserDetailsService {
 
 
     @Transactional
-    public void createMember(CreateMemberRequestDto createUserRequest) {
+    public void createMember(CreateMemberServiceRequestDto createUserRequest) {
         // 1. 신규 회원 생성
         Member newMember = Member.createMember(createUserRequest);
-        newMember.encryptPassword(passwordEncoder.encode(createUserRequest.getPassword()));
+        newMember.encryptPassword(passwordEncoder.encode(createUserRequest.password()));
 
         // 2. 신규 회원 저장
         memberRepository.save(newMember);
@@ -66,11 +66,11 @@ public class MemberService implements UserDetailsService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 4. 신규 계약 생성
-        if (createUserRequest.getHostContractCharge() == null || createUserRequest.getHostContractCharge().compareTo(BigDecimal.ZERO) == 0) {
+        if (createUserRequest.hostContractCharge() == null || createUserRequest.hostContractCharge().compareTo(BigDecimal.ZERO) == 0) {
             return;
         }
 
-        contractService.createContract(member, createUserRequest.getHostContractCharge());
+        contractService.createContract(member, createUserRequest.hostContractCharge());
     }
 
     // 로그인 요청 시 AuthenticationManager를 통해서 호출 될 메서드
