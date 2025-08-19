@@ -30,6 +30,9 @@ public class MemberController {
     @Operation(summary = "회원가입", description = "회원가입")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "회원가입에 성공하였습니다."),
+            @ApiResponse(responseCode = "400", description = "요청 유효성 검증 실패하였습니다."),
+            @ApiResponse(responseCode = "409", description = "이미 가입된 이메일로 가입 실패하였습니다."),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     public ResultResponse<?> signup(@RequestBody @Valid CreateMemberRequestDto request) {
         log.info("회원가입 요청: {}", request);
