@@ -70,13 +70,11 @@ public class ReservationService {
             // 좌석들 검증
             reservationValidator.validatePreemptedSeats(preemptedSeats, userId);
 
-            // 3. 쿠폰 할인 계산
-            Integer discountAmount = 0;
-            if (request.getCouponId() != null) {
-                discountAmount = couponService.calculateCouponDiscount(request.getCouponId(), userId, request.getTotalAmount());
-            }
+            // 2. 쿠폰 할인 계산
+            int finalAmount = calculateFinalAmount(request, userId);
 
-            Integer finalAmount = request.getTotalAmount() - discountAmount;
+            // 3. 최종 결제 금액 검증 - 요청의 최종 결제 금액과 현재 로직에서 계산한 값이 일치하는지 검증한다.
+            reservationValidator.validatePaymentAmount(finalAmount, request.getTotalAmount());
 
             // 4. 포인트 충분성 검증
             int currentPoints = pointService.getCurrentPoint().credit();
