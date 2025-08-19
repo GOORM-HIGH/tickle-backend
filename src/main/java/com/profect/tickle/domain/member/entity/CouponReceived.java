@@ -59,7 +59,7 @@ public class CouponReceived {
         return new CouponReceived(member, coupon, status);
     }
 
-    public void setCouponStatusToUsed(Status used) {
-        this.status = used;
+    public void setCouponStatusTo(Status status) {
+        this.status = status;
     }
 }
