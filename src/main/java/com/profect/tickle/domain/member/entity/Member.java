@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.member.entity;
 
-import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.member.dto.request.CreateMemberServiceRequestDto;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.global.exception.BusinessException;
@@ -38,7 +38,7 @@ public class Member {
     @Column(name = "member_nickname", nullable = false, length = 10)
     private String nickname;  // 닉네임
 
-    @Column(name = "member_birthday", nullable = false)
+    @Column(name = "member_birthday", nullable = true)
     private Instant birthday;  // 생년월일
 
     @Column(name = "member_img", nullable = false, length = 255)
@@ -46,7 +46,7 @@ public class Member {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "member_role", nullable = false)
-    private MemberRole memberRole;  // 0 = 사용자, 1 = 주최자, 2 = 관리자
+    private MemberRole memberRole; // 권한
 
     @Column(name = "member_number", nullable = false, length = 11)
     private String phoneNumber;  // 전화번호
@@ -110,23 +110,22 @@ public class Member {
         this.updatedAt = Instant.now();
     }
 
-    public static Member createMember(CreateMemberRequestDto dto) {
+    public static Member createMember(CreateMemberServiceRequestDto dto) {
         return Member.builder()
-                .email(dto.getEmail())
-                .password(dto.getPassword())  // 서비스에서 BCrypt로 암호화
-                .nickname(dto.getNickname())
-                .birthday(dto.getBirthday())
-                .img(dto.getImg())
-                .phoneNumber(dto.getPhoneNumber())
-                .memberRole(dto.getRole() != null ? dto.getRole() : MemberRole.MEMBER) // 기본값 MEMBER
-                .hostBizNumber(dto.getHostBizNumber())
-                .hostBizCeo(dto.getHostBizCeoName())
-                .hostBizName(dto.getHostBizName())
-                .hostBizAddress(dto.getHostBizAddress())
-                .hostBizEcommerceRegistrationNumber(dto.getHostBizEcommerceRegistrationNumber())
-                .hostBizBank(dto.getHostBizBankName())
-                .hostBizDepositor(dto.getHostBizDepositor())
-                .hostBizBankNumber(dto.getHostBizBankNumber())
+                .email(dto.email())
+                .nickname(dto.nickname())
+                .birthday(dto.birthday())
+                .img(dto.img())
+                .phoneNumber(dto.phoneNumber())
+                .memberRole(dto.role())
+                .hostBizNumber(dto.hostBizNumber())
+                .hostBizCeo(dto.hostBizCeoName())
+                .hostBizName(dto.hostBizName())
+                .hostBizAddress(dto.hostBizAddress())
+                .hostBizEcommerceRegistrationNumber(dto.hostBizEcommerceRegistrationNumber())
+                .hostBizBank(dto.hostBizBankName())
+                .hostBizDepositor(dto.hostBizDepositor())
+                .hostBizBankNumber(dto.hostBizBankNumber())
                 .build();
     }
 
