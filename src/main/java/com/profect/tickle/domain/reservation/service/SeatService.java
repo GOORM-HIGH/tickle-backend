@@ -6,14 +6,14 @@ import com.profect.tickle.domain.performance.repository.PerformanceRepository;
 import com.profect.tickle.domain.reservation.dto.response.reservation.HallTypeAndSeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
-import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.entity.SeatTemplate;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.service.StatusProvider;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +25,8 @@ public class SeatService {
 
     private final PerformanceRepository performanceRepository;
     private final SeatTemplateRepository seatTemplateRepository;
-    private final StatusRepository statusRepository;
     private final SeatRepository seatRepository;
+    private final StatusProvider statusProvider;
 
     public void createSeatsForPerformance(Long performanceId) {
 
@@ -40,7 +40,7 @@ public class SeatService {
         Performance performance = findPerformanceById(performanceId);
 
         // 예매가능 상태 찾아오기
-        Status available = findAvailableStatus();
+        Status available = statusProvider.provide(StatusIds.Seat.AVAILABLE);
 
         List<Seat> seats = createSeats(seatTemplates, performance, available);
         seatRepository.saveAll(seats);
@@ -92,14 +92,6 @@ public class SeatService {
     }
 
     /**
-     * 예매 가능 상태를 조회합니다.
-     */
-    private Status findAvailableStatus() {
-        return statusRepository.findById(SeatStatus.AVAILABLE.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
-    }
-
-    /**
      * 좌석 템플릿을 기반으로 실제 좌석들을 생성합니다.
      */
     private List<Seat> createSeats(
@@ -127,7 +119,7 @@ public class SeatService {
                 .seatNumber(seat.getSeatNumber())
                 .seatGrade(seat.getSeatGrade())
                 .seatPrice(seat.getSeatPrice())
-                .statusId(seat.getStatus() != null ? seat.getStatus().getId() : SeatStatus.AVAILABLE.getId()) // 기본값: 예매가능
+                .statusId(seat.getStatus() != null ? seat.getStatus().getId() : StatusIds.Seat.AVAILABLE) // 기본값: 예매가능
                 .build();
     }
 }

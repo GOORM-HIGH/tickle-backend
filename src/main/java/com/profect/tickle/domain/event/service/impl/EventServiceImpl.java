@@ -18,7 +18,6 @@ import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
-import com.profect.tickle.domain.performance.service.PerformanceService;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
@@ -31,7 +30,8 @@ import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +49,6 @@ public class EventServiceImpl implements EventService {
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
-    private final StatusRepository statusRepository;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
     private final CouponReceivedRepository couponReceivedRepository;
@@ -60,8 +59,8 @@ public class EventServiceImpl implements EventService {
     private final CouponReceivedMapper couponReceivedMapper;
 
     private final PointTarget eventTarget = PointTarget.EVENT;
-    private final PerformanceService performanceService;
     private final PerformanceRepository performanceRepository;
+    private final StatusProvider statusProvider;
 
     @Override
     @Transactional
@@ -77,7 +76,7 @@ public class EventServiceImpl implements EventService {
         );
         couponRepository.save(coupon);
 
-        Status status = getStatusOrThrow(4L);
+        Status status = statusProvider.provide(StatusIds.Event.SCHEDULED);
         Event event = Event.create(status, coupon, request.name());
 
         eventRepository.save(event);
@@ -89,13 +88,16 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request) {
-        Status status = getStatusOrThrow(4L);
+        Status status = statusProvider.provide(StatusIds.Event.SCHEDULED);
         Seat seat = getSeatOrThrow(request.seatId());
         Event ticketEvent = Event.create(status, seat, request);
         Performance performance = getPerformanceOrThrow(request);
 
         eventRepository.save(ticketEvent);
         seat.assignEvent(ticketEvent);
+
+        Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
+        seat.setStatusTo(reservedStatus);
 
         return TicketEventResponseDto.from(ticketEvent, performance);
     }
@@ -114,13 +116,13 @@ public class EventServiceImpl implements EventService {
         boolean isWinner = (event.getAccrued() >= event.getGoalPrice());
         if (isWinner) {
             Seat seat = getSeatOrThrow(event.getSeat().getId());
-            event.updateStatus(getStatusOrThrow(6L));
+            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
 
             seat.assignTo(member);
             Reservation reservation = Reservation.create(
                     member,
                     seat.getPerformance(),
-                    getStatusOrThrow(9L),
+                    statusProvider.provide(StatusIds.Reservation.PAID),
                     event.getAccrued()
             );
 
@@ -176,12 +178,12 @@ public class EventServiceImpl implements EventService {
         }
 
         if (coupon.getCount() <= 0) {
-            event.updateStatus(getStatusOrThrow(6L));
+            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
             throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
         }
 
         coupon.decreaseCount();
-        Status issuedStatus = getStatusOrThrow(17L);
+        Status issuedStatus = statusProvider.provide(StatusIds.Coupon.AVAILABLE);
         couponReceivedRepository.save(CouponReceived.create(member, coupon, issuedStatus));
     }
 
@@ -238,11 +240,6 @@ public class EventServiceImpl implements EventService {
     private Event getEventOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
-    }
-
-    private Status getStatusOrThrow(Long statusId) {
-        return statusRepository.findById(statusId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
     }
 
     private Seat getSeatOrThrow(Long eventSeatId) {

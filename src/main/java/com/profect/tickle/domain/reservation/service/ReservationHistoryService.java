@@ -14,16 +14,15 @@ import com.profect.tickle.domain.reservation.dto.response.reservation.Reservatio
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationInfo;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
-import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
-import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.service.StatusProvider;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -43,9 +42,9 @@ public class ReservationHistoryService {
 
     private final ReservationRepository reservationRepository;
     private final SeatRepository seatRepository;
-    private final StatusRepository statusRepository;
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
+    private final StatusProvider statusProvider;
 
     public List<ReservationHistoryResponseDto> getReservationHistoryWithStatus(Long userId, Long statusId, Pageable pageable) {
         Page<Reservation> reservations = reservationRepository.findByMemberIdOrderByCreatedAtDesc(userId, pageable);
@@ -86,8 +85,7 @@ public class ReservationHistoryService {
             updateSeatsToAvailable(seats);
 
             // 예매 상태 변경
-            Status canceled = statusRepository.findById(ReservationStatus.CANCELED.getId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+            Status canceled = statusProvider.provide(StatusIds.Reservation.CANCELLED);
 
             reservation.changeStatusTo(canceled);
             reservation.markUpdated();
@@ -100,7 +98,7 @@ public class ReservationHistoryService {
             Member member = memberRepository.findById(userId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-            Point point = Point.refund(member, refundAmount, PointTarget.REFUND);
+            Point point = member.refundPoint(refundAmount, PointTarget.REFUND);
             pointRepository.save(point);
 
             member.addPoint(refundAmount);
@@ -182,7 +180,7 @@ public class ReservationHistoryService {
     }
 
     private boolean isCancellable(Reservation reservation) {
-        if (!Objects.equals(reservation.getStatus().getId(), ReservationStatus.PAID.getId())) {
+        if (!Objects.equals(reservation.getStatus().getId(), StatusIds.Reservation.PAID)) {
             return false;
         }
 
@@ -194,8 +192,7 @@ public class ReservationHistoryService {
     }
 
     private void updateSeatsToAvailable(List<Seat> seats) {
-        Status availableStatus = statusRepository.findById(SeatStatus.AVAILABLE.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status availableStatus = statusProvider.provide(StatusIds.Seat.AVAILABLE);
 
         for (Seat seat : seats) {
             cancelSeatsOfReservation(seat, availableStatus);

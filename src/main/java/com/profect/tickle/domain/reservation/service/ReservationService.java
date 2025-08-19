@@ -2,7 +2,6 @@ package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.event.service.CouponService;
 import com.profect.tickle.domain.member.entity.Member;
-import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
@@ -17,9 +16,7 @@ import com.profect.tickle.domain.reservation.dto.response.reservation.Reservatio
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
-import com.profect.tickle.domain.reservation.entity.ReservationStatus;
 import com.profect.tickle.domain.reservation.entity.Seat;
-import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.mapper.ReservationMapper;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
@@ -27,7 +24,8 @@ import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.service.StatusProvider;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -50,14 +48,13 @@ public class ReservationService {
 
     private final SeatRepository seatRepository;
     private final ReservationRepository reservationRepository;
-    private final StatusRepository statusRepository;
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
     private final PointService pointService;
     private final CouponService couponService;
     private final PerformanceMapper performanceMapper;
-    private final MemberMapper memberMapper;
     private final ReservationMapper reservationMapper;
+    private final StatusProvider statusProvider;
 
     // 예매 생성 메서드
     public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
@@ -183,8 +180,7 @@ public class ReservationService {
 
         Performance performance = seats.getFirst().getPerformance();
 
-        Status paidStatus = statusRepository.findById(ReservationStatus.PAID.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status paidStatus = statusProvider.provide(StatusIds.Reservation.PAID);
 
         Reservation reservation = Reservation.create(
                 member,
@@ -197,8 +193,7 @@ public class ReservationService {
     }
 
     private void updateSeatsToReserved(List<Seat> seats, Reservation reservation, Member member) {
-        Status reservedStatus = statusRepository.findById(SeatStatus.RESERVED.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
 
         for (Seat seat : seats) {
             seat.assignReservation(reservation);

@@ -1,5 +1,7 @@
 package com.profect.tickle.domain.settlement.service;
 
+import static com.profect.tickle.global.status.StatusIds.*;
+
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyFindTargetDto;
@@ -9,7 +11,7 @@ import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.service.StatusProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +32,7 @@ public class SettlementWeeklyService {
 
     private final SettlementWeeklyMapper settlementWeeklyMapper;
     private final MemberRepository memberRepository;
-    private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
 
     /**
      * 주간정산 테이블 insert+update_tasklet 구조
@@ -68,8 +70,7 @@ public class SettlementWeeklyService {
         for(SettlementWeeklyFindTargetDto dto : aggregates) {
             Member member = memberRepository.findById(dto.getMemberId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-            Status settlementStatus = statusRepository.findById(14L)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+            Status settlementStatus = statusProvider.provide(Settlement.SCHEDULED);
 
             SettlementWeekly stlWeekly = SettlementWeekly.create(dto, member, settlementStatus,
                     period.yearStr(), period.monthStr(), period.weekOfMonthStr(), settlementDate);
@@ -81,6 +82,10 @@ public class SettlementWeeklyService {
             settlementWeeklyMapper.upsertSettlementWeekly(weeklyList);
         } catch (DataAccessException dae) {
             log.error("SettlementWeekly upsert 오류, list={}", weeklyList);
+            // 에러 정보 상세 출력
+            log.error("에러 메시지: {}", dae.getMessage());
+            log.error("에러 원인: ", dae.getCause());
+            log.error("스택 트레이스:", dae);
             throw new BusinessException(ErrorCode.SETTLEMENT_UPSERT_FAILED);
         }
     }
@@ -91,11 +96,9 @@ public class SettlementWeeklyService {
     @Transactional
     public void updateWeekly() {
         // 정산예정
-        Status beforeStatus = statusRepository.findById(14L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status beforeStatus = statusProvider.provide(Settlement.SCHEDULED);
         // 정산완료
-        Status afterStatus = statusRepository.findById(15L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status afterStatus = statusProvider.provide(Settlement.COMPLETED);
 
         LocalDate now = SettlementTimeUtil.localDate(Instant.now());
         SettlementTimeUtil period = SettlementTimeUtil.get(now);
@@ -111,6 +114,10 @@ public class SettlementWeeklyService {
                         beforeStatus, afterStatus,year, month, week);
             } catch(DataAccessException dae) {
                 log.error("SettlementWeekly update status 오류");
+                // 에러 정보 상세 출력
+                log.error("에러 메시지: {}", dae.getMessage());
+                log.error("에러 원인: ", dae.getCause());
+                log.error("스택 트레이스:", dae);
                 throw new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR);
             }
         }
