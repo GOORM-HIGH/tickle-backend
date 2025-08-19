@@ -9,7 +9,8 @@ import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds.Coupon;
+import com.profect.tickle.global.status.service.StatusProvider;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,12 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponService {
 
-    private static final Long USED_COUPON_STATUS_ID = 18L;
-
     private final CouponReceivedMapper couponReceivedMapper;
     private final CouponMapper couponMapper;
     private final CouponReceivedRepository couponReceivedRepository;
-    private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
 
     public List<CouponResponseDto> getAvailableCoupons(Long memberId) {
         return couponReceivedMapper.findMyCoupons(memberId, 10, 0);
@@ -62,10 +61,8 @@ public class CouponService {
 
 
     private void makeCouponUsed(CouponReceived couponReceived) {
-        Status usedStatus = statusRepository.findById(USED_COUPON_STATUS_ID)
-                .orElseThrow();
-
-        couponReceived.setCouponStatusToUsed(usedStatus);
+        Status used = statusProvider.provide(Coupon.USED);
+        couponReceived.setCouponStatusTo(used);
     }
 
     private Integer calculateDiscountAmount(Integer totalAmount, Short discountRate) {
