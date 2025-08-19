@@ -41,7 +41,7 @@ public class Member {
     @Column(name = "member_birthday", nullable = true)
     private Instant birthday;  // 생년월일
 
-    @Column(name = "member_img", nullable = false, length = 255)
+    @Column(name = "member_img", nullable = true, length = 255)
     private String img;  // 프로필 이미지 URL (외부 저장소)
 
     @Enumerated(EnumType.STRING)
