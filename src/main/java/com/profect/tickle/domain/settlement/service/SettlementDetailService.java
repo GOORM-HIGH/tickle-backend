@@ -9,7 +9,6 @@ import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.StatusIds.Settlement;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import com.profect.tickle.global.status.service.StatusProvider;

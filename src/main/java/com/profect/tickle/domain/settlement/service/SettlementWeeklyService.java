@@ -33,7 +33,6 @@ public class SettlementWeeklyService {
 
     private final SettlementWeeklyMapper settlementWeeklyMapper;
     private final MemberRepository memberRepository;
-    private final StatusRepository statusRepository;
     private final StatusProvider statusProvider;
 
     /**
