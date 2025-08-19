@@ -47,10 +47,10 @@ public class CouponService {
         return dto;
     }
 
-    private CouponReceived findValidCoupon(Long couponId, Long memberId) {
+    public CouponReceived findValidCoupon(Long couponId, Long memberId) {
         return couponReceivedRepository
                 .findByCouponIdAndMemberIdAndNotUsed(couponId, memberId)
-                .orElseThrow(() -> new IllegalArgumentException("사용할 수 없는 쿠폰입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
     }
 
 
