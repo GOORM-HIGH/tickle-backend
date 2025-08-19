@@ -6,12 +6,12 @@ import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequestDt
 import com.profect.tickle.domain.reservation.dto.response.preemption.PreemptedSeatInfo;
 import com.profect.tickle.domain.reservation.dto.response.preemption.SeatPreemptionResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
-import com.profect.tickle.domain.reservation.entity.SeatStatus;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.service.StatusProvider;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -30,7 +30,7 @@ public class SeatPreemptionService {
 
     private final SeatRepository seatRepository;
     private final MemberRepository memberRepository;
-    private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
     private final SeatPreemptionValidator seatPreemptionValidator;
 
     private static final int PREEMPTION_DURATION_MINUTES = 5; // 5분간 선점
@@ -84,10 +84,7 @@ public class SeatPreemptionService {
         seat.assignPreemptedAt(Instant.now());
         seat.assignPreemptedUntil(preemptedUntil);
 
-        // DB status 선점중으로 변경 (ID: 12)
-        Status preempted = statusRepository.findById(SeatStatus.PREEMPTED.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
-
+        Status preempted = statusProvider.provide(StatusIds.Seat.PREEMPTED);
         seat.setStatusTo(preempted);
 
         seatRepository.save(seat);

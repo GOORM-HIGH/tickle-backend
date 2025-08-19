@@ -9,7 +9,8 @@ import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds.Settlement;
+import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -29,7 +30,7 @@ public class SettlementDailyService {
 
     private final SettlementDailyMapper settlementDailyMapper;
     private final MemberRepository memberRepository;
-    private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
 
     /**
      * 일간정산 테이블 insert+update_tasklet 구조
@@ -55,11 +56,9 @@ public class SettlementDailyService {
 
             Status settlementStatus = null; // 정산상태 초기화(14=정산예정, 15=정산완료)
             if(settlementDate.isBefore(dto.getPerformanceEndDate())) {
-                settlementStatus = statusRepository.findById(14L)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+                settlementStatus = statusProvider.provide(Settlement.SCHEDULED);
             } else if(settlementDate.isAfter(dto.getPerformanceEndDate())) {
-                settlementStatus = statusRepository.findById(15L)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+                settlementStatus = statusProvider.provide(Settlement.COMPLETED);
             }
 
             SettlementDaily stlDaily = SettlementDaily.create(dto, member, settlementStatus, settlementDate);
@@ -85,11 +84,9 @@ public class SettlementDailyService {
         Instant endOfDay = SettlementTimeUtil.getEndOfDay();
 
         // 정산예정
-        Status beforeStatus = statusRepository.findById(14L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status beforeStatus = statusProvider.provide(Settlement.SCHEDULED);
         // 정산완료
-        Status afterStatus = statusRepository.findById(15L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status afterStatus = statusProvider.provide(Settlement.COMPLETED);
 
         try {
             settlementDailyMapper.updateSettlementDailyStatus(beforeStatus, afterStatus, endOfDay);
@@ -111,11 +108,9 @@ public class SettlementDailyService {
         Instant endOfDay = SettlementTimeUtil.getEndOfDay();
 
         // 정산예정
-        Status beforeStatus = statusRepository.findById(14L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status beforeStatus = statusProvider.provide(Settlement.SCHEDULED);
         // 정산완료
-        Status afterStatus = statusRepository.findById(15L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status afterStatus = statusProvider.provide(Settlement.COMPLETED);
 
         LocalDate now = SettlementTimeUtil.localDate(Instant.now());
         SettlementTimeUtil period = SettlementTimeUtil.get(now);

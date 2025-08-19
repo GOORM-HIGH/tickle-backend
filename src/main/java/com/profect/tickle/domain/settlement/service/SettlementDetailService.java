@@ -9,7 +9,9 @@ import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.StatusIds.Settlement;
 import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.service.StatusProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class SettlementDetailService {
     private final SettlementDetailMapper settlementDetailMapper;
     private final MemberRepository memberRepository;
     private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
 
     /**
      * 건별정산 연산 및 insert_tasklet 구조
@@ -66,13 +69,11 @@ public class SettlementDetailService {
             if(reservationStatus.getId() == 9) {
                 salesAmount = reservationPrice;
                 refundAmount = 0L;
-                settlementStatus = statusRepository.findById(14L)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+                settlementStatus = statusProvider.provide(Settlement.SCHEDULED);
             } else if(reservationStatus.getId() == 10) {
                 salesAmount = 0L;
                 refundAmount = reservationPrice;
-                settlementStatus = statusRepository.findById(16L)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+                settlementStatus = statusProvider.provide(Settlement.REFUND_REQUESTED);
             }
 
             Long grossAmount = salesAmount; // 정산대상금액 = 판매금액
@@ -114,11 +115,9 @@ public class SettlementDetailService {
         Instant endOfDay = SettlementTimeUtil.getEndOfDay();
 
         // 정산예정
-        Status beforeStatus = statusRepository.findById(14L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status beforeStatus = statusProvider.provide(Settlement.SCHEDULED);
         // 정산완료
-        Status afterStatus = statusRepository.findById(15L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status afterStatus = statusProvider.provide(Settlement.COMPLETED);
 
         try {
             settlementDetailMapper.updateSettlementDetailStatus(beforeStatus, afterStatus, endOfDay);
