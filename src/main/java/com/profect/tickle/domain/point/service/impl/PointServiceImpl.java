@@ -41,8 +41,7 @@ public class PointServiceImpl implements PointService {
 
 
     public PointSimpleResponseDto getCurrentPoint() {
-        Member member = memberRepository.findById(SecurityUtil.getSignInMemberId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        Member member = getMemberOrThrow();
         return PointSimpleResponseDto.from(member.getPointBalance());
     }
 
