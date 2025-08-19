@@ -35,7 +35,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -215,7 +214,6 @@ public class MemberService implements UserDetailsService {
     }
 
     // 맴버정보 업데이트 메서드
-    // 맴버정보 업데이트 메서드
     @Transactional
     public void updateUser(String memberEmail, UpdateMemberRequestDto request) {
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
@@ -240,7 +238,7 @@ public class MemberService implements UserDetailsService {
         }
 
         // 프로필사진 변경
-        if(request.getImg() != null && !request.getImg().trim().isEmpty()) {
+        if (request.getImg() != null && !request.getImg().trim().isEmpty()) {
             String img = request.getImg().trim();
             member.updateImg(img);
         }
