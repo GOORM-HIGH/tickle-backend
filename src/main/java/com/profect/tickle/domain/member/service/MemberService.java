@@ -39,6 +39,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class MemberService implements UserDetailsService {
 
     private final PasswordEncoder passwordEncoder;
@@ -50,7 +51,6 @@ public class MemberService implements UserDetailsService {
     private final MemberMapper memberMapper;
     private final MemberRepository memberRepository;
     private final EmailAuthenticationCodeRepository emailAuthenticationRepository;
-
 
     @Transactional
     public void createMember(CreateMemberServiceRequestDto createUserRequest) {
@@ -144,7 +144,6 @@ public class MemberService implements UserDetailsService {
     }
 
     // 인증코드 검증
-    @Transactional(readOnly = true)
     public void verifyEmailCode(String email, String code) {
         // 1. 인증코드 조회
         EmailAuthenticationCode emailAuthenticationCode = emailAuthenticationRepository.findByEmail(email)
