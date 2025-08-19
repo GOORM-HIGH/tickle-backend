@@ -91,7 +91,7 @@ class MemberControllerTest {
         BigDecimal hostContractCharge = new BigDecimal("0.01");
         CreateMemberRequestDto request = createMemberRequest(
                 "user@example.com", "pw1234!", birthday,
-                "닉네임", null, "01012345678", MemberRole.MEMBER,
+                "닉네임", null, "01012345678", MemberRole.HOST,
                 "4981401407", "김판매", "공연단단해지기", "서울특별시 마포구 덕우빌딩 123",
                 "12345-서울마포-123",
                 "KB국민은행", "김판매", "12312312312",
