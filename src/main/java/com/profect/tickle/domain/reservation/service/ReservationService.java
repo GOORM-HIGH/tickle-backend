@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.event.service.CouponService;
+import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
@@ -26,7 +27,6 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -55,18 +55,20 @@ public class ReservationService {
     private final PerformanceMapper performanceMapper;
     private final ReservationMapper reservationMapper;
     private final StatusProvider statusProvider;
+    private final ReservationValidator reservationValidator;
 
-    // 예매 생성 메서드
-    public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
+    @Transactional
+    public ReservationCompletionResponseDto completeReservation(
+            ReservationCompletionRequestDto request) {
 
         Long userId = SecurityUtil.getSignInMemberId();
 
         try {
-            // 1. 선점 토큰으로 좌석들 조회 및 검증
-            List<Seat> preemptedSeats = validatePreemptedSeats(request.getPreemptionToken(), userId);
+            // 1. 선점 토큰으로 좌석들 조회
+            List<Seat> preemptedSeats = seatRepository.findByPreemptionTokenWithLock(request.getPreemptionToken());
 
-            // 2. 금액 검증
-//            validatePaymentAmount(preemptedSeats, request);
+            // 좌석들 검증
+            reservationValidator.validatePreemptedSeats(preemptedSeats, userId);
 
             // 3. 쿠폰 할인 계산
             Integer discountAmount = 0;
@@ -95,7 +97,6 @@ public class ReservationService {
 
             pointRepository.save(point);
 
-
             // 7. 예매 생성
             Reservation reservation = createReservation(preemptedSeats, member, finalAmount);
 
@@ -122,6 +123,22 @@ public class ReservationService {
         }
     }
 
+    private int calculateFinalAmount(ReservationCompletionRequestDto request, Long userId) {
+
+        // 요청에서 넘어온 쿠폰 조회
+        Long couponId = request.getCouponId();
+
+        if (couponId == null) {
+            return request.getTotalAmount();
+        }
+        // 쿠폰이 존재 할 경우, 할인 금액을 계산한다.
+        CouponReceived couponReceived = couponService.findValidCoupon(couponId, userId);
+        int discountAmount = couponReceived.calculateDiscountAmount(request.getTotalAmount());
+
+        // 최종 결제 금액을 반환한다.
+        return request.getTotalAmount() - discountAmount;
+    }
+
     // 예매 성공 이벤트 발행 메서드
     private void publishReservationSuccessEvent(long reservationId, long userId) {
         PerformanceDto reservedPerformance = performanceMapper.findByReservationId(reservationId); // 예매 공연 정보
@@ -136,42 +153,6 @@ public class ReservationService {
         eventPublisher.publishEvent(new ReservationSuccessEvent(reservedPerformance, reservation, siginMember));
         log.info("예매 성공 이벤트 발행 완료");
     }
-
-    private List<Seat> validatePreemptedSeats(String preemptionToken, Long userId) {
-        List<Seat> seats = seatRepository.findByPreemptionTokenWithLock(preemptionToken);
-
-        if (seats.isEmpty()) {
-            throw new BusinessException(ErrorCode.PREEMPTION_TOKEN_INVALID);
-        }
-
-        Instant now = Instant.now();
-
-        for (Seat seat : seats) {
-            if (!userId.equals(seat.getMember().getId())) {
-                throw new BusinessException(ErrorCode.PREEMPTION_PERMISSION_DENIED);
-            }
-
-            if (seat.getPreemptedUntil() == null || seat.getPreemptedUntil().isBefore(now)) {
-                throw new BusinessException(ErrorCode.PREEMPTION_EXPIRED);
-            }
-
-            if (seat.getReservation() != null) {
-                throw new BusinessException(ErrorCode.RESERVATION_ALREADY_RESERVED);
-            }
-        }
-
-        return seats;
-    }
-
-//    private void validatePaymentAmount(List<Seat> seats, ReservationCompletionRequestDto request) {
-//        Integer calculatedTotal = seats.stream()
-//                .mapToInt(Seat::getSeatPrice)
-//                .sum();
-//
-//        if (!calculatedTotal.equals(request.getTotalAmount())) {
-//            throw new BusinessException(ErrorCode.RESERVATION_AMOUNT_MISMATCH);
-//        }
-//    }
 
     private Reservation createReservation(
             List<Seat> seats,
