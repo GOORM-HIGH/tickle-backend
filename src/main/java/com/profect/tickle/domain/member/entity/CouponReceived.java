@@ -62,4 +62,8 @@ public class CouponReceived {
     public void setCouponStatusTo(Status status) {
         this.status = status;
     }
+
+    public int calculateDiscountAmount(int originalAmount) {
+        return this.coupon.calculateDiscountAmount(originalAmount);
+    }
 }

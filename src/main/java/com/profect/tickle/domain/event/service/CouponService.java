@@ -40,12 +40,6 @@ public class CouponService {
         couponReceivedRepository.save(couponReceived);
     }
 
-    public Integer calculateCouponDiscount(Long couponId, Long memberId, Integer totalAmount) {
-        CouponReceived couponReceived = findValidCoupon(couponId, memberId);
-
-        return calculateDiscountAmount(totalAmount, couponReceived.getCoupon().getRate());
-    }
-
     public CouponListResponseDto getSpecialCouponDetailById(Long couponId) {
         CouponListResponseDto dto = couponMapper.findCouponById(couponId);
         if (dto == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
@@ -63,9 +57,5 @@ public class CouponService {
     private void makeCouponUsed(CouponReceived couponReceived) {
         Status used = statusProvider.provide(Coupon.USED);
         couponReceived.setCouponStatusTo(used);
-    }
-
-    private Integer calculateDiscountAmount(Integer totalAmount, Short discountRate) {
-        return (int) (totalAmount * discountRate / 100.0);
     }
 }

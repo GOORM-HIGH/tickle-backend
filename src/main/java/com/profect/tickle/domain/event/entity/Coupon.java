@@ -80,4 +80,12 @@ public class Coupon {
         if (this.count <= 0) {throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);}
         this.count--;
     }
+
+    public int calculateDiscountAmount(int originalAmount) {
+        if (originalAmount <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_COUPON_AMOUNT);
+        }
+
+        return (int) (originalAmount * this.rate / 100.0);
+    }
 }
