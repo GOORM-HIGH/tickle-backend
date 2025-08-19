@@ -6,7 +6,10 @@ import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.StatusIds.Settlement;
 import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.service.StatusProvider;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
@@ -40,6 +43,7 @@ public class SettlementResponseService {
 
     private final SettlementResponseMapper settlementResponseMapper;
     private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
     private static final int CHUNK_SIZE = 10000; // 1만 건씩 청크 처리
     private static final int WINDOW_SIZE = 100;
 
@@ -91,8 +95,7 @@ public class SettlementResponseService {
      */
     public Long getUnsettledAmount(Long memberId) {
         // 일별정산 테이블에서 '정산예정' 상태인 건들의 대납금액 합계
-        Status status = statusRepository.findById(14L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status status = statusProvider.provide(Settlement.SCHEDULED);
         return settlementResponseMapper.sumUnsettledAmount(memberId, status);
     }
 

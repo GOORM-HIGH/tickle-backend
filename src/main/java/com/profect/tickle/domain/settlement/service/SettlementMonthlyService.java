@@ -9,7 +9,10 @@ import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.StatusIds.Settlement;
 import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -30,7 +33,7 @@ public class SettlementMonthlyService {
 
     private final SettlementMonthlyMapper settlementMonthlyMapper;
     private final MemberRepository memberRepository;
-    private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
 
     public void getSettlementMonthly(){
         HashMap<String, Object> map = new HashMap<>();
@@ -60,8 +63,7 @@ public class SettlementMonthlyService {
         for(SettlementMonthlyFindTargetDto dto : aggregates){
             Member member = memberRepository.findById(dto.getMemberId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-            Status settlementStatus = statusRepository.findById(14L)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+            Status settlementStatus = statusProvider.provide(Settlement.SCHEDULED);
 
             SettlementMonthly stlMonthly = SettlementMonthly.create(dto, member, settlementStatus,
                     period.yearStr(), period.monthStr(), settlementDate);
@@ -85,11 +87,9 @@ public class SettlementMonthlyService {
     @Transactional
     public void updateMonthly() {
         // 정산예정
-        Status beforeStatus = statusRepository.findById(14L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status beforeStatus = statusProvider.provide(Settlement.SCHEDULED);
         // 정산완료
-        Status afterStatus = statusRepository.findById(15L)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
+        Status afterStatus = statusProvider.provide(Settlement.COMPLETED);
 
         LocalDate now = SettlementTimeUtil.localDate(Instant.now());
         SettlementTimeUtil period = SettlementTimeUtil.get(now);
