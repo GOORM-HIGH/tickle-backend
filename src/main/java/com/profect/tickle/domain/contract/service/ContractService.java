@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class ContractService {
 
     private final ContractRepository contractRepository;
@@ -27,6 +28,7 @@ public class ContractService {
         contractRepository.save(newContract);
     }
 
+    @Transactional
     public void updateContract(Long memberId, BigDecimal newCharge) {
 
         Contract contract = contractRepository.findByMemberId(memberId)

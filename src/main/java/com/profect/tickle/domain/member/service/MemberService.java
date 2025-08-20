@@ -1,7 +1,8 @@
 package com.profect.tickle.domain.member.service;
 
+import com.profect.tickle.domain.contract.policy.HostChargePolicy;
 import com.profect.tickle.domain.contract.service.ContractService;
-import com.profect.tickle.domain.member.dto.request.CreateMemberRequestDto;
+import com.profect.tickle.domain.member.dto.request.CreateMemberServiceRequestDto;
 import com.profect.tickle.domain.member.dto.request.UpdateMemberRequestDto;
 import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.EmailAuthenticationCode;
@@ -35,14 +36,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class MemberService implements UserDetailsService {
 
     private final PasswordEncoder passwordEncoder;
+    private final HostChargePolicy hostChargePolicy;
 
     private final MailService mailService;
     private final NotificationTemplateService notificationTemplateService;
@@ -52,26 +54,44 @@ public class MemberService implements UserDetailsService {
     private final MemberRepository memberRepository;
     private final EmailAuthenticationCodeRepository emailAuthenticationRepository;
 
-
     @Transactional
-    public void createMember(CreateMemberRequestDto createUserRequest) {
-        // 1. 신규 회원 생성
-        Member newMember = Member.createMember(createUserRequest);
-        newMember.encryptPassword(passwordEncoder.encode(createUserRequest.getPassword()));
-
-        // 2. 신규 회원 저장
-        memberRepository.save(newMember);
-
-        // 3. 저장된 회원 조회
-        Member member = memberRepository.findByEmail(newMember.getEmail())
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
-        // 4. 신규 계약 생성
-        if (createUserRequest.getHostContractCharge() == null || createUserRequest.getHostContractCharge().compareTo(BigDecimal.ZERO) == 0) {
-            return;
+    public void createMember(CreateMemberServiceRequestDto request) {
+        // 1) 이메일 중복
+        if (memberRepository.existsByEmail(request.email())) {
+            throw new BusinessException(ErrorCode.MEMBER_ALREADY_REGISTERED);
         }
 
-        contractService.createContract(member, createUserRequest.getHostContractCharge());
+        // 2) 역할/필드 일관성
+        if (request.role() == MemberRole.HOST) {
+            requireHostFields(request); // HOST면 필수 사업자 정보 모두 필요
+        } else { // MEMBER or ADMIN
+            if (anyHostFieldFilled(request)) {
+                throw new BusinessException(
+                        "MEMBER/ADMIN 권한에서는 HOST 전용 필드를 보낼 수 없습니다.",
+                        ErrorCode.INVALID_INPUT_VALUE
+                );
+            }
+        }
+
+        // 3) 수수료 유효 범위(있는 경우만). 음수 또는 기타 범위를 막고 싶으면 이곳에서
+        if (request.hostContractCharge() != null
+                && request.hostContractCharge().compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException(ErrorCode.CONTRACT_CHARGE_INVALID);
+        }
+
+        // 4) 엔티티 생성 + 비밀번호 암호화 + 기본값 보정
+        Member member = Member.createMember(request);
+        member.encryptPassword(passwordEncoder.encode(request.password()));
+
+        // 5) 저장
+        Member saved = memberRepository.save(member);
+
+        // 6) HOST 계약 생성 (수수료가 0보다 클 때만 생성)
+        if (request.role() == MemberRole.HOST
+                && request.hostContractCharge() != null
+                && request.hostContractCharge().compareTo(BigDecimal.ZERO) > 0) {
+            contractService.createContract(saved, request.hostContractCharge());
+        }
     }
 
     // 로그인 요청 시 AuthenticationManager를 통해서 호출 될 메서드
@@ -145,7 +165,6 @@ public class MemberService implements UserDetailsService {
     }
 
     // 인증코드 검증
-    @Transactional(readOnly = true)
     public void verifyEmailCode(String email, String code) {
         // 1. 인증코드 조회
         EmailAuthenticationCode emailAuthenticationCode = emailAuthenticationRepository.findByEmail(email)
@@ -215,7 +234,6 @@ public class MemberService implements UserDetailsService {
     }
 
     // 맴버정보 업데이트 메서드
-    // 맴버정보 업데이트 메서드
     @Transactional
     public void updateUser(String memberEmail, UpdateMemberRequestDto request) {
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
@@ -240,7 +258,7 @@ public class MemberService implements UserDetailsService {
         }
 
         // 프로필사진 변경
-        if(request.getImg() != null && !request.getImg().trim().isEmpty()) {
+        if (request.getImg() != null && !request.getImg().trim().isEmpty()) {
             String img = request.getImg().trim();
             member.updateImg(img);
         }
@@ -269,5 +287,46 @@ public class MemberService implements UserDetailsService {
         }
 
         return;
+    }
+
+    private void requireHostFields(CreateMemberServiceRequestDto d) {
+        boolean hostFieldsOk =
+                hasText(d.hostBizNumber()) &&
+                        hasText(d.hostBizName()) &&
+                        hasText(d.hostBizBankName()) &&
+                        hasText(d.hostBizDepositor()) &&
+                        hasText(d.hostBizBankNumber());
+
+        if (!hostFieldsOk) {
+            throw new BusinessException(
+                    "HOST 권한일 때는 사업자 필드가 모두 필요합니다.",
+                    ErrorCode.INVALID_INPUT_VALUE
+            );
+        }
+
+        // ✅ 수수료율 화이트리스트 검사
+        if (!hostChargePolicy.isAllowed(d.hostContractCharge())) {
+            throw new BusinessException(
+                    "허용되지 않는 수수료율입니다. " + hostChargePolicy.message(),
+                    ErrorCode.CONTRACT_CHARGE_INVALID
+            );
+        }
+    }
+
+    private boolean anyHostFieldFilled(CreateMemberServiceRequestDto d) {
+        return hasText(d.hostBizNumber()) ||
+                hasText(d.hostBizName()) ||
+                hasText(d.hostBizBankName()) ||
+                hasText(d.hostBizDepositor()) ||
+                hasText(d.hostBizBankNumber()) ||
+                d.hostContractCharge() != null;
+    }
+
+    private boolean hasText(String s) {
+        return s != null && !s.trim().isEmpty();
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

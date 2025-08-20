@@ -21,23 +21,26 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value = "/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "회원관리", description = "회원관리 API")
+@Tag(name = "회원가입", description = "회원가입 관련 API")
 public class MemberController {
 
     private final MemberService memberService;
 
     @PostMapping(value = "/sign-up")
     @Operation(summary = "회원가입", description = "회원가입")
-    public ResultResponse<?> signup(@RequestBody CreateMemberRequestDto createUserRequest) {
-        log.info("회원가입 요청: {}", createUserRequest);
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "회원가입에 성공하였습니다."),
+            @ApiResponse(responseCode = "400", description = "요청 유효성 검증 실패하였습니다."),
+            @ApiResponse(responseCode = "409", description = "이미 가입된 이메일로 가입 실패하였습니다."),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    public ResultResponse<?> signup(@RequestBody @Valid CreateMemberRequestDto request) {
+        log.info("회원가입 요청: {}", request);
 
-        memberService.createMember(createUserRequest);
+        memberService.createMember(request.toServiceDto());
 
-        log.info("회원가입 성공: {}", createUserRequest.getEmail());
-        return new ResultResponse<>(
-                ResultCode.MEMBER_CREATE_SUCCESS,
-                ResultCode.MEMBER_CREATE_SUCCESS.getMessage()
-        );
+        log.info("회원가입 성공: {}", request.email());
+        return ResultResponse.ok(ResultCode.MEMBER_CREATE_SUCCESS);
     }
 
     @PostMapping(value = "/auth/email-verification")
@@ -72,7 +75,7 @@ public class MemberController {
 
         memberService.verifyEmailCode(request.email(), request.code());
 
-        return new ResultResponse<> (
+        return new ResultResponse<>(
                 ResultCode.EMAIL_VERIFICATION_SUCCESS,
                 ResultCode.EMAIL_VERIFICATION_SUCCESS.getMessage()
         );
