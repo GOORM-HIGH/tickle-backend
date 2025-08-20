@@ -17,7 +17,7 @@ public class SmtpMailSender implements MailSender {
 
     private final JavaMailSender javaMailSender;
 
-    @Async
+    @Async(value = "mailExecutor")
     @Override
     public void sendText(MailCreateServiceRequestDto request) {
         log.info("{} 주소로 메일 전송", request.to());
@@ -37,7 +37,7 @@ public class SmtpMailSender implements MailSender {
         }
     }
 
-    @Async
+    @Async(value = "mailExecutor")
     @Override
     public void sendHtml(MailCreateServiceRequestDto request) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
