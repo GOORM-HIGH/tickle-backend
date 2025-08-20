@@ -15,7 +15,7 @@ import com.profect.tickle.domain.notification.dto.request.MailCreateServiceReque
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
 import com.profect.tickle.domain.notification.entity.NotificationTemplateId;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
-import com.profect.tickle.domain.notification.service.mail.SmtpMailSender;
+import com.profect.tickle.domain.notification.service.mail.MailSender;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
@@ -47,7 +47,7 @@ public class MemberService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final HostChargePolicy hostChargePolicy;
 
-    private final SmtpMailSender smtpMailSender;
+    private final MailSender mailSender;
     private final NotificationTemplateService notificationTemplateService;
     private final ContractService contractService;
 
@@ -156,7 +156,7 @@ public class MemberService implements UserDetailsService {
         String title = template.getTitle();
         String content = String.format(template.getContent(), newAuthenticationCode);
 
-        smtpMailSender.sendText(new MailCreateServiceRequestDto(email, title, content));
+        mailSender.sendText(new MailCreateServiceRequestDto(email, title, content));
         log.info("인증코드 발송 완료");
     }
 

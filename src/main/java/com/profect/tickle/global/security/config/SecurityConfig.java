@@ -30,6 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.Arrays;
 
 @Configuration
@@ -38,7 +39,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private final MemberService smtpMailSender;
+    private final MemberService memberService;
     private final TokenProperties tokenProperties;
     private final JwtUtil jwtUtil;
     private final MemberRepository memberRepository; // 🎯 추가
@@ -49,7 +50,7 @@ public class SecurityConfig {
     public CorsConfigurationSource prodCorsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(Arrays.asList("https://tickle.kr", "https://www.tickle.kr"));
-        cfg.setAllowedMethods(Arrays.asList("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(Arrays.asList("*"));
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
@@ -64,8 +65,8 @@ public class SecurityConfig {
     @Profile("local")
     public CorsConfigurationSource localCorsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(Arrays.asList("http://localhost:5173","http://localhost:3000","http://localhost:8081"));
-        cfg.setAllowedMethods(Arrays.asList("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        cfg.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000", "http://localhost:8081"));
+        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(Arrays.asList("*"));
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
@@ -124,7 +125,7 @@ public class SecurityConfig {
     private AuthenticationManager getAuthenticationManager() {
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
         daoAuthenticationProvider.setPasswordEncoder(bCryptPasswordEncoder);
-        daoAuthenticationProvider.setUserDetailsService(smtpMailSender);
+        daoAuthenticationProvider.setUserDetailsService(memberService);
 
         return new ProviderManager(daoAuthenticationProvider);
     }

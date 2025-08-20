@@ -43,7 +43,7 @@ class MemberControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private MemberService smtpMailSender;
+    private MemberService memberService;
 
     @MockBean
     private ChatJwtAuthenticationInterceptor chatJwtAuthenticationInterceptor;
@@ -69,7 +69,7 @@ class MemberControllerTest {
         String payload = objectMapper.writeValueAsString(request);
 
         BDDMockito.willDoNothing()
-                .given(smtpMailSender)
+                .given(memberService)
                 .createMember(Mockito.any(CreateMemberServiceRequestDto.class));
 
         // when
@@ -80,7 +80,7 @@ class MemberControllerTest {
                 .andReturn();
 
         // then
-        then(smtpMailSender).should().createMember(any(CreateMemberServiceRequestDto.class));
+        then(memberService).should().createMember(any(CreateMemberServiceRequestDto.class));
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
     }
 
@@ -101,7 +101,7 @@ class MemberControllerTest {
         String payload = objectMapper.writeValueAsString(request);
 
         BDDMockito.willDoNothing()
-                .given(smtpMailSender)
+                .given(memberService)
                 .createMember(Mockito.any(CreateMemberServiceRequestDto.class));
 
         // when
@@ -112,7 +112,7 @@ class MemberControllerTest {
                 .andReturn();
 
         // then
-        then(smtpMailSender).should().createMember(any(CreateMemberServiceRequestDto.class));
+        then(memberService).should().createMember(any(CreateMemberServiceRequestDto.class));
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
     }
 
