@@ -76,27 +76,45 @@ public class Seat {
 
     public void assignEvent(Event event) {this.event = event;}
 
-    public void assignReservation(Reservation reservation) {
+    void assignReservation(Reservation reservation) {
         this.reservation = reservation;
     }
 
-    public void assignPreemptionToken(String preemptionToken) {
+    // ==== 좌석 상태 관리 메서드들 ====
+
+    public void preempt(String preemptionToken, Instant preemptedAt, Instant preemptedUntil, Member member, Status preemptedStatus) {
         this.preemptionToken = preemptionToken;
-    }
-
-    public void assignPreemptedAt(Instant now) {
-        this.preemptedAt = now;
-    }
-
-    public void assignPreemptedUntil(Instant preemptedUntil) {
+        this.preemptedAt = preemptedAt;
         this.preemptedUntil = preemptedUntil;
+        this.member = member;
+        this.status = preemptedStatus;
     }
+
+    public void releasePreemption() {
+        this.preemptionToken = null;
+        this.preemptedAt = null;
+        this.preemptedUntil = null;
+        this.member = null;
+    }
+
+    public void completeReservation(Member member, Status reservedStatus, String seatCode) {
+        this.member = member;
+        this.status = reservedStatus;
+        this.seatCode = seatCode;
+        this.preemptionToken = null;
+        this.preemptedAt = null;
+        this.preemptedUntil = null;
+    }
+
+    public void cancelReservation(Status availableStatus) {
+        this.reservation = null;  // 예매 연관관계 해제
+        this.member = null;       // 회원 연관관계 해제
+        this.status = availableStatus;  // 상태를 AVAILABLE로 변경
+        this.seatCode = null;     // 좌석 코드도 초기화
+    }
+
 
     public void setStatusTo(Status status){
         this.status = status;
-    }
-
-    public void assignSeatCode(String seatCode) {
-        this.seatCode = seatCode;
     }
 }
