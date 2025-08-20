@@ -40,6 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ReservationHistoryService {
 
+    private static final String UNABLE_TO_CANCEL_RESERVATION_MESSAGE = "취소할 수 없는 예매입니다.";
+
     private final ReservationRepository reservationRepository;
     private final SeatRepository seatRepository;
     private final MemberRepository memberRepository;
@@ -79,22 +81,14 @@ public class ReservationHistoryService {
 
             // 취소 가능 여부 확인
             if (!isCancellable(reservation)) {
-                return ReservationCancelResponseDto.failure("취소할 수 없는 예매입니다.");
+                return ReservationCancelResponseDto.failure(UNABLE_TO_CANCEL_RESERVATION_MESSAGE);
             }
 
-            // 좌석 상태 변경 (예매완료 → 예매가능)
-            List<Seat> seats = seatRepository.findByReservationId(reservationId);
-            updateSeatsToAvailable(seats);
+            // 예매가 주도하여 모든 관련 상태 처리
+            Status cancledStatus = statusProvider.provide(StatusIds.Reservation.CANCELLED);
+            Status availableStatus = statusProvider.provide(StatusIds.Seat.AVAILABLE);
 
-            // 예매에서 좌석 연관관계 제거 (양방향)
-            reservation.removeAllSeats();
-
-            // 예매 상태 변경
-            Status canceled = statusProvider.provide(StatusIds.Reservation.CANCELLED);
-            reservation.changeStatusTo(canceled);
-            reservation.markUpdated();
-
-            reservationRepository.save(reservation);
+            reservation.cancel(cancledStatus, availableStatus);
 
             // 포인트 환불
             Integer refundAmount = reservation.getPrice();
@@ -103,7 +97,6 @@ public class ReservationHistoryService {
 
             Point point = member.refundPoint(refundAmount, PointTarget.REFUND);
             pointRepository.save(point);
-            member.addPoint(refundAmount);
 
             return ReservationCancelResponseDto.success(refundAmount);
 
@@ -192,16 +185,6 @@ public class ReservationHistoryService {
         Instant today = Instant.now();
 
         return today.isBefore(performanceStartDate);
-    }
-
-    private void updateSeatsToAvailable(List<Seat> seats) {
-        Status availableStatus = statusProvider.provide(StatusIds.Seat.AVAILABLE);
-
-        for (Seat seat : seats) {
-            seat.cancelReservation(availableStatus);
-        }
-
-        seatRepository.saveAll(seats);
     }
 
     private Reservation getReservation(Long reservationId, Long userId) {

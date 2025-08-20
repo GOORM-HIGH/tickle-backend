@@ -102,13 +102,16 @@ public class Seat {
         this.preemptedUntil = null;
     }
 
-    public void cancelReservation(Status availableStatus) {
-        this.reservation = null;  // 예매 연관관계 해제
-        this.member = null;       // 회원 연관관계 해제
-        this.status = availableStatus;  // 상태를 AVAILABLE로 변경
-        this.seatCode = null;     // 좌석 코드도 초기화
+    /**
+     * 예매 취소 시 좌석 상태 초기화
+     * Reservation.cancel()에서 호출되는 내부 메서드
+     */
+    public void resetForCancellation(Status availableStatus) {
+        this.status = availableStatus;
+        this.member = null;
+        this.seatCode = null;
+        // reservation은 Reservation에서 처리하므로 건드리지 않음
     }
-
 
     public void setStatusTo(Status status){
         this.status = status;
