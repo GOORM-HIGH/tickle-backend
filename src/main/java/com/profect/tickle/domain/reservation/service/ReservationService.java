@@ -152,23 +152,18 @@ public class ReservationService {
         log.info("예매 성공 이벤트 발행 완료");
     }
 
-    private Reservation createReservation(
-            List<Seat> seats,
-            Member member,
-            Integer price) {
-
+    private Reservation createReservation(List<Seat> seats, Member member, Integer price) {
         Performance performance = seats.getFirst().getPerformance();
-
         Status paidStatus = statusProvider.provide(StatusIds.Reservation.PAID);
 
-        Reservation reservation = Reservation.create(
-                member,
-                performance,
-                paidStatus,
-                price
-        );
+        Reservation reservation = Reservation.create(member, performance, paidStatus, price);
 
-        return reservationRepository.save(reservation);
+        // 편의 메서드를 통한 양방향 연관관계 설정
+        for (Seat seat : seats) {
+            reservation.assignSeat(seat); // 이 메서드 내부에서 seat.assignReservation(this)도 호출됨
+        }
+
+        return reservation; // 아직 저장하지 않음 - 좌석 상태 업데이트 후 저장
     }
 
     private void updateSeatsToReserved(List<Seat> seats, Reservation reservation, Member member) {
