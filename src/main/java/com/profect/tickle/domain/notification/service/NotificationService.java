@@ -56,7 +56,7 @@ public class NotificationService {
     private final PerformanceService performanceService;
     private final ReservationService reservationService;
 
-    // mapper & repository
+    // mappers & repositories
     private final NotificationTemplateMapper notificationTemplateMapper;
     private final NotificationMapper notificationMapper;
     private final NotificationRepository notificationRepository;
