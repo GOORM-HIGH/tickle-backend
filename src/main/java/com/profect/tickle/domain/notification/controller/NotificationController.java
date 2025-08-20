@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -32,7 +33,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResultResponse<List<NotificationResponseDto>> getNotificationList(@RequestParam(defaultValue = "10") int size) {
+    public ResultResponse<List<NotificationResponseDto>> getNotificationList(@RequestParam(defaultValue = "10") final int size) {
         log.info("{}님의 최신 {}건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail(), size);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
@@ -51,7 +52,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "403", description = "접근 권한이 없는 알림"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResultResponse<String> markAsRead(@PathVariable Long notificationId) {
+    public ResultResponse<String> markAsRead(@PathVariable @Positive final Long notificationId) {
         log.info("{}님이 {}번 알림을 읽음 처리합니다.", SecurityUtil.getSignInMemberEmail(), notificationId);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id

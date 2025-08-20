@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.Collections;
 
+import static com.profect.tickle.global.exception.ErrorCode.INVALID_INPUT_VALUE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -120,5 +121,26 @@ class NotificationControllerTest {
 
         then(notificationService).should(times(1))
                 .markAsRead(notificationId, memberId);
+    }
+
+    @Test
+    @DisplayName("알림 읽음 처리: 알림 ID가 0 이하이면 400 반환")
+    @WithMockMember(id = 1, email = "user@tickle.kr")
+    void markAsRead_withNegativeNotificationId_returns400() throws Exception {
+        // given
+        willDoNothing().given(notificationService)
+                .markAsRead(anyLong(), anyLong());
+
+        // when
+        ResultActions resultActions = mockMvc.perform(patch("/api/v1/notifications/{notificationId}/read", 0) // 0 또는 음수 → @Positive 위반
+                .with(csrf())
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(INVALID_INPUT_VALUE.getMessage()));
     }
 }
