@@ -23,7 +23,8 @@ import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
-import com.profect.tickle.global.status.service.StatusService;
+import com.profect.tickle.global.status.StatusIds;
+import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -43,13 +44,17 @@ public class NotificationService {
 
     private static final Long TIME_OUT = 60 * 60 * 1000L;
 
+    // utils
+    private final StatusProvider statusProvider;
+
+    // services
     private final MemberService memberService;
-    private final StatusService statusService;
     private final NotificationTemplateService notificationTemplateService;
     private final PerformanceService performanceService;
     private final MailService mailService;
     private final ReservationService reservationService;
 
+    // mapper & repository
     private final NotificationTemplateMapper notificationTemplateMapper;
     private final NotificationMapper notificationMapper;
     private final NotificationRepository notificationRepository;
@@ -63,17 +68,20 @@ public class NotificationService {
         return notificationMapper.getNotificationListByMemberId(memberId, limit);
     }
 
-    /**
-     * 알림 읽음 처리
-     */
+    // 알림 읽음 처리 메서드
     @Transactional
     public void markAsRead(Long notificationId, Long memberId) {
+        // 알림 조회
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        // 회원의 알림인지 확인
         if (!notification.getReceivedMember().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.NOTIFICATION_ACCESS_DENIED);
         }
-        notification.markAsRead(statusService.getReadStatusForNotification());
+
+        // 읽음 처리
+        notification.markAsRead(statusProvider.provide(StatusIds.Notification.READ));
     }
 
     /**
@@ -286,7 +294,7 @@ public class NotificationService {
                 .template(template)
                 .title(title)
                 .content(message)
-                .status(statusService.getReadYetStatusForNotification())
+                .status(statusProvider.provide(StatusIds.Notification.UNREAD))
                 .createdAt(createdAt)
                 .build());
     }
