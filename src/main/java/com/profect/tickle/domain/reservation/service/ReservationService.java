@@ -101,10 +101,10 @@ public class ReservationService {
             // 7. 좌석들을 예매 완료 상태로 변경
             updateSeatsToReserved(preemptedSeats, reservation, member);
 
-            reservationRepository.save(reservation);
+            Reservation savedReservation = reservationRepository.save(reservation);
 
-            // 8. 응답 생성
-            List<ReservedSeatDto> reservedSeats = preemptedSeats.stream()
+            // 9. 응답 생성
+            List<ReservedSeatDto> reservedSeats = savedReservation.getSeats().stream()
                     .map(this::convertToReservedSeatInfo)
                     .collect(Collectors.toList());
 
