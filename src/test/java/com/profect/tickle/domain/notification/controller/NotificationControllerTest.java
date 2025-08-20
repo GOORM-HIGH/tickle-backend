@@ -51,7 +51,7 @@ class NotificationControllerTest {
         long memberId = 42L;
         int size = 2;
 
-        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
+        given(notificationService.getNotificationListByMemberId(anyLong(), anyInt()))
                 .willReturn(Collections.emptyList());
 
         // when
@@ -66,7 +66,7 @@ class NotificationControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(0));
 
         then(notificationService).should()
-                .getRecentNotificationListByMemberId(memberId, size);
+                .getNotificationListByMemberId(memberId, size);
     }
 
     @Test
@@ -77,7 +77,7 @@ class NotificationControllerTest {
         long memberId = 42L;
         int size = 10;
 
-        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
+        given(notificationService.getNotificationListByMemberId(anyLong(), anyInt()))
                 .willReturn(Collections.emptyList());
 
         // when
@@ -91,7 +91,7 @@ class NotificationControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(0));
 
         then(notificationService).should()
-                .getRecentNotificationListByMemberId(memberId, size);
+                .getNotificationListByMemberId(memberId, size);
     }
 
     @Test
@@ -101,7 +101,7 @@ class NotificationControllerTest {
         // given
         int size = 0;
 
-        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
+        given(notificationService.getNotificationListByMemberId(anyLong(), anyInt()))
                 .willReturn(Collections.emptyList());
 
         // when
@@ -125,7 +125,7 @@ class NotificationControllerTest {
         // given
         int size = 11;
 
-        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
+        given(notificationService.getNotificationListByMemberId(anyLong(), anyInt()))
                 .willReturn(Collections.emptyList());
 
         // when

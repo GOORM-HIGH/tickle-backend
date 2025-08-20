@@ -60,11 +60,9 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final SseRepository sseRepository;
 
-    /**
-     * 최신 알림 조회
-     */
+    // 알림 조회 메서드
     @Transactional(readOnly = true)
-    public List<NotificationResponseDto> getRecentNotificationListByMemberId(Long memberId, int limit) {
+    public List<NotificationResponseDto> getNotificationListByMemberId(Long memberId, int limit) {
         return notificationMapper.getNotificationListByMemberId(memberId, limit);
     }
 
