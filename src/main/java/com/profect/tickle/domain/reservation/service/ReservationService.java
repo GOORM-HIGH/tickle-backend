@@ -175,13 +175,7 @@ public class ReservationService {
         Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
 
         for (Seat seat : seats) {
-            seat.assignReservation(reservation);
-            seat.assignTo(member);
-            seat.assignPreemptionToken(null);
-            seat.assignPreemptedAt(null);
-            seat.assignPreemptedUntil(null);
-            seat.setStatusTo(reservedStatus);
-            seat.assignSeatCode(generateSeatCode());
+            seat.completeReservation(member, reservedStatus, generateSeatCode());
         }
 
         seatRepository.saveAll(seats);
