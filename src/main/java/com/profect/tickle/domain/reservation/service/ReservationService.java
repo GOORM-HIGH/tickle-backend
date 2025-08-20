@@ -11,7 +11,6 @@ import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
-import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
@@ -50,7 +49,6 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
-    private final PointService pointService;
     private final CouponService couponService;
     private final PerformanceMapper performanceMapper;
     private final ReservationMapper reservationMapper;
@@ -64,10 +62,13 @@ public class ReservationService {
         Long userId = SecurityUtil.getSignInMemberId();
 
         try {
+            Member member = memberRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
             // 1. 선점 토큰으로 좌석들 조회
             List<Seat> preemptedSeats = seatRepository.findByPreemptionTokenWithLock(request.getPreemptionToken());
 
-            // 좌석들 검증
+            // 선점 좌석들 검증
             reservationValidator.validatePreemptedSeats(preemptedSeats, userId);
 
             // 2. 쿠폰 할인 계산
@@ -77,28 +78,20 @@ public class ReservationService {
             reservationValidator.validatePaymentAmount(finalAmount, request.getTotalAmount());
 
             // 4. 포인트 충분성 검증
-            int currentPoints = pointService.getCurrentPoint().credit();
-            if (currentPoints < finalAmount) {
-                throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
-            }
+            validatePointSufficiency(finalAmount, member);
 
             // 5. 쿠폰 사용 처리 (있는 경우)
             if (request.getCouponId() != null) {
                 couponService.useCoupon(request.getCouponId(), userId);
             }
 
-            // 6. 포인트 차감 // 아래 로직 추후 리팩터링 예정
-            Member member = memberRepository.findById(userId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+            // 6. 포인트 차감
+            deductPoint(member, finalAmount);
 
-            Point point = member.deductPoint(finalAmount, PointTarget.RESERVATION);
-
-            pointRepository.save(point);
-
-            // 7. 예매 생성
+            // 7. 선점된 좌석들에 대해 예매 생성
             Reservation reservation = createReservation(preemptedSeats, member, finalAmount);
 
-            // 7. 좌석들을 예매 완료 상태로 변경
+            // 8. 좌석들을 예매 완료 상태로 변경
             updateSeatsToReserved(preemptedSeats, reservation, member);
 
             Reservation savedReservation = reservationRepository.save(reservation);
@@ -108,12 +101,13 @@ public class ReservationService {
                     .map(this::convertToReservedSeatInfo)
                     .collect(Collectors.toList());
 
-            Integer remainingPoints = pointService.getCurrentPoint().credit();
+            Integer remainingPoints = member.getPointBalance();
 
             // 9. 이벤트 생성(예매 성공 알림을 보내기 위함)
             publishReservationSuccessEvent(reservation.getId(), userId);
 
-            return ReservationCompletionResponseDto.success(reservation, reservedSeats, remainingPoints);
+            return ReservationCompletionResponseDto.success(savedReservation, reservedSeats,
+                    remainingPoints);
 
         } catch (BusinessException e) {
             log.error("Reservation completion failed", e);
@@ -121,11 +115,24 @@ public class ReservationService {
         }
     }
 
+    private void validatePointSufficiency(int finalAmount, Member member) {
+        int currentPoints = member.getPointBalance();
+        if (currentPoints < finalAmount) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+    }
+
+    private void deductPoint(Member member, int finalAmount) {
+        Point point = member.deductPoint(finalAmount, PointTarget.RESERVATION);
+        pointRepository.save(point);
+    }
+
     private int calculateFinalAmount(ReservationCompletionRequestDto request, Long userId) {
 
         // 요청에서 넘어온 쿠폰 조회
         Long couponId = request.getCouponId();
 
+        // 쿠폰이 없는 경우 원래 금액을 그대로 반환
         if (couponId == null) {
             return request.getTotalAmount();
         }
