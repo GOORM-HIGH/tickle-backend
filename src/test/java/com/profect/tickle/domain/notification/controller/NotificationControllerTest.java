@@ -51,7 +51,7 @@ class NotificationControllerTest {
         long memberId = 42L;
         int size = 2;
 
-        given(notificationService.getRecentNotificationListByMemberId(memberId, size))
+        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
                 .willReturn(Collections.emptyList());
 
         // when
@@ -77,7 +77,7 @@ class NotificationControllerTest {
         long memberId = 42L;
         int size = 10;
 
-        given(notificationService.getRecentNotificationListByMemberId(memberId, size))
+        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
                 .willReturn(Collections.emptyList());
 
         // when
@@ -92,6 +92,54 @@ class NotificationControllerTest {
 
         then(notificationService).should()
                 .getRecentNotificationListByMemberId(memberId, size);
+    }
+
+    @Test
+    @DisplayName("알림 조회: 조회하려는 알림목록의 사이즈가 0 이하이면 400 반환")
+    @WithMockMember(id = 42, email = "user@tickle.kr")
+    void getRecentNotifications_withNegativeNotificationId_returns400() throws Exception {
+        // given
+        int size = 0;
+
+        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
+                .willReturn(Collections.emptyList());
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get("/api/v1/notifications") // 0 또는 음수 → @Positive 위반
+                .param("size", String.valueOf(size))
+                .with(csrf())
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(INVALID_INPUT_VALUE.getMessage()));
+    }
+
+    @Test
+    @DisplayName("알림 조회: 조회하려는 알림목록의 사이즈가 11 이상이면 400 반환")
+    @WithMockMember(id = 42, email = "user@tickle.kr")
+    void getRecentNotifications_sizeOverMax_returns400() throws Exception {
+        // given
+        int size = 11;
+
+        given(notificationService.getRecentNotificationListByMemberId(anyLong(), anyInt()))
+                .willReturn(Collections.emptyList());
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get("/api/v1/notifications") // 0 또는 음수 → @Positive 위반
+                .param("size", String.valueOf(size))
+                .with(csrf())
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(INVALID_INPUT_VALUE.getMessage()));
     }
 
     @Test

@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +35,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResultResponse<List<NotificationResponseDto>> getNotificationList(@RequestParam(defaultValue = "10") final int size) {
+    public ResultResponse<List<NotificationResponseDto>> getNotificationList(@RequestParam(defaultValue = "10") @Positive @Max(10) final int size) {
         log.info("{}님의 최신 {}건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail(), size);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
