@@ -46,8 +46,10 @@ public class ReservationHistoryService {
     private final PointRepository pointRepository;
     private final StatusProvider statusProvider;
 
-    public List<ReservationHistoryResponseDto> getReservationHistoryWithStatus(Long userId, Long statusId, Pageable pageable) {
-        Page<Reservation> reservations = reservationRepository.findByMemberIdOrderByCreatedAtDesc(userId, pageable);
+    public List<ReservationHistoryResponseDto> getReservationHistoryWithStatus(Long userId,
+            Long statusId, Pageable pageable) {
+        Page<Reservation> reservations = reservationRepository.findByMemberIdOrderByCreatedAtDesc(
+                userId, pageable);
 
         log.info("reservations count: {}", reservations.getTotalElements());
 
@@ -84,9 +86,11 @@ public class ReservationHistoryService {
             List<Seat> seats = seatRepository.findByReservationId(reservationId);
             updateSeatsToAvailable(seats);
 
+            // 예매에서 좌석 연관관계 제거 (양방향)
+            reservation.removeAllSeats();
+
             // 예매 상태 변경
             Status canceled = statusProvider.provide(StatusIds.Reservation.CANCELLED);
-
             reservation.changeStatusTo(canceled);
             reservation.markUpdated();
 
@@ -94,13 +98,11 @@ public class ReservationHistoryService {
 
             // 포인트 환불
             Integer refundAmount = reservation.getPrice();
-
             Member member = memberRepository.findById(userId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             Point point = member.refundPoint(refundAmount, PointTarget.REFUND);
             pointRepository.save(point);
-
             member.addPoint(refundAmount);
 
             return ReservationCancelResponseDto.success(refundAmount);
@@ -132,7 +134,8 @@ public class ReservationHistoryService {
                 .build();
     }
 
-    private ReservationDetailResponseDto convertToDetailResponse(Reservation reservation, List<Seat> seats) {
+    private ReservationDetailResponseDto convertToDetailResponse(Reservation reservation,
+            List<Seat> seats) {
 
         // 공연 정보
         Performance performance = reservation.getPerformance();
@@ -195,16 +198,10 @@ public class ReservationHistoryService {
         Status availableStatus = statusProvider.provide(StatusIds.Seat.AVAILABLE);
 
         for (Seat seat : seats) {
-            cancelSeatsOfReservation(seat, availableStatus);
+            seat.cancelReservation(availableStatus);
         }
 
         seatRepository.saveAll(seats);
-    }
-
-    private void cancelSeatsOfReservation(Seat seat, Status availableStatus) {
-        seat.assignReservation(null);
-        seat.assignTo(null);
-        seat.setStatusTo(availableStatus);
     }
 
     private Reservation getReservation(Long reservationId, Long userId) {
