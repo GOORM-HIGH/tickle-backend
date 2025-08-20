@@ -118,15 +118,18 @@ public class EventServiceImpl implements EventService {
             Seat seat = getSeatOrThrow(event.getSeat().getId());
             event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
 
-            seat.assignTo(member);
+            Status paidStatus = statusProvider.provide(StatusIds.Reservation.PAID);
             Reservation reservation = Reservation.create(
                     member,
                     seat.getPerformance(),
-                    statusProvider.provide(StatusIds.Reservation.PAID),
+                    paidStatus,
                     event.getAccrued()
             );
 
             reservation.assignSeat(seat);
+
+            Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
+            seat.completeReservation(member, reservedStatus, null);
 
             reservationRepository.save(reservation);
         }

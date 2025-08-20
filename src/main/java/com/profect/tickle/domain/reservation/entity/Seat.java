@@ -70,10 +70,6 @@ public class Seat {
     @Column(name = "preemption_token")
     private String preemptionToken;
 
-    public void assignTo(Member member) {
-        this.member = member;
-    }
-
     public void assignEvent(Event event) {this.event = event;}
 
     void assignReservation(Reservation reservation) {
