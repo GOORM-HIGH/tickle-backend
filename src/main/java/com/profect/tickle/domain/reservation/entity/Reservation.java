@@ -68,9 +68,23 @@ public class Reservation {
         return reservation;
     }
 
+    // 연관관계 편의 메서드 - 양방향 설정
     public void assignSeat(Seat seat) {
         this.seats.add(seat);
-        seat.assignReservation(this); // 연관관계 편의 메서드
+        seat.assignReservation(this);
+    }
+
+    // 좌석 제거 편의 메서드
+    public void removeSeat(Seat seat) {
+        this.seats.remove(seat);
+        seat.assignReservation(null);
+    }
+
+    // 모든 좌석 제거 (예매 취소 시 사용)
+    public void removeAllSeats() {
+        for (Seat seat : new ArrayList<>(this.seats)) {
+            removeSeat(seat);
+        }
     }
 
     public void changeStatusTo(Status status) {
