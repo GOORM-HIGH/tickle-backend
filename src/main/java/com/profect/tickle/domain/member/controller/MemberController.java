@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "회원가입", description = "회원가입 관련 API")
 public class MemberController {
 
-    private final MemberService memberService;
+    private final MemberService smtpMailSender;
 
     @PostMapping(value = "/sign-up")
     @Operation(summary = "회원가입", description = "회원가입")
@@ -37,7 +37,7 @@ public class MemberController {
     public ResultResponse<?> signup(@RequestBody @Valid CreateMemberRequestDto request) {
         log.info("회원가입 요청: {}", request);
 
-        memberService.createMember(request.toServiceDto());
+        smtpMailSender.createMember(request.toServiceDto());
 
         log.info("회원가입 성공: {}", request.email());
         return ResultResponse.ok(ResultCode.MEMBER_CREATE_SUCCESS);
@@ -54,7 +54,7 @@ public class MemberController {
     public ResultResponse<?> emailVerification(@RequestBody EmailValidationCodeCreateRequest email) {
         log.info("인증번호 발송 email: {}", email.email());
 
-        memberService.createEmailAuthenticationCode(email.email());
+        smtpMailSender.createEmailAuthenticationCode(email.email());
 
         return new ResultResponse<>(
                 ResultCode.EMAIL_VALIDATION_CODE_CREATE,
@@ -73,7 +73,7 @@ public class MemberController {
     public ResultResponse<?> verifyEmailCode(@Valid @RequestBody EmailValidationRequestDto request) {
         log.info("email verification: {}", request);
 
-        memberService.verifyEmailCode(request.email(), request.code());
+        smtpMailSender.verifyEmailCode(request.email(), request.code());
 
         return new ResultResponse<>(
                 ResultCode.EMAIL_VERIFICATION_SUCCESS,
@@ -92,7 +92,7 @@ public class MemberController {
         log.info("{}번 인덱스의 계정을 탈퇴처리 합니다.", memberId);
 
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
-        memberService.deleteUser(memberId, signInMemberEmail);
+        smtpMailSender.deleteUser(memberId, signInMemberEmail);
         return new ResultResponse<>(
                 ResultCode.MEMBER_DELETE_SUCCESS,
                 ResultCode.MEMBER_DELETE_SUCCESS.getMessage()
@@ -110,7 +110,7 @@ public class MemberController {
     public ResultResponse<?> updateUser(@PathVariable String memberEmail, @RequestBody UpdateMemberRequestDto request) {
         log.info("{} 계정을 업데이트 요청을 실행합니다.", memberEmail);
 
-        memberService.updateUser(memberEmail, request);
+        smtpMailSender.updateUser(memberEmail, request);
 
         return new ResultResponse<>(
                 ResultCode.MEMBER_UPDATE_SUCCESS,

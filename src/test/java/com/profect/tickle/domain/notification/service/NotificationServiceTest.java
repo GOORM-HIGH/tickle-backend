@@ -43,13 +43,11 @@ class NotificationServiceMarkAsReadTest {
 
     // 생성자 주입을 위해 필요하지만 이 테스트에서는 사용하지 않는 의존성들
     @Mock
-    private MemberService memberService;
+    private MemberService smtpMailSender;
     @Mock
     private NotificationTemplateService notificationTemplateService;
     @Mock
     private PerformanceService performanceService;
-    @Mock
-    private MailService mailService;
     @Mock
     private ReservationService reservationService;
     @Mock

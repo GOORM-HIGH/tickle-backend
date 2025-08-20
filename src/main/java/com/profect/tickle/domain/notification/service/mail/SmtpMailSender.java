@@ -1,5 +1,6 @@
-package com.profect.tickle.domain.notification.service;
+package com.profect.tickle.domain.notification.service.mail;
 
+import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,21 +11,22 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
-public class MailService {
+@Slf4j
+public class SmtpMailSender implements MailSender {
 
     private final JavaMailSender javaMailSender;
 
     @Async
-    public void sendSimpleMailMessage(String email, String title, String content) {
-        log.info("{} 주소로 메일 전송", email);
+    @Override
+    public void sendText(MailCreateServiceRequestDto request) {
+        log.info("{} 주소로 메일 전송", request.to());
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 
         try {
-            simpleMailMessage.setTo(email);
-            simpleMailMessage.setSubject(title);
-            simpleMailMessage.setText(content);
+            simpleMailMessage.setTo(request.to());
+            simpleMailMessage.setSubject(request.subject());
+            simpleMailMessage.setText(request.content());
 
             javaMailSender.send(simpleMailMessage);
             log.info("메일 발송 성공");
@@ -36,16 +38,17 @@ public class MailService {
     }
 
     @Async
-    public void sendMimeMessage(String email, String title) {
+    @Override
+    public void sendHtml(MailCreateServiceRequestDto request) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
 
         try {
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
 
             // 메일을 받을 수신자 설정
-            mimeMessageHelper.setTo(email);
+            mimeMessageHelper.setTo(request.to());
             // 메일의 제목 설정
-            mimeMessageHelper.setSubject(title);
+            mimeMessageHelper.setSubject(request.subject());
 
             // html 문법 적용한 메일의 내용
             String content = """

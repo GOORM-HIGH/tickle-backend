@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.service.MemberService;
+import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
 import com.profect.tickle.domain.notification.dto.response.NotificationSseResponseDto;
 import com.profect.tickle.domain.notification.entity.Notification;
@@ -15,6 +16,7 @@ import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.mapper.NotificationTemplateMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import com.profect.tickle.domain.notification.repository.SseRepository;
+import com.profect.tickle.domain.notification.service.mail.SmtpMailSender;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.service.PerformanceService;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
@@ -52,7 +54,6 @@ public class NotificationService {
     private final MemberService memberService;
     private final NotificationTemplateService notificationTemplateService;
     private final PerformanceService performanceService;
-    private final MailService mailService;
     private final ReservationService reservationService;
 
     // mapper & repository
@@ -60,6 +61,7 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
     private final NotificationRepository notificationRepository;
     private final SseRepository sseRepository;
+    private final SmtpMailSender smtpMailSender;
 
     // 알림 조회 메서드
     public List<NotificationResponseDto> getNotificationListByMemberId(Long memberId, int limit) {
@@ -264,34 +266,33 @@ public class NotificationService {
         }
     }
 
-    /**
-     * 알림 전송 + 저장 + 메일 발송
-     */
+    // SSE 전송 + Mail 전송 메서드
     private void sendSseAndSaveNotification(
             String memberEmail, // 받는 유저 이메일
             NotificationTemplate template, // 템플릿 유형
-            String title, // 제목
-            String message, // 메시지
+            String subject, // 제목
+            String content, // 메시지
             Instant createdAt // 생성일
     ) {
         // SSE 전송
         NotificationSseResponseDto dto = NotificationSseResponseDto.builder()
-                .title(title)
-                .message(message)
+                .title(subject)
+                .message(content)
                 .build();
 
         String json = convertToJson(dto);
         sendSseNotification(memberEmail, json);
 
         // 메일 발송
-        mailService.sendSimpleMailMessage(memberEmail, title, message);
+        smtpMailSender.sendText(new MailCreateServiceRequestDto(memberEmail, subject, content));
+
         // DB 저장
         Member member = memberService.getMemberByEmail(memberEmail);
         notificationRepository.save(Notification.builder()
                 .receivedMember(member)
                 .template(template)
-                .title(title)
-                .content(message)
+                .title(subject)
+                .content(content)
                 .status(statusProvider.provide(StatusIds.Notification.UNREAD))
                 .createdAt(createdAt)
                 .build());

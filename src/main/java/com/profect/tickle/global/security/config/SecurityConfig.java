@@ -20,7 +20,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -39,7 +38,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private final MemberService memberService;
+    private final MemberService smtpMailSender;
     private final TokenProperties tokenProperties;
     private final JwtUtil jwtUtil;
     private final MemberRepository memberRepository; // 🎯 추가
@@ -125,7 +124,7 @@ public class SecurityConfig {
     private AuthenticationManager getAuthenticationManager() {
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
         daoAuthenticationProvider.setPasswordEncoder(bCryptPasswordEncoder);
-        daoAuthenticationProvider.setUserDetailsService(memberService);
+        daoAuthenticationProvider.setUserDetailsService(smtpMailSender);
 
         return new ProviderManager(daoAuthenticationProvider);
     }

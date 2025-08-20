@@ -18,15 +18,15 @@ import java.security.Key;
 public class JwtUtil {
 
     private final Key key;
-    private final MemberService memberService;
+    private final MemberService smtpMailSender;
 
     public JwtUtil(
             TokenProperties tokenProperties,
-            MemberService memberService
+            MemberService smtpMailSender
     ) {
         byte[] keyBytes = Decoders.BASE64.decode(tokenProperties.getSecretKey());
         this.key = Keys.hmacShaKeyFor(keyBytes);
-        this.memberService = memberService;
+        this.smtpMailSender = smtpMailSender;
     }
 
     /* Token 검증(Bearer 토큰이 넘어왔고, 우리 사이트의 secret key로 만들어 졌는가, 만료되었는지와 내용이 비어있진 않은지) */
@@ -49,7 +49,7 @@ public class JwtUtil {
     /* 넘어온 AccessToken으로 인증 객체 추출 */
     public Authentication getAuthentication(String token) {
         /* 토큰을 들고 왔던 들고 오지 않았던(로그인 시) 동일하게 security가 관리 할 UserDetails 타입을 정의 */
-        UserDetails userDetails = memberService.loadUserByUsername(this.getEmail(token));
+        UserDetails userDetails = smtpMailSender.loadUserByUsername(this.getEmail(token));
 
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }

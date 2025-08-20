@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class MyPageController {
 
-    private final MemberService memberService;
+    private final MemberService smtpMailSender;
     private final EventService eventService;
 
     @Operation(summary = "사용자 정보 조회", description = "마이페이지에 보여줄 로그인한 사용자의 정보를 조회합니다.")
@@ -33,7 +33,7 @@ public class MyPageController {
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
         log.info("{}님의 마이페이지 정보 조회 API요청이 수신되었습니다.", signInMemberEmail);
 
-        MemberResponseDto data = memberService.getMemberDtoByEmail(signInMemberEmail);
+        MemberResponseDto data = smtpMailSender.getMemberDtoByEmail(signInMemberEmail);
 
         return new ResultResponse<>(
                 ResultCode.MEMBER_MYPAGE_INFO_SUCCESS,

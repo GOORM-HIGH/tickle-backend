@@ -13,7 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.time.Instant;
 
 @ExtendWith(MockitoExtension.class)
-class MemberServiceTest {
+class SmtpMailSenderTest {
 
     @MockBean
     private MemberRepository memberRepository;
