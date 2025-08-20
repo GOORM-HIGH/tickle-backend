@@ -2,6 +2,7 @@ package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.reservation.dto.PreemptionContext;
 import com.profect.tickle.domain.reservation.dto.request.SeatPreemptionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.preemption.PreemptedSeatInfo;
 import com.profect.tickle.domain.reservation.dto.response.preemption.SeatPreemptionResponseDto;
@@ -28,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class SeatPreemptionService {
 
+    private static final String UNAVAILABLE_SEAT_MESSAGE = "선택한 좌석 중 선점할 수 없는 좌석이 있습니다.";
+
     private final SeatRepository seatRepository;
     private final MemberRepository memberRepository;
     private final StatusProvider statusProvider;
@@ -51,46 +54,60 @@ public class SeatPreemptionService {
                     .collect(Collectors.toList());
 
             return SeatPreemptionResponseDto.failure(
-                    "선택한 좌석 중 선점할 수 없는 좌석이 있습니다.",
+                    UNAVAILABLE_SEAT_MESSAGE,
                     unavailableSeatIds);
         }
 
-        // 4. 전체 선점 실행
-        String preemptionToken = generatePreemptionToken();
-        Instant preemptedUntil = Instant.now().plus(PREEMPTION_DURATION_MINUTES, ChronoUnit.MINUTES);
-
-        for (Seat seat : availableSeats) {
-            preemptSeat(seat, userId, preemptionToken, preemptedUntil);
-        }
+        // 4. 전체 좌석 선점
+        PreemptionContext context = createPreemptionContext(userId);
+        preemptSeats(availableSeats, context);
 
         // 5. 성공 응답 생성
         List<PreemptedSeatInfo> preemptedSeats = availableSeats.stream()
                 .map(this::convertToPreemptedSeatInfo)
                 .collect(Collectors.toList());
 
+        // 선점 하고 저장한 좌석들로 응답 뿌려줘야 되지 않을까?
+        log.info("🪑좌석 배치 선점 완료! 선점된 좌석 수: {}, 토큰: {}",
+                availableSeats.size(), context.getPreemptionToken());
+
         return SeatPreemptionResponseDto.success(
-                preemptionToken,
-                preemptedUntil,
+                context.getPreemptionToken(),
+                context.getPreemptedUntil(),
                 preemptedSeats,
                 String.format("%d개 좌석을 선점했습니다.", availableSeats.size()));
     }
 
-    private void preemptSeat(Seat seat, Long userId, String preemptionToken, Instant preemptedUntil) {
+    private PreemptionContext createPreemptionContext(Long userId) {
+        String preemptionToken = generatePreemptionToken();
+        Instant preemptedAt = Instant.now();
+        Instant preemptedUntil = Instant.now()
+                .plus(PREEMPTION_DURATION_MINUTES, ChronoUnit.MINUTES);
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        seat.assignTo(member);
-        seat.assignPreemptionToken(preemptionToken);
-        seat.assignPreemptedAt(Instant.now());
-        seat.assignPreemptedUntil(preemptedUntil);
+        return PreemptionContext.builder()
+                .preemptionToken(preemptionToken)
+                .preemptedAt(preemptedAt)
+                .preemptedUntil(preemptedUntil)
+                .member(member)
+                .build();
+    }
 
-        Status preempted = statusProvider.provide(StatusIds.Seat.PREEMPTED);
-        seat.setStatusTo(preempted);
+    private void preemptSeats(List<Seat> availableSeats, PreemptionContext context) {
+        Status preemptedStatus = statusProvider.provide(StatusIds.Seat.PREEMPTED);
 
-        seatRepository.save(seat);
+        for (Seat seat : availableSeats) {
+            seat.preempt(
+                    context.getPreemptionToken(),
+                    context.getPreemptedAt(),
+                    context.getPreemptedUntil(),
+                    context.getMember(),
+                    preemptedStatus
+            );
+        }
 
-        // 선점된 좌석들 로그 찍기
-        log.info("🪑좌석이 선점됨!! 선점된 좌석 : {}", seat);
+        seatRepository.saveAll(availableSeats);
     }
 
     private String generatePreemptionToken() {

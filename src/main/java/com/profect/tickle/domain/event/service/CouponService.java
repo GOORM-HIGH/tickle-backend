@@ -9,7 +9,8 @@ import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
-import com.profect.tickle.global.status.repository.StatusRepository;
+import com.profect.tickle.global.status.StatusIds.Coupon;
+import com.profect.tickle.global.status.service.StatusProvider;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,12 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponService {
 
-    private static final Long USED_COUPON_STATUS_ID = 18L;
-
     private final CouponReceivedMapper couponReceivedMapper;
     private final CouponMapper couponMapper;
     private final CouponReceivedRepository couponReceivedRepository;
-    private final StatusRepository statusRepository;
+    private final StatusProvider statusProvider;
 
     public List<CouponResponseDto> getAvailableCoupons(Long memberId) {
         return couponReceivedMapper.findMyCoupons(memberId, 10, 0);
@@ -41,12 +40,6 @@ public class CouponService {
         couponReceivedRepository.save(couponReceived);
     }
 
-    public Integer calculateCouponDiscount(Long couponId, Long memberId, Integer totalAmount) {
-        CouponReceived couponReceived = findValidCoupon(couponId, memberId);
-
-        return calculateDiscountAmount(totalAmount, couponReceived.getCoupon().getRate());
-    }
-
     public CouponListResponseDto getSpecialCouponDetailById(Long couponId) {
         CouponListResponseDto dto = couponMapper.findCouponById(couponId);
         if (dto == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
@@ -54,21 +47,15 @@ public class CouponService {
         return dto;
     }
 
-    private CouponReceived findValidCoupon(Long couponId, Long memberId) {
+    public CouponReceived findValidCoupon(Long couponId, Long memberId) {
         return couponReceivedRepository
                 .findByCouponIdAndMemberIdAndNotUsed(couponId, memberId)
-                .orElseThrow(() -> new IllegalArgumentException("사용할 수 없는 쿠폰입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
     }
 
 
     private void makeCouponUsed(CouponReceived couponReceived) {
-        Status usedStatus = statusRepository.findById(USED_COUPON_STATUS_ID)
-                .orElseThrow();
-
-        couponReceived.setCouponStatusToUsed(usedStatus);
-    }
-
-    private Integer calculateDiscountAmount(Integer totalAmount, Short discountRate) {
-        return (int) (totalAmount * discountRate / 100.0);
+        Status used = statusProvider.provide(Coupon.USED);
+        couponReceived.setCouponStatusTo(used);
     }
 }
