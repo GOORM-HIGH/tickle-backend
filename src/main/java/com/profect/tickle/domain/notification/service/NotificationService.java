@@ -14,9 +14,10 @@ import com.profect.tickle.domain.notification.event.reservation.event.Performanc
 import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
 import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.mapper.NotificationTemplateMapper;
+import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import com.profect.tickle.domain.notification.repository.SseRepository;
-import com.profect.tickle.domain.notification.service.mail.SmtpMailSender;
+import com.profect.tickle.domain.notification.service.mail.MailSender;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.service.PerformanceService;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
@@ -45,10 +46,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NotificationService {
 
-    private static final Long TIME_OUT = 60 * 60 * 1000L;
-
     // utils
     private final StatusProvider statusProvider;
+    private final MailSender mailSender;
+    private final NotificationProperty notificationProperty;
 
     // services
     private final MemberService memberService;
@@ -61,7 +62,6 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
     private final NotificationRepository notificationRepository;
     private final SseRepository sseRepository;
-    private final SmtpMailSender smtpMailSender;
 
     // 알림 조회 메서드
     public List<NotificationResponseDto> getNotificationListByMemberId(Long memberId, int limit) {
@@ -95,7 +95,7 @@ public class NotificationService {
             log.warn("❌ emitterId가 null이거나 공백입니다. 인증된 사용자 정보가 없습니다.");
         }
 
-        SseEmitter emitter = new SseEmitter(TIME_OUT);
+        SseEmitter emitter = new SseEmitter(notificationProperty.sseTimeout().toMillis());
         sseRepository.save(emitterId, emitter);
         log.info("✅ SSE emitter 저장 완료 - ID: {}", emitterId);
 
@@ -284,7 +284,7 @@ public class NotificationService {
         sendSseNotification(memberEmail, json);
 
         // 메일 발송
-        smtpMailSender.sendText(new MailCreateServiceRequestDto(memberEmail, subject, content));
+        mailSender.sendText(new MailCreateServiceRequestDto(memberEmail, subject, content));
 
         // DB 저장
         Member member = memberService.getMemberByEmail(memberEmail);
@@ -314,5 +314,4 @@ public class NotificationService {
             return "{}";
         }
     }
-
 }
