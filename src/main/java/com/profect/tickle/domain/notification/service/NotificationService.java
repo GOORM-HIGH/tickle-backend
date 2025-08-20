@@ -71,16 +71,16 @@ public class NotificationService {
     // 알림 읽음 처리 메서드
     @Transactional
     public void markAsRead(Long notificationId, Long memberId) {
-        // 알림 조회
+        // 알림 조회한다
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
-        // 회원의 알림인지 확인
+        // 회원의 알림인지 확인한다.
         if (!notification.getReceivedMember().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.NOTIFICATION_ACCESS_DENIED);
         }
 
-        // 읽음 처리
+        // 읽음 처리한다.
         notification.markAsRead(statusProvider.provide(StatusIds.Notification.READ));
     }
 
