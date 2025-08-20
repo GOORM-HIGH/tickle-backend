@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class NotificationService {
 
@@ -61,7 +62,6 @@ public class NotificationService {
     private final SseRepository sseRepository;
 
     // 알림 조회 메서드
-    @Transactional(readOnly = true)
     public List<NotificationResponseDto> getNotificationListByMemberId(Long memberId, int limit) {
         return notificationMapper.getNotificationListByMemberId(memberId, limit);
     }
