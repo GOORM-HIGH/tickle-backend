@@ -4,21 +4,19 @@ import com.profect.tickle.domain.file.dto.response.FileUploadResponseDto;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.global.exception.ChatExceptions;
+import com.profect.tickle.global.nas.service.WebDavService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
@@ -30,15 +28,13 @@ import java.util.UUID;
 public class FileService {
 
     private final MemberRepository memberRepository;
-
-    @Value("${file.upload.path:uploads/chat}")
-    private String uploadPath;
+    private final WebDavService webDavService;
 
     @Value("${file.upload.max-size:10485760}")  // 10MB
     private long maxFileSize;
 
     /**
-     * 파일 업로드 (파일 시스템에만 저장, Chat 엔티티는 메시지 전송시 활용)
+     * 파일 업로드 (NAS WebDAV에 저장, Chat 엔티티는 메시지 전송시 활용)
      */
     @Transactional
     public FileUploadResponseDto uploadFile(MultipartFile file, Long uploaderId) {
@@ -46,64 +42,53 @@ public class FileService {
                 file.getOriginalFilename(), file.getSize(), uploaderId);
 
         // 1. 업로드 사용자 확인
-        Member uploader = memberRepository.findById(uploaderId)
+        memberRepository.findById(uploaderId)
                 .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(uploaderId));
 
         // 2. 파일 검증
         validateFile(file);
 
-        // 3. 파일 저장
+        // 3. NAS에 파일 저장
         String storedFileName = generateStoredFileName(file.getOriginalFilename());
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-        String fullPath = uploadPath + "/" + datePath;
+        String nasFilePath = "chat/" + datePath + "/" + storedFileName;
 
         try {
-            // 디렉토리 생성
-            Path uploadDir = Paths.get(fullPath);
-            Files.createDirectories(uploadDir);
-
-            // 파일 저장
-            Path filePath = uploadDir.resolve(storedFileName);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            // NAS WebDAV에 파일 업로드
+            webDavService.uploadFile(nasFilePath, file.getInputStream());
 
             // 4. 응답 DTO 생성 (DB 저장은 메시지 전송시에)
-            String savedFilePath = fullPath + "/" + storedFileName;
-
-            log.info("파일 업로드 완료: storedName={}, path={}", storedFileName, savedFilePath);
+            log.info("파일 업로드 완료: storedName={}, nasPath={}", storedFileName, nasFilePath);
 
             return FileUploadResponseDto.of(
                     storedFileName,
                     file.getOriginalFilename(),
                     file.getContentType(),
                     (int) file.getSize(),
-                    savedFilePath
+                    nasFilePath  // NAS 경로 저장
             );
 
         } catch (IOException e) {
-            log.error("파일 저장 중 오류 발생: {}", e.getMessage(), e);
+            log.error("NAS 파일 저장 중 오류 발생: {}", e.getMessage(), e);
             throw new RuntimeException("파일 저장에 실패했습니다: " + e.getMessage());
         }
     }
 
     /**
-     * 파일 다운로드 (Chat 엔티티의 filePath로부터)
+     * 파일 다운로드 (NAS WebDAV에서 Chat 엔티티의 filePath로부터)
      */
-    public Resource downloadFile(String filePath, String originalFileName) {
-        log.info("파일 다운로드 요청: filePath={}, originalName={}", filePath, originalFileName);
+    public Resource downloadFile(String nasFilePath, String originalFileName) {
+        log.info("파일 다운로드 요청: nasFilePath={}, originalName={}", nasFilePath, originalFileName);
 
         try {
-            Path path = Paths.get(filePath);
-            Resource resource = new UrlResource(path.toUri());
-
-            if (!resource.exists() || !resource.isReadable()) {
-                throw new RuntimeException("파일을 읽을 수 없습니다: " + originalFileName);
-            }
-
+            // NAS WebDAV에서 파일 다운로드
+            InputStream inputStream = webDavService.downloadFile(nasFilePath);
+            
             log.info("파일 다운로드 준비 완료: originalName={}", originalFileName);
-            return resource;
+            return new InputStreamResource(inputStream);
 
-        } catch (Exception e) {
-            log.error("파일 다운로드 중 오류 발생: {}", e.getMessage(), e);
+        } catch (IOException e) {
+            log.error("NAS 파일 다운로드 중 오류 발생: {}", e.getMessage(), e);
             throw new RuntimeException("파일 다운로드에 실패했습니다: " + e.getMessage());
         }
     }
