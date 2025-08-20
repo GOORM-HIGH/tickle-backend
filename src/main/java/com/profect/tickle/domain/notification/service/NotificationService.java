@@ -60,7 +60,7 @@ public class NotificationService {
      */
     @Transactional(readOnly = true)
     public List<NotificationResponseDto> getRecentNotificationListByMemberId(Long memberId, int limit) {
-        return notificationMapper.getRecentNotificationListByMemberId(memberId, limit);
+        return notificationMapper.getNotificationListByMemberId(memberId, limit);
     }
 
     /**
