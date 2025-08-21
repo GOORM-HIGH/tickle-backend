@@ -131,7 +131,7 @@ public class ReservationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
 
         eventPublisher.publishEvent(new ReservationSuccessEvent(performanceServiceDto, reservationServiceDto));
-        log.info("[{}이벤트 발행]", NotificationKind.RESERVATION_SUCCESS);
+        log.info("[{} 이벤트 발행]", NotificationKind.RESERVATION_SUCCESS);
     }
 
     private List<Seat> validatePreemptedSeats(String preemptionToken, Long userId) {

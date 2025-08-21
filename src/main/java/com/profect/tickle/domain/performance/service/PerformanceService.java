@@ -3,6 +3,7 @@ package com.profect.tickle.domain.performance.service;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.event.reservation.event.PerformanceModifiedEvent;
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
@@ -26,6 +27,7 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ import java.util.List;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Slf4j
 public class PerformanceService {
 
     private final ApplicationEventPublisher eventPublisher;
@@ -219,5 +222,6 @@ public class PerformanceService {
                 performanceServiceDto,
                 reservationList)
         );
+        log.info("[{} 이벤트 발행]", NotificationKind.PERFORMANCE_MODIFIED);
     }
 }
