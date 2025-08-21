@@ -56,10 +56,10 @@ public class SeatPreemptionService {
 
         // 3. 전체 좌석 선점
         PreemptionContext context = createPreemptionContext(userId);
-        preemptSeats(availableSeats, context);
+        List<Seat> preemptedSeats = preemptSeats(seats, context);
 
         // 4. 성공 응답 생성
-        List<PreemptedSeatInfo> preemptedSeats = availableSeats.stream()
+        List<PreemptedSeatInfo> preemptedSeatInfos = preemptedSeats.stream()
                 .map(this::convertToPreemptedSeatInfo)
                 .collect(Collectors.toList());
 
@@ -69,7 +69,7 @@ public class SeatPreemptionService {
         return SeatPreemptionResponseDto.success(
                 context.getPreemptionToken(),
                 context.getPreemptedUntil(),
-                preemptedSeats,
+                preemptedSeatInfos,
                 String.format("%d개 좌석을 선점했습니다.", availableSeats.size()));
     }
 
@@ -89,10 +89,10 @@ public class SeatPreemptionService {
                 .build();
     }
 
-    private void preemptSeats(List<Seat> availableSeats, PreemptionContext context) {
+    private List<Seat> preemptSeats(List<Seat> seats, PreemptionContext context) {
         Status preemptedStatus = statusProvider.provide(StatusIds.Seat.PREEMPTED);
 
-        for (Seat seat : availableSeats) {
+        for (Seat seat : seats) {
             seat.preempt(
                     context.getPreemptionToken(),
                     context.getPreemptedAt(),
@@ -102,7 +102,7 @@ public class SeatPreemptionService {
             );
         }
 
-        seatRepository.saveAll(availableSeats);
+        return seatRepository.saveAll(seats);
     }
 
     private List<Seat> filterAvailableSeats(List<Seat> seats, Long performanceId) {
