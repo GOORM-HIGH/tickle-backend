@@ -47,10 +47,10 @@ public class ReservationEventListener {
                 event.reservation().getPrice()
         );
 
-        // 메일
+        // 메일 전송
         mailSender.sendText(new MailCreateServiceRequestDto(event.reservation().getMemberEmail(), subject, content));
 
-        // SSE
+        // 실시간 알림 전송
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                 NotificationKind.RESERVATION_SUCCESS,
                 subject,
@@ -80,10 +80,10 @@ public class ReservationEventListener {
                 String subject = String.format(template.getTitle(), event.performance().title());
                 String content = String.format(template.getContent(), newContent);
 
-                // 메일
+                // 메일 전송
                 mailSender.sendText(new MailCreateServiceRequestDto(reservation.getMemberEmail(), subject, content));
 
-                // SSE
+                // 실시간 알림 전송
                 NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                         NotificationKind.PERFORMANCE_MODIFIED,
                         subject,
