@@ -194,18 +194,35 @@
         )
     </select>
 
-    <!-- 예매Id로 공연정보 조회 쿼리 -->
+    <!-- 예매ID로 공연정보 조회 쿼리 -->
     <select id="findByReservationId"
-            resultType="PerformanceDto"
-            parameterType="long">
+            resultType="PerformanceServiceDto"
+            parameterType="java.lang.Long">
         SELECT
-            p.performance_id AS performanceId,
-            p.performance_title AS title,
-            p.performance_date AS date,
-            p.performance_img AS img
+            p.performance_id              AS id,
+            m.member_id                   AS hostId,
+            h.hall_id                     AS hallId,
+            g.genre_id                    AS genreId,
+            s.status_id                   AS statusId,
+            p.performance_title           AS title,
+            p.performance_price           AS price,
+            p.performance_date            AS performanceDateAndTime,
+            p.runtime                     AS runtime,
+            p.performance_img             AS thumbnailUrl,
+            p.performance_start_date      AS startDate,
+            p.performance_end_date        AS endDate,
+            p.performance_is_event        AS isEvent,
+            p.performance_look_count      AS lookCount,
+            p.performance_created_at      AS createdAt,
+            p.performance_updated_at      AS updatedAt,
+            p.performance_deleted_at      AS deletedAt
         FROM performance p
-                 JOIN reservation r ON r.performance_id = p.performance_id
-        WHERE r.reservation_id = #{reservationId}
+                 JOIN reservation r       ON p.performance_id = r.performance_id
+                 JOIN hall   h            ON p.hall_id   = h.hall_id
+                 JOIN genre  g            ON p.genre_id  = g.genre_id
+                 JOIN status s            ON p.status_id = s.status_id
+                 JOIN member m            ON p.member_id = m.member_id
+        WHERE p.performance_id = #{reservationId}
     </select>
 
     <!-- 공연ID로 공연정보 조회 쿼리-->
