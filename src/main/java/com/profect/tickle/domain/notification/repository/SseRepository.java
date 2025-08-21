@@ -106,4 +106,24 @@ public class SseRepository {
         var map = eventsByMember.get(memberId);
         if (map != null) map.headMap(thresholdEventId, false).clear();
     }
+
+    public void removeAll(long memberId) {
+        removeAll(memberId, true); // 기본: 캐시까지 제거
+    }
+
+    public void removeAll(long memberId, boolean clearEventCache) {
+        // 1) emitterId 집합을 인덱스에서 제거하면서 스냅샷 확보
+        var ids = emitterIdsByMember.remove(memberId);
+        if (ids != null) {
+            // 2) 각 emitterId에 대한 Emitter 레코드 제거
+            for (String emitterId : ids) {
+                emittersById.remove(emitterId);
+            }
+        }
+
+        // 3) 이벤트 캐시 처리
+        if (clearEventCache) {
+            eventsByMember.remove(memberId);
+        }
+    }
 }

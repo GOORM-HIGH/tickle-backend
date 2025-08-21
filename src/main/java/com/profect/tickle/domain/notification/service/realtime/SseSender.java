@@ -17,10 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 
 @Component
@@ -126,19 +123,31 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void disconnectAll(long memberId) {
-        Collection<SseEmitter> emitters = sseRepository.getAll(memberId);
+        // 1) 스냅샷을 떠서 안전하게 순회
+        var emitters = List.copyOf(sseRepository.getAll(memberId));
+        if (emitters.isEmpty()) {
+            log.debug("disconnectAll: no emitters for memberId={}", memberId);
+            return;
+        }
+
+        // 2) 각각 종료 시도
         for (SseEmitter e : emitters) {
             try {
+                // 종료 알림 보내기 (실패하더라도 무시)
                 try {
                     e.send(SseEmitter.event().name("bye").data("closing"));
                 } catch (IOException ignored) {
                 }
-                e.complete();
-            } catch (Exception ignored) {
+
+                e.complete();  // 정상 종료
+            } catch (Exception ex) {
+                log.debug("disconnectAll: complete failed (memberId={}) - {}", memberId, ex.toString());
             }
         }
-        // 모든 emitterId를 내부에서 제거하도록 Repository 쪽에서 처리(또는 별도 메서드 제공)
-        // 예: sseRepository.removeAll(memberId);
+
+        sseRepository.removeAll(memberId);
+
+        log.info("SSE disconnected all emitters - memberId={}, count={}", memberId, emitters.size());
     }
 
     @Override
