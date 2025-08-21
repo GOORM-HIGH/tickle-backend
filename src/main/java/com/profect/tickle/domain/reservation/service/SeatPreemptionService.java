@@ -47,7 +47,7 @@ public class SeatPreemptionService {
             List<Long> unavailableSeatIds = seats.stream()
                     .filter(seat -> !availableSeats.contains(seat))
                     .map(Seat::getId)
-                    .collect(Collectors.toList());
+                    .toList();
 
             return SeatPreemptionResponseDto.failure(
                     UNAVAILABLE_SEAT_MESSAGE,
@@ -61,7 +61,7 @@ public class SeatPreemptionService {
         // 4. 성공 응답 생성
         List<PreemptedSeatInfo> preemptedSeatInfos = preemptedSeats.stream()
                 .map(this::convertToPreemptedSeatInfo)
-                .collect(Collectors.toList());
+                .toList();
 
         log.info("🪑좌석 배치 선점 완료! 선점된 좌석 수: {}, 토큰: {}",
                 availableSeats.size(), context.getPreemptionToken());
