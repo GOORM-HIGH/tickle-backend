@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.notification.service.realtime;
 
-import com.profect.tickle.domain.notification.entity.NotificationEnvelope;
+import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.notification.service.realtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.profect.tickle.domain.notification.entity.NotificationEnvelope;
+import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.notification.util.NotificationUtil;
