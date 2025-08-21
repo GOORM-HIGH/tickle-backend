@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 @Slf4j
 public class SseSender implements RealtimeSender {
 
-    // uitls
+    // utils
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final Supplier<UUID> uuidSupplier;
