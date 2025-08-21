@@ -92,7 +92,7 @@ public class ReservationService {
             Reservation reservation = createReservation(preemptedSeats, member, finalAmount);
 
             // 8. 좌석들을 예매 완료 상태로 변경
-            updateSeatsToReserved(preemptedSeats, reservation, member);
+            updateSeatsToReserved(preemptedSeats, member);
 
             Reservation savedReservation = reservationRepository.save(reservation);
 
@@ -173,7 +173,7 @@ public class ReservationService {
         return reservation; // 아직 저장하지 않음 - 좌석 상태 업데이트 후 저장
     }
 
-    private void updateSeatsToReserved(List<Seat> seats, Reservation reservation, Member member) {
+    private void updateSeatsToReserved(List<Seat> seats, Member member) {
         Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
 
         for (Seat seat : seats) {
