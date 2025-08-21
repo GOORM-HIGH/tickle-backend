@@ -208,16 +208,33 @@
         WHERE r.reservation_id = #{reservationId}
     </select>
 
-    <!-- 공연Id로 공연정보 조회 쿼리-->
+    <!-- 공연ID로 공연정보 조회 쿼리-->
     <select id="findById"
-            resultType="PerformanceDto"
+            resultType="com.profect.tickle.domain.performance.dto.response.PerformanceServiceDto"
             parameterType="long">
         SELECT
-            performance_id AS performanceId,
-            performance_title AS title,
-            performance_date AS date,
-            performance_img AS img
-        FROM performance
-        WHERE performance_id = #{performanceId}
+            p.performance_id              AS id,
+            m.member_id                   AS hostId,
+            h.hall_id                     AS hallId,
+            g.genre_id                    AS genreId,
+            s.status_id                   AS statusId,
+            p.performance_title           AS title,
+            p.performance_price           AS price,
+            p.performance_date            AS performanceDateAndTime,
+            p.runtime                     AS runtime,
+            p.performance_img             AS thumbnailUrl,
+            p.performance_start_date      AS startDate,
+            p.performance_end_date        AS endDate,
+            p.performance_is_event        AS isEvent,
+            p.performance_look_count      AS lookCount,
+            p.performance_created_at      AS createdAt,
+            p.performance_updated_at      AS updatedAt,
+            p.performance_deleted_at      AS deletedAt
+        FROM performance p
+                 JOIN hall   h ON p.hall_id   = h.hall_id
+                 JOIN genre  g ON p.genre_id  = g.genre_id
+                 JOIN status s ON p.status_id = s.status_id
+                 JOIN member m ON p.member_id = m.member_id
+        WHERE p.performance_id = #{id}
     </select>
 </mapper>

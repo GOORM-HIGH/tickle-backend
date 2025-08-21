@@ -53,5 +53,5 @@ public interface PerformanceMapper {
 
     PerformanceDto findByReservationId(Long reservationId);
 
-    Optional<PerformanceDto> findById(@Param("performanceId") Long performanceId);
+    Optional<PerformanceServiceDto> findById(@Param("id") Long id);
 }

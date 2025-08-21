@@ -1,14 +1,12 @@
 package com.profect.tickle.domain.notification.event.reservation.event;
 
-import com.profect.tickle.domain.member.entity.Member;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
+import com.profect.tickle.domain.performance.dto.response.PerformanceServiceDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationServiceDto;
 
 import java.util.List;
 
 public record PerformanceModifiedEvent(
-        PerformanceDto performance, // 공연 정보
-        List<ReservationDto> reservationList, // 예매 정보
-        Member member // 예매 유저
+        PerformanceServiceDto performance,              // 공연정보
+        List<ReservationServiceDto> reservationList     // 예매정보 리스트
 ) {
 }
