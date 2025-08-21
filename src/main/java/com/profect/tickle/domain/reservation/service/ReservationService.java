@@ -3,9 +3,8 @@ package com.profect.tickle.domain.reservation.service;
 import com.profect.tickle.domain.event.service.CouponService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
-import com.profect.tickle.domain.performance.dto.response.PerformanceServiceDto;
+import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.point.entity.Point;
@@ -14,7 +13,7 @@ import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationServiceDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -27,18 +26,17 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -52,76 +50,99 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
     private final PointRepository pointRepository;
-    private final PointService pointService;
     private final CouponService couponService;
     private final PerformanceMapper performanceMapper;
     private final ReservationMapper reservationMapper;
     private final StatusProvider statusProvider;
+    private final ReservationValidator reservationValidator;
 
-    // 예매 생성 메서드
-    public ReservationCompletionResponseDto completeReservation(ReservationCompletionRequestDto request) {
+    @Transactional
+    public ReservationCompletionResponseDto completeReservation(
+            ReservationCompletionRequestDto request) {
 
         Long userId = SecurityUtil.getSignInMemberId();
 
         try {
-            // 1. 선점 토큰으로 좌석들 조회 및 검증
-            List<Seat> preemptedSeats = validatePreemptedSeats(request.getPreemptionToken(), userId);
+            Member member = memberRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-            // 2. 금액 검증
-//            validatePaymentAmount(preemptedSeats, request);
+            // 1. 선점 토큰으로 좌석들 조회
+            List<Seat> preemptedSeats = seatRepository.findByPreemptionTokenWithLock(request.getPreemptionToken());
 
-            // 3. 쿠폰 할인 계산
-            Integer discountAmount = 0;
-            if (request.getCouponId() != null) {
-                discountAmount = couponService.calculateCouponDiscount(request.getCouponId(), userId, request.getTotalAmount());
-            }
+            // 선점 좌석들 검증
+            reservationValidator.validatePreemptedSeats(preemptedSeats, userId);
 
-            Integer finalAmount = request.getTotalAmount() - discountAmount;
+            // 2. 쿠폰 할인 계산
+            int finalAmount = calculateFinalAmount(request, userId);
+
+            // 3. 최종 결제 금액 검증 - 요청의 최종 결제 금액과 현재 로직에서 계산한 값이 일치하는지 검증한다.
+            reservationValidator.validatePaymentAmount(finalAmount, request.getTotalAmount());
 
             // 4. 포인트 충분성 검증
-            int currentPoints = pointService.getCurrentPoint().credit();
-            if (currentPoints < finalAmount) {
-                throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
-            }
+            validatePointSufficiency(finalAmount, member);
 
             // 5. 쿠폰 사용 처리 (있는 경우)
             if (request.getCouponId() != null) {
                 couponService.useCoupon(request.getCouponId(), userId);
             }
 
-            // 6. 포인트 차감 // 아래 로직 추후 리팩터링 예정
-            Member member = memberRepository.findById(userId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+            // 6. 포인트 차감
+            deductPoint(member, finalAmount);
 
-            Point point = member.deductPoint(finalAmount, PointTarget.RESERVATION);
-
-            pointRepository.save(point);
-
-
-            // 7. 예매 생성
+            // 7. 선점된 좌석들에 대해 예매 생성
             Reservation reservation = createReservation(preemptedSeats, member, finalAmount);
 
-            // 7. 좌석들을 예매 완료 상태로 변경
-            updateSeatsToReserved(preemptedSeats, reservation, member);
+            // 8. 좌석들을 예매 완료 상태로 변경
+            updateSeatsToReserved(preemptedSeats, member);
 
-            reservationRepository.save(reservation);
+            Reservation savedReservation = reservationRepository.save(reservation);
 
-            // 8. 응답 생성
-            List<ReservedSeatDto> reservedSeats = preemptedSeats.stream()
+            // 9. 응답 생성
+            List<ReservedSeatDto> reservedSeats = savedReservation.getSeats().stream()
                     .map(this::convertToReservedSeatInfo)
                     .collect(Collectors.toList());
 
-            Integer remainingPoints = pointService.getCurrentPoint().credit();
+            Integer remainingPoints = member.getPointBalance();
 
             // 9. 이벤트 생성(예매 성공 알림을 보내기 위함)
             publishReservationSuccessEvent(reservation.getId());
 
-            return ReservationCompletionResponseDto.success(reservation, reservedSeats, remainingPoints);
+            return ReservationCompletionResponseDto.success(savedReservation, reservedSeats,
+                    remainingPoints);
 
         } catch (BusinessException e) {
             log.error("Reservation completion failed", e);
             return ReservationCompletionResponseDto.failure(e.getMessage());
         }
+    }
+
+    private void validatePointSufficiency(int finalAmount, Member member) {
+        int currentPoints = member.getPointBalance();
+        if (currentPoints < finalAmount) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+    }
+
+    private void deductPoint(Member member, int finalAmount) {
+        Point point = member.deductPoint(finalAmount, PointTarget.RESERVATION);
+        pointRepository.save(point);
+    }
+
+    private int calculateFinalAmount(ReservationCompletionRequestDto request, Long userId) {
+
+        // 요청에서 넘어온 쿠폰 조회
+        Long couponId = request.getCouponId();
+
+        // 쿠폰이 없는 경우 원래 금액을 그대로 반환
+        if (couponId == null) {
+            return request.getTotalAmount();
+        }
+        // 쿠폰이 존재 할 경우, 할인 금액을 계산한다.
+        CouponReceived couponReceived = couponService.findValidCoupon(couponId, userId);
+        int discountAmount = couponReceived.calculateDiscountAmount(request.getTotalAmount());
+
+        // 최종 결제 금액을 반환한다.
+        return request.getTotalAmount() - discountAmount;
     }
 
     // 예매 성공 이벤트 발행 메서드
@@ -134,75 +155,26 @@ public class ReservationService {
         log.info("[{} 이벤트 발행]", NotificationKind.RESERVATION_SUCCESS);
     }
 
-    private List<Seat> validatePreemptedSeats(String preemptionToken, Long userId) {
-        List<Seat> seats = seatRepository.findByPreemptionTokenWithLock(preemptionToken);
-
-        if (seats.isEmpty()) {
-            throw new BusinessException(ErrorCode.PREEMPTION_TOKEN_INVALID);
-        }
-
-        Instant now = Instant.now();
-
-        for (Seat seat : seats) {
-            if (!userId.equals(seat.getMember().getId())) {
-                throw new BusinessException(ErrorCode.PREEMPTION_PERMISSION_DENIED);
-            }
-
-            if (seat.getPreemptedUntil() == null || seat.getPreemptedUntil().isBefore(now)) {
-                throw new BusinessException(ErrorCode.PREEMPTION_EXPIRED);
-            }
-
-            if (seat.getReservation() != null) {
-                throw new BusinessException(ErrorCode.RESERVATION_ALREADY_RESERVED);
-            }
-        }
-
-        return seats;
-    }
-
-//    private void validatePaymentAmount(List<Seat> seats, ReservationCompletionRequestDto request) {
-//        Integer calculatedTotal = seats.stream()
-//                .mapToInt(Seat::getSeatPrice)
-//                .sum();
-//
-//        if (!calculatedTotal.equals(request.getTotalAmount())) {
-//            throw new BusinessException(ErrorCode.RESERVATION_AMOUNT_MISMATCH);
-//        }
-//    }
-
-    private Reservation createReservation(
-            List<Seat> seats,
-            Member member,
-            Integer price) {
-
+    private Reservation createReservation(List<Seat> seats, Member member, Integer price) {
         Performance performance = seats.getFirst().getPerformance();
-
         Status paidStatus = statusProvider.provide(StatusIds.Reservation.PAID);
 
-        Reservation reservation = Reservation.create(
-                member,
-                performance,
-                paidStatus,
-                price
-        );
+        Reservation reservation = Reservation.create(member, performance, paidStatus, price);
 
-        return reservationRepository.save(reservation);
+        // 편의 메서드를 통한 양방향 연관관계 설정
+        for (Seat seat : seats) {
+            reservation.assignSeat(seat); // 이 메서드 내부에서 seat.assignReservation(this)도 호출됨
+        }
+
+        return reservation; // 아직 저장하지 않음 - 좌석 상태 업데이트 후 저장
     }
 
-    private void updateSeatsToReserved(List<Seat> seats, Reservation reservation, Member member) {
+    private void updateSeatsToReserved(List<Seat> seats, Member member) {
         Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
 
         for (Seat seat : seats) {
-            seat.assignReservation(reservation);
-            seat.assignTo(member);
-            seat.assignPreemptionToken(null);
-            seat.assignPreemptedAt(null);
-            seat.assignPreemptedUntil(null);
-            seat.setStatusTo(reservedStatus);
-            seat.assignSeatCode(generateSeatCode());
+            seat.completeReservation(member, reservedStatus, generateSeatCode());
         }
-
-        seatRepository.saveAll(seats);
     }
 
     private ReservedSeatDto convertToReservedSeatInfo(Seat seat) {

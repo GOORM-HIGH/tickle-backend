@@ -4,6 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.4'
     id 'org.hibernate.orm' version '6.6.22.Final'
     id 'org.graalvm.buildtools.native' version '0.10.6'
+    id 'jacoco'  // ✅ JaCoCo 플러그인 추가
 }
 
 group = 'com.profect'
@@ -107,4 +108,27 @@ hibernate {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// ✅ JaCoCo 설정 추가
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = false
+        csv.required = false
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.8  // 80% 이상 커버리지 요구
+            }
+        }
+    }
 }

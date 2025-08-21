@@ -4,6 +4,7 @@ import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.StatusIds;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.AccessLevel;
@@ -70,33 +71,80 @@ public class Seat {
     @Column(name = "preemption_token")
     private String preemptionToken;
 
-    public void assignTo(Member member) {
-        this.member = member;
-    }
-
     public void assignEvent(Event event) {this.event = event;}
 
-    public void assignReservation(Reservation reservation) {
+    void assignReservation(Reservation reservation) {
         this.reservation = reservation;
     }
 
-    public void assignPreemptionToken(String preemptionToken) {
+    // ==== 좌석 상태 관리 메서드들 ====
+
+    public void preempt(String preemptionToken, Instant preemptedAt, Instant preemptedUntil, Member member, Status preemptedStatus) {
         this.preemptionToken = preemptionToken;
-    }
-
-    public void assignPreemptedAt(Instant now) {
-        this.preemptedAt = now;
-    }
-
-    public void assignPreemptedUntil(Instant preemptedUntil) {
+        this.preemptedAt = preemptedAt;
         this.preemptedUntil = preemptedUntil;
+        this.member = member;
+        this.status = preemptedStatus;
+    }
+
+    public void releasePreemption() {
+        this.preemptionToken = null;
+        this.preemptedAt = null;
+        this.preemptedUntil = null;
+        this.member = null;
+    }
+
+    public void completeReservation(Member member, Status reservedStatus, String seatCode) {
+        this.member = member;
+        this.status = reservedStatus;
+        this.seatCode = seatCode;
+        this.preemptionToken = null;
+        this.preemptedAt = null;
+        this.preemptedUntil = null;
+    }
+
+    /**
+     * 예매 취소 시 좌석 상태 초기화
+     * Reservation.cancel()에서 호출되는 내부 메서드
+     */
+    public void resetForCancellation(Status availableStatus) {
+        this.status = availableStatus;
+        this.member = null;
+        this.seatCode = null;
+        // reservation은 Reservation에서 처리하므로 건드리지 않음
     }
 
     public void setStatusTo(Status status){
         this.status = status;
     }
 
-    public void assignSeatCode(String seatCode) {
-        this.seatCode = seatCode;
+    public boolean belongsToPerformance(Long performanceId) {
+        return performance != null && performance.getId().equals(performanceId);
+    }
+
+    public boolean isOwnedBy(Long userId) {
+        return member != null && member.getId().equals(userId);
+    }
+
+    public boolean isAlreadyReserved() {
+        return reservation != null;
+    }
+
+    public boolean isAvailableStatus() {
+        return status != null && StatusIds.Seat.AVAILABLE.equals(status.getId());
+    }
+
+    public boolean isPreempted() {
+        return preemptionToken != null && !isPreemptionExpired();
+    }
+
+    public boolean isPreemptionExpired() {
+        return preemptionToken == null || preemptedUntil.isBefore(Instant.now());
+    }
+
+    public boolean isAvailableForPreemption() {
+        return !isAlreadyReserved()
+                && isPreemptionExpired()
+                && isAvailableStatus();
     }
 }

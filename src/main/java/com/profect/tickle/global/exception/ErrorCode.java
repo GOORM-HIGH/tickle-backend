@@ -25,6 +25,7 @@ public enum ErrorCode {
     INVALID_COUPON_VALUE(HttpStatus.BAD_REQUEST, "쿠폰 수량과 할인율은 0 이상이어야 합니다."),
     INVALID_DATE(HttpStatus.BAD_REQUEST, "이미 지난 날짜로 쿠폰을 설정할 수 없습니다."),
     DUPLICATE_COUPON_NAME(HttpStatus.CONFLICT, "이미 존재하는 쿠폰 이름입니다."),
+    INVALID_COUPON_AMOUNT(HttpStatus.BAD_REQUEST, "쿠폰을 적용할 수 없는 금액입니다."),
 
     //POINT
     INSUFFICIENT_POINT(HttpStatus.NOT_FOUND, "보유 포인트가 부족합니다."),
