@@ -85,51 +85,6 @@ public class NotificationService {
     }
 
     /**
-     * 알림 전송
-     */
-    public void sendSseNotification(String id, String message) {
-        SseEmitter emitter = sseRepository.get(id);
-        if (emitter == null) {
-            log.warn("❗ SSE Emitter not found for ID: {}", id);
-            return;
-        }
-
-        String eventId = String.valueOf(System.currentTimeMillis());
-
-        try {
-            log.info("📤 SSE 알림 전송 시작 - ID: {}, EventID: {}, Message: {}", id, eventId, message);
-
-            emitter.send(SseEmitter.event()
-                    .name("notification")
-                    .data(message, MediaType.APPLICATION_JSON)
-                    .id(eventId));
-
-            sseRepository.saveEvent(eventId, message);
-
-            log.info("✅ SSE 알림 전송 완료 - ID: {}, EventID: {}", id, eventId);
-
-        } catch (IOException e) {
-            log.error("❌ SSE 전송 실패 - ID: {}, 오류: {}", id, e.getMessage());
-            sseRepository.deleteById(id);
-        }
-    }
-
-
-    /**
-     * 유실 이벤트 재전송
-     */
-    private void resendMissedSseEvents(SseEmitter emitter, String lastEventId) {
-        sseRepository.getEventCache().forEach((eventId, event) -> {
-            if (Long.parseLong(eventId) > Long.parseLong(lastEventId)) {
-                try {
-                    emitter.send(SseEmitter.event().name("notification").data(event).id(eventId));
-                } catch (IOException ignored) {
-                }
-            }
-        });
-    }
-
-    /**
      * 쿠폰 만료 임박 알림
      */
     @Transactional
