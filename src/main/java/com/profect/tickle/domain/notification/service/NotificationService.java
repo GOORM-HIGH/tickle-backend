@@ -67,24 +67,6 @@ public class NotificationService {
     }
 
     /**
-     * 쿠폰 만료 임박 알림
-     */
-//    @Transactional
-//    public void sendCouponAlmostExpiredNotification(
-//            String memberEmail, // 알림는 유저 이메일
-//            String couponName, // 쿠폰 이름
-//            Instant expiryDate // 만료 일자
-//    ) {
-//        NotificationTemplate template = getTemplate(NotificationTemplateId.COUPON_ALMOST_EXPIRED);
-//        Instant now = Instant.now();
-//
-//        String title = String.format(template.getTitle(), couponName);
-//        String message = String.format(template.getContent(), couponName, expiryDate.toString());
-//
-//        sendSseAndSaveNotification(memberEmail, template, title, message, now);
-//    }
-
-    /**
      * 예매 성공 알림
      */
 //    public void sendReservationSuccessNotification(ReservationSuccessEvent event) {
