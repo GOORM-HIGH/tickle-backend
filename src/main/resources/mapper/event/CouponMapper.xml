@@ -15,18 +15,17 @@
         </constructor>
     </resultMap>
 
-
     <!-- 만료일이 targetDate 이전인 쿠폰 조회 -->
-    <select id="findCouponsExpiringBefore" parameterType="java.time.Instant" resultType="ExpiringSoonCouponResponseDto">
-        SELECT
-            member.member_email AS memberEmail,
-            coupon.coupon_name AS couponName,
-            coupon.coupon_valid AS expiryDate
+    <select id="findCouponListExpiringBefore" parameterType="java.time.Instant" resultType="ExpiringSoonCouponResponseDto">
+        SELECT member.member_id    AS memberId,
+               member.member_email AS memberEmail,
+               coupon.coupon_name  AS couponName,
+               coupon.coupon_valid AS expiryDate
         FROM coupon AS coupon
-        JOIN coupon_received AS received
-            ON coupon.coupon_id = received.coupon_id
-        JOIN member AS member
-            ON received.member_id = member.member_id
+                 JOIN coupon_received AS received
+                      ON coupon.coupon_id = received.coupon_id
+                 JOIN member AS member
+                      ON received.member_id = member.member_id
         WHERE coupon.coupon_valid &lt;= #{targetDate}
     </select>
 

@@ -6,8 +6,8 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class NotificationUtil {
 
     public static String toJson(ObjectMapper mapper, Object obj) {

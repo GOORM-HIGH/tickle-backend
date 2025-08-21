@@ -13,7 +13,7 @@ import com.profect.tickle.domain.member.repository.EmailAuthenticationCodeReposi
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
-import com.profect.tickle.domain.notification.entity.NotificationTemplateId;
+import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.event.member.event.EmailAuthenticationCodePublishEvent;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.domain.notification.service.mail.MailSender;
@@ -158,7 +158,7 @@ public class MemberService implements UserDetailsService {
 
         // 4. 메일 발송
         log.info("인증코드 이메일 발송 준비");
-        NotificationTemplate template = notificationTemplateService.getNotificationTemplateById(NotificationTemplateId.AUTH_CODE_SENT.getId());
+        NotificationTemplate template = notificationTemplateService.getNotificationTemplateById(NotificationKind.AUTH_CODE_SENT.getId());
         String title = template.getTitle();
         String content = String.format(template.getContent(), newAuthenticationCode);
 

@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.notification.service.realtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.profect.tickle.domain.notification.entity.NotificationEnvelope;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.notification.util.NotificationUtil;
@@ -52,7 +53,7 @@ public class SseSender implements RealtimeSender {
         try {
             long eventId = clock.millis();
             emitter.send(SseEmitter.event()
-                    .name("sse connect")
+                    .name("sse-connect")
                     .id(Long.toString(eventId))
                     .data("connected"));
         } catch (IOException e) {
@@ -69,7 +70,7 @@ public class SseSender implements RealtimeSender {
     }
 
     @Override
-    public void send(long memberId, Object payload) {
+    public void send(long memberId, NotificationEnvelope<?> payload) {
         Collection<SseEmitter> emitters = sseRepository.getAll(memberId);
         if (emitters.isEmpty()) {
             log.debug("ℹ️ no active SSE emitters for memberId={}", memberId);

@@ -26,7 +26,7 @@ public class ReservationEventListener {
                 event.reservation().getId()
         );
 
-        notificationService.sendReservationSuccessNotification(event);
+//        notificationService.sendReservationSuccessNotification(event);
     }
 
     // 공연 정보 수정 시 알림 전송
@@ -35,6 +35,6 @@ public class ReservationEventListener {
     public void handlePerformanceModified(PerformanceModifiedEvent event) {
         log.info("공연 내용 수정 이벤트 감지: {}", event.performance().getTitle());
 
-        notificationService.sendPerformanceModifiedNotification(event);
+//        notificationService.sendPerformanceModifiedNotification(event);
     }
 }

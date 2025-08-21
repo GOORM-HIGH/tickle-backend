@@ -5,7 +5,9 @@ import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.entity.EventType;
 import com.profect.tickle.global.paging.PagingResponse;
+import org.apache.commons.math3.analysis.function.Exp;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface EventService {
@@ -27,5 +29,5 @@ public interface EventService {
 
     PagingResponse<CouponResponseDto> getMyCoupons(int page, int size);
 
-    List<ExpiringSoonCouponResponseDto> getCouponsExpiringWithinOneDay();
+    List<ExpiringSoonCouponResponseDto> getCouponListExpiringUntil(LocalDate untilDate);
 }

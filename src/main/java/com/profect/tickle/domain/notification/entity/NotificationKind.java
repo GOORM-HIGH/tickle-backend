@@ -3,7 +3,7 @@ package com.profect.tickle.domain.notification.entity;
 import lombok.Getter;
 
 @Getter
-public enum NotificationTemplateId {
+public enum NotificationKind {
     RESERVATION_SUCCESS(1L),
     PERFORMANCE_MODIFIED(2L),
     COUPON_ALMOST_EXPIRED(3L),
@@ -11,7 +11,7 @@ public enum NotificationTemplateId {
 
     private final Long id;
 
-    NotificationTemplateId(Long id) {
+    NotificationKind(Long id) {
         this.id = id;
     }
 
