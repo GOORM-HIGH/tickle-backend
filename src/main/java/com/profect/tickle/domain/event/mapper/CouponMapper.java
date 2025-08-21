@@ -10,6 +10,6 @@ import java.util.List;
 
 @Mapper
 public interface CouponMapper {
-    List<ExpiringSoonCouponResponseDto> findCouponsExpiringBefore(@Param("targetDate") Instant targetDate);
+    List<ExpiringSoonCouponResponseDto> findCouponListExpiringBefore(@Param("targetDate") Instant targetDate);
     CouponListResponseDto findCouponById(@Param("couponId") Long couponId);
 }

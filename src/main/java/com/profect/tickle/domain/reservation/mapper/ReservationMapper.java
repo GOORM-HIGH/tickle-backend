@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.reservation.mapper;
 
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationServiceDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -11,9 +11,12 @@ import java.util.Optional;
 @Mapper
 public interface ReservationMapper {
 
-    List<ReservedSeatDto> findReservedSeatById(Long reservationId);
+    List<ReservedSeatDto> findReservedSeatListByReservationId(
+            @Param("reservationId") Long reservationId);
 
-    Optional<ReservationDto> findById(@Param("reservationId") long reservationId);
+    Optional<ReservationServiceDto> findById(
+            @Param("reservationId") Long reservationId);
 
-    List<ReservationDto> findByPerformanceId(@Param("performanceId") Long performanceId);
+    List<ReservationServiceDto> findByPerformanceId(
+            @Param("performanceId") Long performanceId);
 }
