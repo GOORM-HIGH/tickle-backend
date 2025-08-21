@@ -179,8 +179,6 @@ public class ReservationService {
         for (Seat seat : seats) {
             seat.completeReservation(member, reservedStatus, generateSeatCode());
         }
-
-        seatRepository.saveAll(seats);
     }
 
     private ReservedSeatDto convertToReservedSeatInfo(Seat seat) {
