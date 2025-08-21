@@ -4,6 +4,7 @@ import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.StatusIds;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.AccessLevel;
@@ -115,5 +116,35 @@ public class Seat {
 
     public void setStatusTo(Status status){
         this.status = status;
+    }
+
+    public boolean belongsToPerformance(Long performanceId) {
+        return performance != null && performance.getId().equals(performanceId);
+    }
+
+    public boolean isOwnedBy(Long userId) {
+        return member != null && member.getId().equals(userId);
+    }
+
+    public boolean isAlreadyReserved() {
+        return reservation != null;
+    }
+
+    public boolean isAvailableStatus() {
+        return status != null && StatusIds.Seat.AVAILABLE.equals(status.getId());
+    }
+
+    public boolean isPreempted() {
+        return preemptionToken != null && !isPreemptionExpired();
+    }
+
+    public boolean isPreemptionExpired() {
+        return preemptionToken == null || preemptedUntil.isBefore(Instant.now());
+    }
+
+    public boolean isAvailableForPreemption() {
+        return !isAlreadyReserved()
+                && isPreemptionExpired()
+                && isAvailableStatus();
     }
 }

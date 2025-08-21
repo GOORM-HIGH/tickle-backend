@@ -34,19 +34,15 @@ public class SeatPreemptionService {
     private final SeatRepository seatRepository;
     private final MemberRepository memberRepository;
     private final StatusProvider statusProvider;
-    private final SeatPreemptionValidator seatPreemptionValidator;
 
     private static final int PREEMPTION_DURATION_MINUTES = 5; // 5분간 선점
 
     public SeatPreemptionResponseDto preemptSeats(SeatPreemptionRequestDto request, Long userId) {
-        // 1. 기본 검증
-        seatPreemptionValidator.validateRequest(request, userId);
-
-        // 2. 좌석 조회 및 선점 가능 여부 확인
+        // 1. 좌석 조회 및 선점 가능 여부 확인
         List<Seat> seats = seatRepository.findAllByIdWithLock(request.getSeatIds());
-        List<Seat> availableSeats = seatPreemptionValidator.filterAvailableSeats(seats, request.getPerformanceId());
+        List<Seat> availableSeats = filterAvailableSeats(seats, request.getPerformanceId());
 
-        // 3. 전체 선점 가능 여부 확인
+        // 2. 전체 선점 가능 여부 확인
         if (availableSeats.size() != request.getSeatIds().size()) {
             List<Long> unavailableSeatIds = seats.stream()
                     .filter(seat -> !availableSeats.contains(seat))
@@ -58,16 +54,15 @@ public class SeatPreemptionService {
                     unavailableSeatIds);
         }
 
-        // 4. 전체 좌석 선점
+        // 3. 전체 좌석 선점
         PreemptionContext context = createPreemptionContext(userId);
         preemptSeats(availableSeats, context);
 
-        // 5. 성공 응답 생성
+        // 4. 성공 응답 생성
         List<PreemptedSeatInfo> preemptedSeats = availableSeats.stream()
                 .map(this::convertToPreemptedSeatInfo)
                 .collect(Collectors.toList());
 
-        // 선점 하고 저장한 좌석들로 응답 뿌려줘야 되지 않을까?
         log.info("🪑좌석 배치 선점 완료! 선점된 좌석 수: {}, 토큰: {}",
                 availableSeats.size(), context.getPreemptionToken());
 
@@ -108,6 +103,15 @@ public class SeatPreemptionService {
         }
 
         seatRepository.saveAll(availableSeats);
+    }
+
+    private List<Seat> filterAvailableSeats(List<Seat> seats, Long performanceId) {
+        Instant now = Instant.now();
+
+        return seats.stream()
+                .filter(seat -> seat.belongsToPerformance(performanceId))
+                .filter(Seat::isAvailableForPreemption)
+                .collect(Collectors.toList());
     }
 
     private String generatePreemptionToken() {
