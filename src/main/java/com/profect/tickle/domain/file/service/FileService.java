@@ -51,7 +51,7 @@ public class FileService {
         // 3. NAS에 파일 저장
         String storedFileName = generateStoredFileName(file.getOriginalFilename());
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-        String nasFilePath = "chat/" + datePath + "/" + storedFileName;
+        String nasFilePath = datePath + "/" + storedFileName;  // chat/ 제거
 
         try {
             // NAS WebDAV에 파일 업로드

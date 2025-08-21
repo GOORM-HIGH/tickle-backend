@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.file.controller;
 
+import com.profect.tickle.domain.chat.annotation.CurrentMember;
 import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
 import com.profect.tickle.domain.file.dto.response.FileUploadResponseDto;
 import com.profect.tickle.domain.file.service.FileService;
@@ -43,7 +44,7 @@ public class FileController {
             @Parameter(description = "업로드할 파일", required = true)
             @RequestParam("file") MultipartFile file,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long uploaderId) {
+            @CurrentMember Long uploaderId) {
 
         log.info("파일 업로드 API 호출: fileName={}, size={}, uploaderId={}",
                 file.getOriginalFilename(), file.getSize(), uploaderId);
