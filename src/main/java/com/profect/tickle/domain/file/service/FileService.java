@@ -54,8 +54,8 @@ public class FileService {
         String nasFilePath = datePath + "/" + storedFileName;  // chat/ 제거
 
         try {
-            // NAS WebDAV에 파일 업로드
-            webDavService.uploadFile(nasFilePath, file.getInputStream());
+            // NAS WebDAV에 파일 업로드 (기존 채팅용)
+            webDavService.uploadFile(nasFilePath, file.getInputStream()); // Calls WebDavService.uploadFile(String, InputStream)
 
             // 4. 응답 DTO 생성 (DB 저장은 메시지 전송시에)
             log.info("파일 업로드 완료: storedName={}, nasPath={}", storedFileName, nasFilePath);
@@ -70,6 +70,44 @@ public class FileService {
 
         } catch (IOException e) {
             log.error("NAS 파일 저장 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("파일 저장에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    // 사용자별 파일 업로드 (프로필 사진, 공연 이미지 등)
+    public FileUploadResponseDto uploadUserFile(MultipartFile file, Long uploaderId, String fileType) {
+        log.info("사용자별 파일 업로드 요청: fileName={}, size={}, uploaderId={}, fileType={}",
+                file.getOriginalFilename(), file.getSize(), uploaderId, fileType);
+
+        // 1. 업로드 사용자 확인
+        memberRepository.findById(uploaderId)
+                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(uploaderId));
+
+        // 2. 파일 검증
+        validateFile(file);
+
+        // 3. 사용자별 파일명 생성 (파일 타입 포함)
+        String storedFileName = generateStoredFileName(file.getOriginalFilename());
+        String userFileName = fileType + "_" + storedFileName;
+
+        try {
+            // NAS WebDAV에 사용자별 파일 업로드
+            webDavService.uploadFile(userFileName, file.getInputStream(), uploaderId);
+
+            // 4. 응답 DTO 생성
+            log.info("사용자별 파일 업로드 완료: storedName={}, userId={}, fileType={}", 
+                    userFileName, uploaderId, fileType);
+
+            return FileUploadResponseDto.of(
+                    userFileName,
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    (int) file.getSize(),
+                    "users/" + uploaderId + "/" + userFileName  // 사용자별 경로
+            );
+
+        } catch (IOException e) {
+            log.error("사용자별 NAS 파일 저장 중 오류 발생: {}", e.getMessage(), e);
             throw new RuntimeException("파일 저장에 실패했습니다: " + e.getMessage());
         }
     }
@@ -90,6 +128,38 @@ public class FileService {
         } catch (IOException e) {
             log.error("NAS 파일 다운로드 중 오류 발생: {}", e.getMessage(), e);
             throw new RuntimeException("파일 다운로드에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * PreSigned URL 생성 (사용자별 분류)
+     */
+    public String generatePreSignedUrl(String fileName, Long userId) {
+        log.info("PreSigned URL 생성 요청: fileName={}, userId={}", fileName, userId);
+        
+        try {
+            String downloadUrl = webDavService.generatePreSignedUrl(fileName, userId);
+            log.info("PreSigned URL 생성 완료: fileName={}, userId={}, url={}", fileName, userId, downloadUrl);
+            return downloadUrl;
+        } catch (Exception e) {
+            log.error("PreSigned URL 생성 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("PreSigned URL 생성에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * PreSigned URL 생성 (기본)
+     */
+    public String generatePreSignedUrl(String fileName) {
+        log.info("PreSigned URL 생성 요청: fileName={}", fileName);
+        
+        try {
+            String downloadUrl = webDavService.generatePreSignedUrl(fileName);
+            log.info("PreSigned URL 생성 완료: fileName={}, url={}", fileName, downloadUrl);
+            return downloadUrl;
+        } catch (Exception e) {
+            log.error("PreSigned URL 생성 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("PreSigned URL 생성에 실패했습니다: " + e.getMessage());
         }
     }
 
