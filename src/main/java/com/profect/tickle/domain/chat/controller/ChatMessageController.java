@@ -3,11 +3,9 @@ package com.profect.tickle.domain.chat.controller;
 import com.profect.tickle.domain.chat.annotation.CurrentMember; // ✅ import 추가
 import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
 import com.profect.tickle.domain.chat.service.ChatMessageService;
-import com.profect.tickle.domain.file.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,9 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
-    private final FileService fileService;
 
     /**
      * 메시지 전송
@@ -233,39 +227,5 @@ public class ChatMessageController {
                 chatRoomId, currentMemberId, unreadCount);
 
         return ResponseEntity.ok(ApiResponseDto.success(unreadCount));
-    }
-
-    /**
-     * 메시지의 첨부 파일 다운로드
-     */
-    @Operation(
-            summary = "메시지 첨부 파일 다운로드",
-            description = "메시지에 첨부된 파일을 다운로드합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @GetMapping("/{messageId}/download")
-    public ResponseEntity<Resource> downloadMessageFile(
-            @PathVariable Long chatRoomId,
-            @PathVariable Long messageId,
-            @CurrentMember Long currentMemberId) { // ✅ 변경
-
-        log.info("메시지 파일 다운로드 API 호출: messageId={}, memberId={}", messageId, currentMemberId);
-
-        // 1. ChatMessageService를 통해 파일 정보 조회 및 권한 검증
-        ChatMessageFileDownloadDto fileInfo = chatMessageService.getMessageFileForDownload(
-                chatRoomId, messageId, currentMemberId);
-
-        // 2. FileService를 통해 실제 파일 리소스 조회
-        Resource resource = fileService.downloadFile(fileInfo.getFilePath(), fileInfo.getFileName());
-
-        // 3. 응답 헤더 설정
-        String encodedFileName = URLEncoder.encode(fileInfo.getFileName(), StandardCharsets.UTF_8)
-                .replaceAll("\\+", "%20");
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(fileInfo.getFileType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName)
-                .body(resource);
     }
 }
