@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.notification.event.coupon.listener;
 
-import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
+import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
 import com.profect.tickle.domain.notification.event.coupon.event.CouponAlmostExpiredEvent;
