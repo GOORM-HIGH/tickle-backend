@@ -1,19 +1,20 @@
 package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.event.service.CouponService;
+import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
-import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
+import com.profect.tickle.domain.performance.dto.response.PerformanceServiceDto;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
-import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.request.ReservationCompletionRequestDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationCompletionResponseDto;
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationServiceDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -26,17 +27,17 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
