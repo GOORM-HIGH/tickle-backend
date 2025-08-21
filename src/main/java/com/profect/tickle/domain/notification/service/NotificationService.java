@@ -85,46 +85,6 @@ public class NotificationService {
     }
 
     /**
-     * SSE 연결
-     */
-    public SseEmitter sseConnect(String lastEventId) {
-        String emitterId = SecurityUtil.getSignInMemberEmail();
-        log.info("📡 SSE 연결 요청 - emitterId: {}", emitterId);
-
-        if (emitterId == null || emitterId.isBlank()) {
-            log.warn("❌ emitterId가 null이거나 공백입니다. 인증된 사용자 정보가 없습니다.");
-        }
-
-        SseEmitter emitter = new SseEmitter(notificationProperty.sseTimeout().toMillis());
-        sseRepository.save(emitterId, emitter);
-        log.info("✅ SSE emitter 저장 완료 - ID: {}", emitterId);
-
-        emitter.onCompletion(() -> {
-            log.info("🧹 SSE 연결 종료 (onCompletion) - ID: {}", emitterId);
-            sseRepository.deleteById(emitterId);
-        });
-
-        emitter.onTimeout(() -> {
-            log.warn("⏱️ SSE 타임아웃 발생 - ID: {}", emitterId);
-            sseRepository.deleteById(emitterId);
-        });
-
-        try {
-            emitter.send(SseEmitter.event().name("sse connect").data("connected"));
-            log.info("✅ SSE 초기 메시지 전송 완료 - ID: {}", emitterId);
-        } catch (IOException e) {
-            log.error("❌ SSE 초기 메시지 전송 실패 - ID: {}, 오류: {}", emitterId, e.getMessage());
-            sseRepository.deleteById(emitterId);
-        }
-
-        if (!lastEventId.isEmpty()) {
-            resendMissedSseEvents(emitter, lastEventId);
-        }
-
-        return emitter;
-    }
-
-    /**
      * 알림 전송
      */
     public void sendSseNotification(String id, String message) {

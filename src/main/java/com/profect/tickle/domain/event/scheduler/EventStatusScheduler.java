@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.notification.scheduler;
+package com.profect.tickle.domain.event.scheduler;
 
 import com.profect.tickle.domain.event.mapper.EventMapper;
 import jakarta.transaction.Transactional;
