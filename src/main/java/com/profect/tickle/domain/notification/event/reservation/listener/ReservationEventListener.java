@@ -1,3 +1,5 @@
+package com.profect.tickle.domain.notification.event.reservation.listener;
+
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import com.profect.tickle.domain.notification.entity.NotificationKind;
