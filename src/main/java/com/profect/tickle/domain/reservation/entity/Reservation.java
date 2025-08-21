@@ -53,8 +53,7 @@ public class Reservation {
     @Column(name = "reservation_updated_at")
     private Instant updatedAt;
 
-    // 예매가 삭제 되면 좌석도 삭제 되는가? 지금의 설정에 대해 공부해보자.
-    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "reservation", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Seat> seats = new ArrayList<>();
 
     public static Reservation create(Member member, Performance performance, Status status, Integer price) {

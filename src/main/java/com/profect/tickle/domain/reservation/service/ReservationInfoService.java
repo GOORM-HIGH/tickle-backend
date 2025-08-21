@@ -38,7 +38,7 @@ public class ReservationInfoService {
         }
 
         // 2. 총 결제 금액 계산
-        Integer totalAmount = seats.stream()
+        int totalAmount = seats.stream()
                 .mapToInt(Seat::getSeatPrice)
                 .sum();
 
