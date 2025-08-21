@@ -68,30 +68,39 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void send(long memberId, NotificationEnvelope<?> payload) {
-        Collection<SseEmitter> emitters = sseRepository.getAll(memberId);
-        if (emitters.isEmpty()) {
-            log.debug("ℹ️ no active SSE emitters for memberId={}", memberId);
+        // 0) 이벤트 ID/페이로드 준비
+        long eventId = clock.millis();
+        String json = NotificationUtil.toJson(objectMapper, payload);
+
+        // 1) 유저별 이벤트 캐시 저장 (오프라인이어도 복원 가능하도록)
+        sseRepository.saveEvent(memberId, eventId, json);
+
+        // 2) 활성 emitter 수신자 조회 (id 포함)
+        Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
+        if (targets.isEmpty()) {
+            log.debug("ℹ️ no active SSE emitters; cached event for later replay. memberId={}, eventId={}", memberId, eventId);
             return;
         }
 
-        long eventId = System.currentTimeMillis();
-        String json = NotificationUtil.toJson(objectMapper, payload);
-
-        for (SseEmitter e : emitters) {
+        // 3) 전송
+        for (Map.Entry<String, SseEmitter> entry : targets.entrySet()) {
+            String emitterId = entry.getKey();
+            SseEmitter e = entry.getValue();
             try {
                 e.send(SseEmitter.event()
                         .name("notification")
-                        .id(String.valueOf(eventId))
+                        .id(Long.toString(eventId))
                         .data(json, MediaType.APPLICATION_JSON));
             } catch (IOException ex) {
-                // 개별 emitter가 끊겼다면 해당 emitter만 정리
-                log.warn("⚠️ send failed to one emitter (memberId={}) - {}", memberId, ex.toString());
-                // emitterId를 갖고 있지 않으니, Repository에 "끊긴 emitter를 제거" API가 있다면 호출하세요.
-                // (예: sseRepository.removeByEmitterInstance(memberId, e))
+                // 끊긴 연결: 레지스트리 정리 + 종료 시그널 시도
+                log.warn("⚠️ send failed - memberId={}, emitterId={}, err={}", memberId, emitterId, ex.toString());
+                try {
+                    e.completeWithError(ex);
+                } catch (Exception ignore) {
+                }
+                sseRepository.remove(memberId, emitterId);
             }
         }
-        // 유저별 이벤트 캐시에 저장 (유실 복원용)
-        sseRepository.saveEvent(memberId, eventId, json);
     }
 
     @Override

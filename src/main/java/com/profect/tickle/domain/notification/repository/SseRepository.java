@@ -3,10 +3,7 @@ package com.profect.tickle.domain.notification.repository;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.NavigableMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -125,5 +122,15 @@ public class SseRepository {
         if (clearEventCache) {
             eventsByMember.remove(memberId);
         }
+    }
+
+    public Map<String, SseEmitter> getAllWithIds(long memberId) {
+        var ids = emitterIdsByMember.getOrDefault(memberId, new CopyOnWriteArraySet<>());
+        Map<String, SseEmitter> map = new HashMap<>(ids.size());
+        for (String id : ids) {
+            SseEmitter e = emittersById.get(id);
+            if (e != null) map.put(id, e);
+        }
+        return map;
     }
 }
