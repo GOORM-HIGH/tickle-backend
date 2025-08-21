@@ -15,7 +15,7 @@ public class ReservationValidator {
 
         Instant now = Instant.now();
         for (Seat seat : seats) {
-            validatePreemptionPermission(userId, seat);
+            validateSeatOwnership(userId, seat);
             validatePreemptionNotExpired(seat, now);
             validateSeatNotAlreadyReserved(seat);
         }
@@ -33,26 +33,22 @@ public class ReservationValidator {
         }
     }
 
-    private void validatePreemptionPermission(Long userId, Seat seat) {
-        if (isNotSeatOwner(userId, seat)) {
+    private void validateSeatOwnership(Long userId, Seat seat) {
+        if (!seat.isOwnedBy(userId)) {
             throw new BusinessException(ErrorCode.PREEMPTION_PERMISSION_DENIED);
         }
     }
 
-    private boolean isNotSeatOwner(Long userId, Seat seat) {
-        return !userId.equals(seat.getMember().getId());
-    }
-
     private void validatePreemptionNotExpired(Seat seat, Instant now) {
-        // 선점 만료 시간이 없거나, 지난 경우
-        if (seat.getPreemptedUntil() == null || seat.getPreemptedUntil().isBefore(now)) {
+        // 선점이 만료 경우
+        if (seat.isPreemptionExpired()) {
             throw new BusinessException(ErrorCode.PREEMPTION_EXPIRED);
         }
     }
 
     private void validateSeatNotAlreadyReserved(Seat seat) {
-        // 좌석에 대한 예매가 이미 할당 된 경우
-        if (seat.getReservation() != null) {
+        // 좌석이 이미 예매된 경우
+        if (seat.isAlreadyReserved()) {
             throw new BusinessException(ErrorCode.RESERVATION_ALREADY_RESERVED);
         }
     }
