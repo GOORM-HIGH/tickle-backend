@@ -13,7 +13,7 @@ public class AsyncConfig {
 
     @Bean(name = "mailExecutor")
     public Executor mailExecutor() {
-        var ex = new org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor();
+        var ex = new ThreadPoolTaskExecutor();
         ex.setCorePoolSize(2);           // 최소 스레드
         ex.setMaxPoolSize(10);           // 최대 스레드
         ex.setQueueCapacity(200);        // 대기열 크기
@@ -27,7 +27,6 @@ public class AsyncConfig {
         return ex;
     }
 
-    // config
     @Bean(name = "sseExecutor")
     public Executor sseExecutor() {
         var ex = new ThreadPoolTaskExecutor();
