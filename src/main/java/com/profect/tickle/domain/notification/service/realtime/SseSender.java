@@ -5,7 +5,6 @@ import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.notification.util.NotificationUtil;
-import com.profect.tickle.domain.notification.util.RealtimeEventUtil;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 @Component
@@ -29,24 +32,27 @@ public class SseSender implements RealtimeSender {
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final Supplier<UUID> uuidSupplier;
+    private final Executor sseExecutor;
 
-    // repositories
+    // repositories / properties
     private final NotificationProperty notificationProperty;
     private final SseRepository sseRepository;
 
     @Override
     public SseEmitter connect(@NotNull Long memberId, @Nullable String lastEventId) {
+        // 연결마다 고유 emitterId 생성
         Instant connectedAt = clock.instant();
         UUID uuid = uuidSupplier.get();
+        String emitterId = memberId + "_" + connectedAt.toEpochMilli() + "_" + uuid;
 
-        String emitterId = memberId + "_" + connectedAt.toEpochMilli() + "_" + uuid; // 연결마다 사용할 고유 ID
         log.info("📡 SSE connect - memberId={}, emitterId={}", memberId, emitterId);
 
+        // 타임아웃 설정
         SseEmitter emitter = new SseEmitter(notificationProperty.sseTimeout().toMillis());
         sseRepository.save(memberId, emitterId, emitter);
-
         setEmitter(memberId, emitter, emitterId);
 
+        // 초기 핑(Last-Event-ID 체인 시작)
         try {
             long eventId = clock.millis();
             emitter.send(SseEmitter.event()
@@ -60,8 +66,9 @@ public class SseSender implements RealtimeSender {
             return emitter;
         }
 
+        // 유실 이벤트 복원은 전용 풀로 비동기 처리
         if (lastEventId != null && !lastEventId.isBlank()) {
-            resend(memberId, emitter, lastEventId);
+            sseExecutor.execute(() -> resend(memberId, emitter, lastEventId));
         }
         return emitter;
     }
@@ -69,43 +76,47 @@ public class SseSender implements RealtimeSender {
     @Override
     public void send(long memberId, NotificationEnvelope<?> payload) {
         // 0) 이벤트 ID/페이로드 준비
-        long eventId = clock.millis();
+        long eventId = clock.millis(); // 단조 증가 가정(밀리초)
         String json = NotificationUtil.toJson(objectMapper, payload);
 
-        // 1) 유저별 이벤트 캐시 저장 (오프라인이어도 복원 가능하도록)
+        // 1) 유저별 이벤트 캐시 저장(오프라인일 때 재전송용)
         sseRepository.saveEvent(memberId, eventId, json);
+        // 필요 시 오래된 캐시 정리 (예시)
+        // sseRepository.clearEventsBefore(memberId, eventId - TimeUnit.MINUTES.toMillis(10));
 
-        // 2) 활성 emitter 수신자 조회 (id 포함)
+        // 2) 활성 emitter 조회
         Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
         if (targets.isEmpty()) {
-            log.debug("ℹ️ no active SSE emitters; cached event for later replay. memberId={}, eventId={}", memberId, eventId);
+            log.debug("ℹ️ no active SSE emitters; cached event for replay. memberId={}, eventId={}", memberId, eventId);
             return;
         }
 
-        // 3) 전송
-        for (Map.Entry<String, SseEmitter> entry : targets.entrySet()) {
-            String emitterId = entry.getKey();
-            SseEmitter e = entry.getValue();
-            try {
-                e.send(SseEmitter.event()
-                        .name("notification")
-                        .id(Long.toString(eventId))
-                        .data(json, MediaType.APPLICATION_JSON));
-            } catch (IOException ex) {
-                // 끊긴 연결: 레지스트리 정리 + 종료 시그널 시도
-                log.warn("⚠️ send failed - memberId={}, emitterId={}, err={}", memberId, emitterId, ex.toString());
+        // 3) 비동기 전송
+        sseExecutor.execute(() -> {
+            targets.forEach((emitterId, emitter) -> {
                 try {
-                    e.completeWithError(ex);
-                } catch (Exception ignore) {
+                    // emitter 단위 직렬화를 위한 최소 동기화(필요 시 SerialExecutor로 대체)
+                    synchronized (emitter) {
+                        emitter.send(SseEmitter.event()
+                                .name("notification")
+                                .id(Long.toString(eventId))
+                                .data(json, MediaType.APPLICATION_JSON));
+                    }
+                } catch (IOException ex) {
+                    log.warn("⚠️ send failed - memberId={}, emitterId={}, err={}", memberId, emitterId, ex.toString());
+                    try {
+                        emitter.completeWithError(ex);
+                    } catch (Exception ignore) {
+                    }
+                    sseRepository.remove(memberId, emitterId);
                 }
-                sseRepository.remove(memberId, emitterId);
-            }
-        }
+            });
+        });
     }
 
     @Override
     public void resend(long memberId, SseEmitter emitter, String lastEventId) {
-        long last;
+        final long last;
         try {
             last = Long.parseLong(lastEventId);
         } catch (NumberFormatException ex) {
@@ -113,18 +124,18 @@ public class SseSender implements RealtimeSender {
             return;
         }
 
+        // last 이후의 이벤트만 정렬된 상태로 가져오기
         NavigableMap<Long, String> later = sseRepository.eventsAfter(memberId, last);
         for (Map.Entry<Long, String> entry : later.entrySet()) {
             long eid = entry.getKey();
             String data = entry.getValue();
-            if (!RealtimeEventUtil.isAfterEventId(String.valueOf(eid), lastEventId)) continue;
             try {
                 emitter.send(SseEmitter.event()
                         .name("notification")
-                        .id(String.valueOf(eid))
+                        .id(Long.toString(eid))
                         .data(data, MediaType.APPLICATION_JSON));
             } catch (IOException ignored) {
-                // 재전송 중 끊기면 onError/onTimeout에서 정리됨
+                // 재전송 중 끊기면 콜백(onError/onTimeout)에서 정리됨
                 break;
             }
         }
@@ -132,30 +143,26 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void disconnectAll(long memberId) {
-        // 1) 스냅샷을 떠서 안전하게 순회
+        // 스냅샷을 떠서 안전하게 순회
         var emitters = List.copyOf(sseRepository.getAll(memberId));
         if (emitters.isEmpty()) {
             log.debug("disconnectAll: no emitters for memberId={}", memberId);
             return;
         }
 
-        // 2) 각각 종료 시도
         for (SseEmitter e : emitters) {
             try {
-                // 종료 알림 보내기 (실패하더라도 무시)
                 try {
                     e.send(SseEmitter.event().name("bye").data("closing"));
                 } catch (IOException ignored) {
                 }
-
-                e.complete();  // 정상 종료
+                e.complete();
             } catch (Exception ex) {
                 log.debug("disconnectAll: complete failed (memberId={}) - {}", memberId, ex.toString());
             }
         }
 
         sseRepository.removeAll(memberId);
-
         log.info("SSE disconnected all emitters - memberId={}, count={}", memberId, emitters.size());
     }
 
