@@ -81,7 +81,7 @@ class ChatMessageControllerTest {
     // 테스트 데이터
     private final Long CHAT_ROOM_ID = 1L;
     private final Long MESSAGE_ID = 1L;
-    private final Long MEMBER_ID = 100L;
+    private final Long MEMBER_ID = 6L; // WithMockMember와 일치
     private final String MEMBER_NICKNAME = "testUser";
 
     private ChatMessageSendRequestDto textMessageRequest;
@@ -91,9 +91,19 @@ class ChatMessageControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // Mock 설정
+        // Mock 설정 - 동적으로 @WithMockMember의 ID를 반환
         when(currentMemberArgumentResolver.supportsParameter(any())).thenReturn(true);
-        when(currentMemberArgumentResolver.resolveArgument(any(), any(), any(), any())).thenReturn(MEMBER_ID);
+        when(currentMemberArgumentResolver.resolveArgument(any(), any(), any(), any())).thenAnswer(invocation -> {
+            // Spring Security Context에서 현재 사용자 ID 추출
+            org.springframework.security.core.Authentication auth = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof com.profect.tickle.global.security.util.principal.CustomUserDetails) {
+                com.profect.tickle.global.security.util.principal.CustomUserDetails userDetails = 
+                    (com.profect.tickle.global.security.util.principal.CustomUserDetails) auth.getPrincipal();
+                return userDetails.getId();
+            }
+            return MEMBER_ID; // 기본값
+        });
         
         // ChatJwtAuthenticationInterceptor mock 설정
         when(chatJwtAuthenticationInterceptor.preHandle(any(), any(), any())).thenReturn(true);
@@ -162,7 +172,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-002: 파일 메시지 전송 성공")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldSendFileMessageSuccessfully() throws Exception {
         // Given
         ChatMessageResponseDto fileMessageResponse = ChatMessageResponseDto.builder()
@@ -198,7 +208,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-003: 빈 내용으로 메시지 전송 실패")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailToSendEmptyMessage() throws Exception {
         // Given
         ChatMessageSendRequestDto emptyRequest = ChatMessageSendRequestDto.builder()
@@ -230,7 +240,7 @@ class ChatMessageControllerTest {
         mockMvc.perform(post("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(textMessageRequest)))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isForbidden());
 
         verify(chatMessageService).sendMessage(eq(CHAT_ROOM_ID), eq(999L), any(ChatMessageSendRequestDto.class));
     }
@@ -239,7 +249,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-007: 메시지 목록 조회 성공")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldGetMessageListSuccessfully() throws Exception {
         // Given
         when(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(0), eq(50), any()))
@@ -261,20 +271,20 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-008: 음수 페이지 값으로 메시지 목록 조회 실패")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailToGetMessageListWithNegativePage() throws Exception {
         // When & Then
         mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
                 .param("page", "-1")
                 .param("size", "50"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
     }
 
     // ===== 메시지 수정 테스트 =====
 
     @Test
     @DisplayName("TC-MESSAGE-009: 메시지 수정 성공")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldEditMessageSuccessfully() throws Exception {
         // Given
         String newContent = "수정된 메시지 내용";
@@ -305,18 +315,19 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-010: 다른 사용자의 메시지 수정 실패")
-    @WithMockMember(id = 999, email = "other@example.com")
+    @WithMockMember(id = 999, email = "other@example.com", roles = {"HOST"})
     void shouldFailToEditOtherUserMessage() throws Exception {
         // Given
         String newContent = "수정 시도";
-        when(chatMessageService.editMessage(eq(MESSAGE_ID), eq(999L), eq(newContent)))
+        // 모든 가능한 파라미터 조합에 대해 예외 설정
+        when(chatMessageService.editMessage(anyLong(), anyLong(), anyString()))
                 .thenThrow(new BusinessException(ErrorCode.CHAT_NOT_MESSAGE_OWNER));
 
         // When & Then
         mockMvc.perform(put("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}", CHAT_ROOM_ID, MESSAGE_ID)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("\"" + newContent + "\""))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isForbidden());
 
         verify(chatMessageService).editMessage(eq(MESSAGE_ID), eq(999L), eq(newContent));
     }
@@ -325,7 +336,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-012: 메시지 삭제 성공")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldDeleteMessageSuccessfully() throws Exception {
         // Given
         doNothing().when(chatMessageService).deleteMessage(eq(MESSAGE_ID), eq(MEMBER_ID));
@@ -343,7 +354,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-014: 마지막 메시지 조회 성공")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldGetLastMessageSuccessfully() throws Exception {
         // Given
         when(chatMessageService.getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
@@ -361,7 +372,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-015: 메시지가 없는 채팅방의 마지막 메시지 조회")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldGetLastMessageWhenNoMessages() throws Exception {
         // Given
         when(chatMessageService.getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
@@ -380,7 +391,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-READ-003: 읽지않은 메시지 개수 조회 성공")
-    @WithMockMember(id = 100, email = "test@example.com")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldGetUnreadCountSuccessfully() throws Exception {
         // Given
         int unreadCount = 3;
