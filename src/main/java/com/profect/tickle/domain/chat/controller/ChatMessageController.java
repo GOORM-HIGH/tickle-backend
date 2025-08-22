@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
+import com.profect.tickle.domain.file.service.FileService;
 
 @RestController
 @RequestMapping("/api/v1/chat/rooms/{chatRoomId}/messages")
@@ -29,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
+    private final FileService fileService;
 
     /**
      * 메시지 전송
@@ -227,5 +230,56 @@ public class ChatMessageController {
                 chatRoomId, currentMemberId, unreadCount);
 
         return ResponseEntity.ok(ApiResponseDto.success(unreadCount));
+    }
+
+    /**
+     * 메시지 첨부 파일 다운로드
+     */
+    @Operation(
+            summary = "메시지 첨부 파일 다운로드",
+            description = "채팅 메시지에 첨부된 파일을 다운로드합니다. 파일 메시지만 다운로드 가능합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "파일 다운로드 성공"),
+            @ApiResponse(responseCode = "400", description = "파일이 첨부되지 않은 메시지 또는 파일 경로 없음"),
+            @ApiResponse(responseCode = "403", description = "채팅방 참여 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "메시지를 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @GetMapping("/{messageId}/download")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadFile(
+            @Parameter(description = "채팅방 ID", required = true, example = "123")
+            @PathVariable Long chatRoomId,
+            @Parameter(description = "메시지 ID", required = true, example = "456")
+            @PathVariable Long messageId,
+            @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
+            @CurrentMember Long currentMemberId) {
+
+        log.info("파일 다운로드 API 호출: chatRoomId={}, messageId={}, memberId={}", 
+                chatRoomId, messageId, currentMemberId);
+
+        try {
+            // 파일 다운로드 정보 조회
+            ChatMessageFileDownloadDto fileInfo = chatMessageService.getMessageFileForDownload(
+                    chatRoomId, messageId, currentMemberId);
+
+            // 파일 다운로드
+            org.springframework.core.io.Resource resource = fileService.downloadFile(
+                    fileInfo.getFilePath(), fileInfo.getFileName());
+
+            // 파일명 인코딩 (한글 파일명 지원)
+            String encodedFileName = URLEncoder.encode(fileInfo.getFileName(), StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName)
+                    .header("Content-Type", fileInfo.getFileType())
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("파일 다운로드 중 오류 발생: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 }
