@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 @Component
@@ -61,8 +62,7 @@ public class SseSender implements RealtimeSender {
                     .data("connected"));
         } catch (IOException e) {
             log.error("❌ initial send failed - {}, {}", emitterId, e.getMessage());
-            sseRepository.remove(memberId, emitterId);
-            emitter.completeWithError(e);
+            disconnectEmitterWithError(memberId, emitterId, e);
             return emitter;
         }
 
@@ -81,8 +81,8 @@ public class SseSender implements RealtimeSender {
 
         // 1) 유저별 이벤트 캐시 저장(오프라인일 때 재전송용)
         sseRepository.saveEvent(memberId, eventId, json);
-        // 필요 시 오래된 캐시 정리 (예시)
-        // sseRepository.clearEventsBefore(memberId, eventId - TimeUnit.MINUTES.toMillis(10));
+        // 오래된 캐시 정리
+        sseRepository.clearEventsBefore(memberId, eventId - TimeUnit.MINUTES.toMillis(10));
 
         // 2) 활성 emitter 조회
         Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
@@ -104,11 +104,8 @@ public class SseSender implements RealtimeSender {
                     }
                 } catch (IOException ex) {
                     log.warn("⚠️ send failed - memberId={}, emitterId={}, err={}", memberId, emitterId, ex.toString());
-                    try {
-                        emitter.completeWithError(ex);
-                    } catch (Exception ignore) {
-                    }
-                    sseRepository.remove(memberId, emitterId);
+                    // 공통 에러 종료 로직 사용
+                    disconnectEmitterWithError(memberId, emitterId, ex);
                 }
             });
         });
@@ -211,7 +208,8 @@ public class SseSender implements RealtimeSender {
         });
         emitter.onError(e -> {
             log.warn("⚠️ onError - {}: {}", emitterId, e.toString());
-            sseRepository.remove(memberId, emitterId);
+            // 공통 에러 종료 로직 사용
+            disconnectEmitterWithError(memberId, emitterId, e);
         });
     }
 }
