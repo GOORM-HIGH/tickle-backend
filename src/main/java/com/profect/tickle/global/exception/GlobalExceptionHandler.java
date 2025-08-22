@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,27 +17,15 @@ import static com.profect.tickle.global.exception.ErrorCode.*;
 @Slf4j
 public class GlobalExceptionHandler {
 
-//    @ExceptionHandler(MethodArgumentNotValidException.class)
-//    protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-//        return ResponseEntity
-//                .status(HttpStatus.BAD_REQUEST)
-//                .body(ErrorResponse.of(INVALID_INPUT_VALUE, e.getBindingResult()));
-//    }
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<Object> handleNotAcceptable(HttpMediaTypeNotAcceptableException ex) {
+        return new ResponseEntity<>(ErrorResponse.of(INVALID_TYPE_VALUE), HttpStatus.NOT_ACCEPTABLE);
+    }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     protected ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException e) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(INVALID_INPUT_VALUE));
+        return new ResponseEntity<>(ErrorResponse.of(INVALID_INPUT_VALUE), HttpStatus.BAD_REQUEST);
     }
-
-// @ExceptionHandler(ConstraintViolationException.class) // @Validated 예외
-//    protected ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException e) {
-//        return ResponseEntity
-//                .status(HttpStatus.BAD_REQUEST)
-//                .body(ErrorResponse.of(INVALID_INPUT_VALUE));
-//    }
-
 
     @ExceptionHandler
     protected ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
