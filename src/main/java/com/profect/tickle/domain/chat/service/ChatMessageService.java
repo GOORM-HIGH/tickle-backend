@@ -44,7 +44,7 @@ public class ChatMessageService {
     private final FileService fileService;
     private final SimpMessagingTemplate simpMessagingTemplate; // WebSocket 템플릿
 
-    // ✅ ChatParticipantsService 의존성 제거
+    // ChatParticipantsService 의존성 제거
     // private final ChatParticipantsService chatParticipantsService;
 
     /**
@@ -57,20 +57,20 @@ public class ChatMessageService {
 
         // 1. 채팅방 존재 및 활성 상태 확인
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // 수정
 
         if (!chatRoom.isActive()) {
-            throw ChatExceptions.chatRoomInactive(chatRoomId); // ✅ 수정
+            throw ChatExceptions.chatRoomInactive(chatRoomId); // 수정
         }
 
         // 2. 발신자 존재 확인
         Member sender = memberRepository.findById(senderId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(senderId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(senderId)); // 수정
 
         // 3. 채팅방 참여 여부 확인
         boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, sender);
         if (!isParticipant) {
-            throw ChatExceptions.chatNotParticipant(); // ✅ 수정
+            throw ChatExceptions.chatNotParticipant(); // 수정
         }
 
         // 4. 메시지 검증
@@ -169,16 +169,16 @@ public class ChatMessageService {
 
         // 1. 메시지 존재 확인
         Chat message = chatRepository.findById(messageId)
-                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId)); // 수정
 
         // 2. 수정 권한 확인 (작성자만 수정 가능)
         if (!message.getMember().getId().equals(editorId)) {
-            throw ChatExceptions.chatNotMessageOwner(); // ✅ 수정
+            throw ChatExceptions.chatNotMessageOwner(); // 수정
         }
 
         // 3. 수정 가능 상태 확인
         if (message.getIsDeleted()) {
-            throw ChatExceptions.chatMessageCannotEdit(); // ✅ 수정
+            throw ChatExceptions.chatMessageCannotEdit(); // 수정
         }
 
         // 4. 메시지 수정 (더티 체킹)
@@ -202,16 +202,16 @@ public class ChatMessageService {
 
         // 1. 메시지 존재 확인
         Chat message = chatRepository.findById(messageId)
-                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId)); // 수정
 
         // 2. 삭제 권한 확인 (작성자만 삭제 가능)
         if (!message.getMember().getId().equals(deleterId)) {
-            throw ChatExceptions.chatNotMessageOwner(); // ✅ 수정
+            throw ChatExceptions.chatNotMessageOwner(); // 수정
         }
 
         // 3. 이미 삭제된 메시지 확인
         if (message.getIsDeleted()) {
-            throw ChatExceptions.chatMessageAlreadyDeleted(messageId); // ✅ 수정
+            throw ChatExceptions.chatMessageAlreadyDeleted(messageId); // 수정
         }
 
         // 4. 논리 삭제 (더티 체킹)
@@ -230,9 +230,9 @@ public class ChatMessageService {
                     .build();
 
             simpMessagingTemplate.convertAndSend("/topic/chat/" + message.getChatRoomId(), deleteEvent);
-            log.info("🗑️ 삭제 이벤트 WebSocket 전송 완료: messageId={}, chatRoomId={}", messageId, message.getChatRoomId());
+            log.info("삭제 이벤트 WebSocket 전송 완료: messageId={}, chatRoomId={}", messageId, message.getChatRoomId());
         } catch (Exception e) {
-            log.error("❌ 삭제 이벤트 WebSocket 전송 실패: messageId={}, error={}", messageId, e.getMessage());
+            log.error("삭제 이벤트 WebSocket 전송 실패: messageId={}, error={}", messageId, e.getMessage());
             // WebSocket 전송 실패해도 삭제는 성공으로 처리
         }
     }
@@ -241,7 +241,7 @@ public class ChatMessageService {
      * 채팅방의 마지막 메시지 조회 (MyBatis 사용)
      */
     // ChatMessageService에서 getLastMessage 메서드 수정
-    public ChatMessageResponseDto getLastMessage(Long chatRoomId, Long currentMemberId) { // ✅ 파라미터 추가
+    public ChatMessageResponseDto getLastMessage(Long chatRoomId, Long currentMemberId) { // 파라미터 추가
         log.info("마지막 메시지 조회: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
         // 채팅방 존재 여부 확인
@@ -249,7 +249,7 @@ public class ChatMessageService {
                 .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
 
         // MyBatis 매퍼 호출 (currentMemberId 추가)
-        ChatMessageResponseDto response = chatMessageMapper.findLastMessageByRoomId(chatRoomId, currentMemberId); // ✅ 파라미터 추가
+        ChatMessageResponseDto response = chatMessageMapper.findLastMessageByRoomId(chatRoomId, currentMemberId); // 파라미터 추가
 
         return response;
     }
@@ -302,20 +302,20 @@ public class ChatMessageService {
         switch (requestDto.getMessageType()) {
             case TEXT:
                 if (requestDto.getContent() == null || requestDto.getContent().trim().isEmpty()) {
-                    throw ChatExceptions.chatMessageEmptyContent(); // ✅ 수정
+                    throw ChatExceptions.chatMessageEmptyContent(); // 수정
                 }
                 if (requestDto.getContent().length() > 255) {
-                    throw ChatExceptions.chatMessageTooLong(); // ✅ 수정
+                    throw ChatExceptions.chatMessageTooLong(); // 수정
                 }
                 break;
 
             case FILE:
             case IMAGE:
                 if (requestDto.getFilePath() == null || requestDto.getFileName() == null) {
-                    throw ChatExceptions.chatMessageMissingFileInfo(); // ✅ 수정
+                    throw ChatExceptions.chatMessageMissingFileInfo(); // 수정
                 }
                 if (requestDto.getFileSize() == null || requestDto.getFileSize() <= 0) {
-                    throw ChatExceptions.chatMessageInvalidFileSize(); // ✅ 수정
+                    throw ChatExceptions.chatMessageInvalidFileSize(); // 수정
                 }
                 break;
 

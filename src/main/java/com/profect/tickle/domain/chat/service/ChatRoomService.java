@@ -40,19 +40,19 @@ public class ChatRoomService {
 
         // 1. 공연 존재 여부 확인
         Performance performance = performanceRepository.findById(requestDto.getPerformanceId())
-                .orElseThrow(() -> ChatExceptions.performanceNotFoundInChat(requestDto.getPerformanceId())); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.performanceNotFoundInChat(requestDto.getPerformanceId())); // 수정
 
         // 2. 이미 채팅방이 있는지 확인
         Optional<ChatRoom> existingRoom = chatRoomRepository.findByPerformanceId(requestDto.getPerformanceId());
         if (existingRoom.isPresent()) {
-            throw ChatExceptions.chatRoomAlreadyExists(requestDto.getPerformanceId()); // ✅ 수정
+            throw ChatExceptions.chatRoomAlreadyExists(requestDto.getPerformanceId()); // 수정
         }
 
 
         // 3. 새 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
-                .performanceId(requestDto.getPerformanceId())  // ✅ Long 값 전달
-                .name(requestDto.getRoomName())           // ✅ 올바른 getter 메서드
+                .performanceId(requestDto.getPerformanceId())  // Long 값 전달
+                .name(requestDto.getRoomName())           // 올바른 getter 메서드
                 .status(true)
                 .maxParticipants(requestDto.getMaxParticipants())
                 .createdAt(Instant.now())
@@ -76,7 +76,7 @@ public class ChatRoomService {
         ChatRoomResponseDto roomDetails = chatRoomMapper.findRoomDetailsByPerformanceId(performanceId, currentMemberId);
 
         if (roomDetails == null) {
-            throw ChatExceptions.chatRoomNotFoundByPerformance(performanceId); // ✅ 수정
+            throw ChatExceptions.chatRoomNotFoundByPerformance(performanceId); // 수정
         }
 
         return roomDetails;
@@ -89,7 +89,7 @@ public class ChatRoomService {
         log.info("채팅방 기본 정보 조회: chatRoomId={}", chatRoomId);
 
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // 수정
 
         return ChatRoomResponseDto.fromEntity(chatRoom);
     }
@@ -109,7 +109,7 @@ public class ChatRoomService {
         log.info("채팅방 상태 변경: chatRoomId={}, status={}", chatRoomId, status);
 
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // 수정
 
         // Entity의 상태 변경 (더티 체킹으로 자동 업데이트)
         chatRoom.updateStatus(status); // Entity에 이 메서드를 추가해야 함

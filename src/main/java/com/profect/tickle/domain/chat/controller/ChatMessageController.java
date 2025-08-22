@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.chat.controller;
 
-import com.profect.tickle.domain.chat.annotation.CurrentMember; // ✅ import 추가
+import com.profect.tickle.domain.chat.annotation.CurrentMember; // import 추가
 import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
@@ -53,7 +53,7 @@ public class ChatMessageController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // ✅ 변경
+            @CurrentMember Long currentMemberId, // 변경
             @Valid @RequestBody ChatMessageSendRequestDto requestDto) {
 
         log.info("메시지 전송 API 호출: chatRoomId={}, memberId={}, type={}",
@@ -84,7 +84,7 @@ public class ChatMessageController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // ✅ 변경
+            @CurrentMember Long currentMemberId, // 변경
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기", example = "50")
@@ -123,7 +123,7 @@ public class ChatMessageController {
             @Parameter(description = "메시지 ID", required = true, example = "456")
             @PathVariable Long messageId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // ✅ 변경
+            @CurrentMember Long currentMemberId, // 변경
             @Parameter(description = "수정할 메시지 내용", required = true)
             @RequestBody String newContent) {
 

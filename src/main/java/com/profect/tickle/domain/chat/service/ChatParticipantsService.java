@@ -55,10 +55,10 @@ public class ChatParticipantsService {
             ChatParticipants participant = existingParticipant.get();
 
             if (participant.getStatus()) {
-                // ✅ 올바른 메시지 + 기존 방식으로 DTO 변환
+                // 올바른 메시지 + 기존 방식으로 DTO 변환
                 log.info("사용자가 이미 채팅방에 참여 중: participantId={}", participant.getId());
 
-                // ✅ 기존 방식: 엔티티에서 직접 DTO 생성
+                // 기존 방식: 엔티티에서 직접 DTO 생성
                 return ChatParticipantsResponseDto.builder()
                         .id(participant.getId())
                         .chatRoomId(participant.getChatRoom().getId())
@@ -75,7 +75,7 @@ public class ChatParticipantsService {
                 ChatParticipants saved = chatParticipantsRepository.save(participant);
                 log.info("채팅방 재참여 완료: participantId={}", saved.getId());
 
-                // ✅ 재활성화된 참여자 DTO 반환
+                // 재활성화된 참여자 DTO 반환
                 return ChatParticipantsResponseDto.builder()
                         .id(saved.getId())
                         .chatRoomId(saved.getChatRoom().getId())
@@ -105,7 +105,7 @@ public class ChatParticipantsService {
         ChatParticipants saved = chatParticipantsRepository.save(newParticipant);
         log.info("채팅방 참여 완료: participantId={}", saved.getId());
 
-        // ✅ 기존 방식: 새 참여자 DTO 반환
+        // 기존 방식: 새 참여자 DTO 반환
         return ChatParticipantsResponseDto.builder()
                 .id(saved.getId())
                 .chatRoomId(saved.getChatRoom().getId())
@@ -126,13 +126,13 @@ public class ChatParticipantsService {
         log.info("채팅방 나가기 요청: chatRoomId={}, memberId={}", chatRoomId, memberId);
 
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // 수정
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId)); // 수정
 
         ChatParticipants participant = chatParticipantsRepository.findByChatRoomAndMember(chatRoom, member)
-                .orElseThrow(() -> ChatExceptions.chatParticipantNotFound(chatRoomId, memberId)); // ✅ 수정
+                .orElseThrow(() -> ChatExceptions.chatParticipantNotFound(chatRoomId, memberId)); // 수정
 
         // 상태를 비활성화 (논리 삭제)
         participant.leave(); // Entity에 추가할 메서드
@@ -157,7 +157,7 @@ public class ChatParticipantsService {
         );
 
         if (updated == 0) {
-            throw ChatExceptions.chatParticipantNotFound(chatRoomId, memberId); // ✅ 수정
+            throw ChatExceptions.chatParticipantNotFound(chatRoomId, memberId); // 수정
         }
 
         log.info("읽음 처리 완료");
@@ -172,7 +172,7 @@ public class ChatParticipantsService {
         UnreadCountResponseDto result = chatParticipantsMapper.getReadStatus(chatRoomId, memberId);
 
         if (result == null) {
-            throw ChatExceptions.chatParticipantNotFound(chatRoomId, memberId); // ✅ 수정
+            throw ChatExceptions.chatParticipantNotFound(chatRoomId, memberId); // 수정
         }
 
         return result;

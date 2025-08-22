@@ -34,7 +34,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .withSockJS();
     }
 
-    // 🎯 STOMP 메시지 인터셉터 등록
+            // STOMP 메시지 인터셉터 등록
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(stompJwtChannelInterceptor);

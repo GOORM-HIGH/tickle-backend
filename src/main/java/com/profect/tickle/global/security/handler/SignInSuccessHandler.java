@@ -31,14 +31,14 @@ import java.util.List;
 public class SignInSuccessHandler implements AuthenticationSuccessHandler {
 
     private final TokenProperties tokenProperties;
-    private final MemberRepository memberRepository; // 🎯 추가
-    private final ObjectMapper objectMapper; // 🎯 추가
+    private final MemberRepository memberRepository; // 추가
+    private final ObjectMapper objectMapper; // 추가
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         log.info("{}님 로그인 성공하였습니다.", authentication.getName());
 
-        // 🎯 사용자 정보 조회
+        // 사용자 정보 조회
         Member member = memberRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
@@ -50,7 +50,7 @@ public class SignInSuccessHandler implements AuthenticationSuccessHandler {
         // Token에 들어갈 Claim 생성
         Claims claims = Jwts.claims().setSubject(authentication.getName());
         claims.put("authorities", authorities);
-        // 🎯 JWT에 사용자 ID 추가
+        // JWT에 사용자 ID 추가
         claims.put("userId", member.getId());
         claims.put("nickname", member.getNickname());
 
@@ -67,10 +67,10 @@ public class SignInSuccessHandler implements AuthenticationSuccessHandler {
         // 여기서 토큰을 response에 넣거나 헤더로 전달하는 로직 추가
         response.setHeader("Authorization", "Bearer " + token);
 
-        // 🎯 응답에 사용자 정보 포함
+        // 응답에 사용자 정보 포함
         response.setContentType("application/json;charset=UTF-8");
         
-        // 🎯 로그인 응답 DTO 생성
+        // 로그인 응답 DTO 생성
         LoginResponseDto loginResponse = LoginResponseDto.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
@@ -90,7 +90,7 @@ public class SignInSuccessHandler implements AuthenticationSuccessHandler {
         response.getWriter().flush();
     }
 
-    // 🎯 로그인 응답 DTO
+            // 로그인 응답 DTO
     @lombok.Builder
     @lombok.Getter
     public static class LoginResponseDto {

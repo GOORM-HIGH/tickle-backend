@@ -25,8 +25,8 @@ public class StompChatController {
 
     private final ChatMessageService chatMessageService;
     private final SimpMessagingTemplate messagingTemplate; // STOMP 메시지 전송용
-    private final com.profect.tickle.domain.member.repository.MemberRepository memberRepository; // 🎯 추가
-    private final JwtUtil jwtUtil; // 🎯 추가
+    private final com.profect.tickle.domain.member.repository.MemberRepository memberRepository; // 추가
+    private final JwtUtil jwtUtil; // 추가
 
     /**
      * 채팅방 참여 처리
@@ -37,18 +37,18 @@ public class StompChatController {
             @Payload WebSocketMessageRequestDto message,
             SimpMessageHeaderAccessor headerAccessor) {
 
-        log.info("🚪 사용자 채팅방 참여 요청: {} -> 채팅방 {}",
+        log.info("사용자 채팅방 참여 요청: {} -> 채팅방 {}",
                 message.getSenderNickname(), message.getChatRoomId());
 
-        // 🎯 JWT 토큰에서 실제 사용자 ID 추출
+        // JWT 토큰에서 실제 사용자 ID 추출
         Long actualSenderId = extractUserIdFromToken(headerAccessor);
-        log.info("🎯 JOIN - JWT에서 추출한 실제 사용자 ID: {}", actualSenderId);
+        log.info("JOIN - JWT에서 추출한 실제 사용자 ID: {}", actualSenderId);
 
-        // 🎯 실제 사용자 정보 조회
+        // 실제 사용자 정보 조회
         var actualMember = memberRepository.findById(actualSenderId);
         String actualNickname = actualMember.isPresent() ? actualMember.get().getNickname() : "알 수 없음";
         
-        log.info("🎯 JOIN - 실제 사용자 정보: memberId={}, nickname={}", actualSenderId, actualNickname);
+        log.info("JOIN - 실제 사용자 정보: memberId={}, nickname={}", actualSenderId, actualNickname);
 
         // 세션에 실제 사용자 정보 저장
         headerAccessor.getSessionAttributes().put("username", actualNickname);
@@ -57,18 +57,18 @@ public class StompChatController {
         WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
                 .type("USER_JOIN")
                 .chatRoomId(message.getChatRoomId())
-                .senderId(actualSenderId) // 🎯 실제 사용자 ID 사용
-                .senderNickname(actualNickname) // 🎯 실제 사용자 닉네임 사용
+                .senderId(actualSenderId) // 실제 사용자 ID 사용
+                .senderNickname(actualNickname) // 실제 사용자 닉네임 사용
                 .messageType(com.profect.tickle.domain.chat.entity.ChatMessageType.SYSTEM)
                 .content(actualNickname + "님이 채팅방에 참여했습니다.")
                 .createdAt(Instant.now())
-                // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
+                // isMyMessage 제거 - 프론트엔드에서 계산
                 .build();
 
-        log.info("🎯 JOIN 메시지 응답 생성: senderId={}, senderNickname={}", 
+        log.info("JOIN 메시지 응답 생성: senderId={}, senderNickname={}", 
                 actualSenderId, actualNickname);
 
-        // 🎯 채팅방 전체에 브로드캐스트
+        // 채팅방 전체에 브로드캐스트
         messagingTemplate.convertAndSend(
                 "/topic/chat/" + message.getChatRoomId(),
                 response
@@ -81,28 +81,28 @@ public class StompChatController {
     @MessageMapping("/chat.message")
     public void handleMessage(@Payload WebSocketMessageRequestDto message, SimpMessageHeaderAccessor headerAccessor) {
         try {
-            log.info("💬 채팅 메시지 수신: {} -> {}",
+            log.info("채팅 메시지 수신: {} -> {}",
                     message.getSenderNickname(), message.getContent());
 
-            // 🎯 필수 데이터 검증
+            // 필수 데이터 검증
             if (message.getChatRoomId() == null) {
-                log.error("❌ chatRoomId가 null입니다");
+                log.error("chatRoomId가 null입니다");
                 return;
             }
 
             if (message.getSenderId() == null) {
-                log.error("❌ senderId가 null입니다");
+                log.error("senderId가 null입니다");
                 return;
             }
 
-            log.info("🔍 메시지 전송 요청: chatRoomId={}, senderId={}, type={}",
+            log.info("메시지 전송 요청: chatRoomId={}, senderId={}, type={}",
                     message.getChatRoomId(), message.getSenderId(), message.getMessageType());
 
-            // 🎯 JWT 토큰에서 실제 사용자 ID 추출
+            // JWT 토큰에서 실제 사용자 ID 추출
             Long actualSenderId = extractUserIdFromToken(headerAccessor);
-            log.info("🎯 JWT에서 추출한 실제 사용자 ID: {}", actualSenderId);
+            log.info("JWT에서 추출한 실제 사용자 ID: {}", actualSenderId);
 
-            // 🎯 DB에 메시지 저장 (실제 사용자 ID 사용)
+            // DB에 메시지 저장 (실제 사용자 ID 사용)
             var sendRequest = com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto.builder()
                     .messageType(message.getMessageType())
                     .content(message.getContent())
@@ -110,44 +110,44 @@ public class StompChatController {
 
             var savedMessage = chatMessageService.sendMessage(
                     message.getChatRoomId(), 
-                    actualSenderId, // 🎯 실제 사용자 ID 사용
+                    actualSenderId, // 실제 사용자 ID 사용
                     sendRequest
             );
 
-            log.info("💾 메시지 DB 저장 완료: messageId={}", savedMessage.getId());
+            log.info("메시지 DB 저장 완료: messageId={}", savedMessage.getId());
 
-            // 🎯 실제 사용자 정보 조회
+            // 실제 사용자 정보 조회
             var actualMember = memberRepository.findById(actualSenderId);
             String actualNickname = actualMember.isPresent() ? actualMember.get().getNickname() : "알 수 없음";
             
-            log.info("🎯 실제 사용자 정보: memberId={}, nickname={}", actualSenderId, actualNickname);
+            log.info("실제 사용자 정보: memberId={}, nickname={}", actualSenderId, actualNickname);
 
-            // 🎯 저장된 메시지로 응답 생성 (실제 닉네임 사용)
+            // 저장된 메시지로 응답 생성 (실제 닉네임 사용)
             WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
                     .type("MESSAGE")
                     .messageId(savedMessage.getId())
                     .chatRoomId(message.getChatRoomId())
-                    .senderId(actualSenderId) // 🎯 실제 사용자 ID 사용
-                    .senderNickname(actualNickname) // 🎯 실제 사용자 닉네임 사용
+                    .senderId(actualSenderId) // 실제 사용자 ID 사용
+                    .senderNickname(actualNickname) // 실제 사용자 닉네임 사용
                     .messageType(message.getMessageType())
                     .content(message.getContent())
                     .createdAt(savedMessage.getCreatedAt())
-                    // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
+                    // isMyMessage 제거 - 프론트엔드에서 계산
                     .build();
 
-            log.info("🎯 메시지 응답 생성: senderId={}, senderNickname={}", 
+            log.info("메시지 응답 생성: senderId={}, senderNickname={}", 
                     actualSenderId, actualNickname);
 
-            // 🎯 채팅방 전체에 브로드캐스트
+            // 채팅방 전체에 브로드캐스트
             messagingTemplate.convertAndSend(
                     "/topic/chat/" + message.getChatRoomId(),
                     response
             );
 
-            log.info("📤 메시지 브로드캐스트 완료: {}", response);
+            log.info("메시지 브로드캐스트 완료: {}", response);
 
         } catch (Exception e) {
-            log.error("❌ 메시지 처리 실패: {}", e.getMessage(), e);
+            log.error("메시지 처리 실패: {}", e.getMessage(), e);
         }
     }
 
@@ -157,34 +157,34 @@ public class StompChatController {
      */
     @MessageMapping("/chat.leave")
     public void handleLeave(@Payload WebSocketMessageRequestDto message, SimpMessageHeaderAccessor headerAccessor) {
-        log.info("🚪 사용자 채팅방 나가기 요청: {} -> 채팅방 {}",
+        log.info("사용자 채팅방 나가기 요청: {} -> 채팅방 {}",
                 message.getSenderNickname(), message.getChatRoomId());
 
-        // 🎯 JWT 토큰에서 실제 사용자 ID 추출
+        // JWT 토큰에서 실제 사용자 ID 추출
         Long actualSenderId = extractUserIdFromToken(headerAccessor);
-        log.info("🎯 LEAVE - JWT에서 추출한 실제 사용자 ID: {}", actualSenderId);
+        log.info("LEAVE - JWT에서 추출한 실제 사용자 ID: {}", actualSenderId);
 
-        // 🎯 실제 사용자 정보 조회
+        // 실제 사용자 정보 조회
         var actualMember = memberRepository.findById(actualSenderId);
         String actualNickname = actualMember.isPresent() ? actualMember.get().getNickname() : "알 수 없음";
         
-        log.info("🎯 LEAVE - 실제 사용자 정보: memberId={}, nickname={}", actualSenderId, actualNickname);
+        log.info("LEAVE - 실제 사용자 정보: memberId={}, nickname={}", actualSenderId, actualNickname);
 
         WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
                 .type("USER_LEAVE")
                 .chatRoomId(message.getChatRoomId())
-                .senderId(actualSenderId) // 🎯 실제 사용자 ID 사용
-                .senderNickname(actualNickname) // 🎯 실제 사용자 닉네임 사용
+                .senderId(actualSenderId) // 실제 사용자 ID 사용
+                .senderNickname(actualNickname) // 실제 사용자 닉네임 사용
                 .messageType(com.profect.tickle.domain.chat.entity.ChatMessageType.SYSTEM)
                 .content(actualNickname + "님이 채팅방을 나갔습니다.")
                 .createdAt(Instant.now())
-                // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
+                // isMyMessage 제거 - 프론트엔드에서 계산
                 .build();
 
-        log.info("🎯 LEAVE 메시지 응답 생성: senderId={}, senderNickname={}", 
+        log.info("LEAVE 메시지 응답 생성: senderId={}, senderNickname={}", 
                 actualSenderId, actualNickname);
 
-        // 🎯 채팅방 전체에 브로드캐스트
+        // 채팅방 전체에 브로드캐스트
         messagingTemplate.convertAndSend(
                 "/topic/chat/" + message.getChatRoomId(),
                 response
@@ -196,29 +196,29 @@ public class StompChatController {
      */
     private Long extractUserIdFromToken(SimpMessageHeaderAccessor headerAccessor) {
         try {
-            log.info("🎯 모든 헤더: {}", headerAccessor.toNativeHeaderMap());
+            log.info("모든 헤더: {}", headerAccessor.toNativeHeaderMap());
 
-            // 🎯 먼저 인터셉터에서 보존된 JWT 토큰 확인
+            // 먼저 인터셉터에서 보존된 JWT 토큰 확인
             String token = (String) headerAccessor.getHeader("JWT_TOKEN");
 
             if (token == null) {
-                // 🎯 보존된 토큰이 없으면 네이티브 헤더에서 추출
+                // 보존된 토큰이 없으면 네이티브 헤더에서 추출
                 token = headerAccessor.getFirstNativeHeader("Authorization");
                 if (token != null && token.startsWith("Bearer ")) {
                     token = token.substring(7);
                 }
             }
 
-            log.info("🎯 추출된 JWT 토큰: {}", token != null ? token.substring(0, Math.min(50, token.length())) + "..." : "null");
+            log.info("추출된 JWT 토큰: {}", token != null ? token.substring(0, Math.min(50, token.length())) + "..." : "null");
 
             if (token != null) {
-                // 🎯 JWT 토큰 검증
+                // JWT 토큰 검증
                 if (!jwtUtil.validateToken(token)) {
                     log.warn("🎯 유효하지 않은 JWT 토큰");
                     return 1L;
                 }
 
-                // 🎯 JWT에서 직접 userId 추출 시도
+                // JWT에서 직접 userId 추출 시도
                 try {
                     Long userId = jwtUtil.getUserId(token);
                     log.info("🎯 JwtUtil.getUserId() 결과: {}", userId);
@@ -279,14 +279,14 @@ public class StompChatController {
 
                     log.info("🎯 JSON 파싱 성공: {}", jsonNode.toString());
 
-                    // 🎯 userId 클레임 확인
+                    // userId 클레임 확인
                     if (jsonNode.has("userId")) {
                         Long userId = jsonNode.get("userId").asLong();
                         log.info("🎯 JWT에서 직접 추출한 userId: {}", userId);
                         return userId;
                     }
 
-                    // 🎯 이메일로 조회 (기존 방식)
+                    // 이메일로 조회 (기존 방식)
                     if (jsonNode.has("sub")) {
                         String email = jsonNode.get("sub").asText();
                         log.info("🎯 JWT에서 추출한 이메일: {}", email);
@@ -339,7 +339,7 @@ public class StompChatController {
         try {
             log.info("🎯 이메일로 사용자 조회 시작: email={}", email);
             
-            // 🎯 MemberRepository를 사용해서 실제 사용자 ID 조회
+            // MemberRepository를 사용해서 실제 사용자 ID 조회
             var member = memberRepository.findByEmail(email);
             
             if (member.isPresent()) {
@@ -351,7 +351,7 @@ public class StompChatController {
             } else {
                 log.warn("🎯 이메일로 사용자 조회 실패: email={} - 사용자를 찾을 수 없습니다", email);
                 
-                // 🎯 디버깅: 전체 사용자 목록 조회
+                // 디버깅: 전체 사용자 목록 조회
                 log.info("🎯 전체 사용자 목록 조회:");
                 var allMembers = memberRepository.findAll();
                 for (var m : allMembers) {
@@ -385,10 +385,10 @@ public class StompChatController {
                 .messageType(request.getMessageType())
                 .content(request.getContent())
                 .createdAt(savedMessage.getCreatedAt())
-                // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
+                                        // isMyMessage 제거 - 프론트엔드에서 계산
                 .build();
 
-        // 🎯 채팅방 전체에 브로드캐스트
+        // 채팅방 전체에 브로드캐스트
         messagingTemplate.convertAndSend(
                 "/topic/chat/" + request.getChatRoomId(),
                 response

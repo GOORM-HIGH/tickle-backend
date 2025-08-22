@@ -42,8 +42,8 @@ public class SecurityConfig {
     private final MemberService memberService;
     private final TokenProperties tokenProperties;
     private final JwtUtil jwtUtil;
-    private final MemberRepository memberRepository; // 🎯 추가
-    private final ObjectMapper objectMapper; // 🎯 추가
+    private final MemberRepository memberRepository; // 추가
+    private final ObjectMapper objectMapper; // 추가
 
     @Bean
     @Profile("prod")
@@ -115,7 +115,7 @@ public class SecurityConfig {
     private Filter getAuthenticationFilter() {
         CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter();
         customAuthenticationFilter.setAuthenticationManager(getAuthenticationManager());
-        // 🎯 수정: 필요한 의존성들을 주입하여 SignInSuccessHandler 생성
+        // 수정: 필요한 의존성들을 주입하여 SignInSuccessHandler 생성
         customAuthenticationFilter.setAuthenticationSuccessHandler(new SignInSuccessHandler(tokenProperties, memberRepository, objectMapper));
         customAuthenticationFilter.setAuthenticationFailureHandler(new SignInFailureHandler());
 
