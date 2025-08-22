@@ -41,7 +41,7 @@ public class NotificationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
         // 회원의 알림인지 확인한다.
-        if (!notification.getReceivedMember().getId().equals(memberId)) {
+        if (!notification.isForMember(memberId)) {
             throw new BusinessException(ErrorCode.NOTIFICATION_ACCESS_DENIED);
         }
 
