@@ -125,7 +125,7 @@ public class SseRepository {
     }
 
     public Map<String, SseEmitter> getAllWithIds(long memberId) {
-        var ids = emitterIdsByMember.getOrDefault(memberId, new CopyOnWriteArraySet<>());
+        CopyOnWriteArraySet<String> ids = emitterIdsByMember.getOrDefault(memberId, new CopyOnWriteArraySet<>());
         Map<String, SseEmitter> map = new HashMap<>(ids.size());
         for (String id : ids) {
             SseEmitter e = emittersById.get(id);
