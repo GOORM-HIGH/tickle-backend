@@ -1,7 +1,8 @@
 package com.profect.tickle.domain.chat.controller;
 
 import com.profect.tickle.domain.chat.annotation.CurrentMember; // import 추가
-import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
+import com.profect.tickle.global.response.ResultResponse;
+import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
@@ -49,11 +50,11 @@ public class ChatMessageController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping
-    public ResponseEntity<ApiResponseDto<ChatMessageResponseDto>> sendMessage(
+    public ResultResponse<ChatMessageResponseDto> sendMessage(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // 변경
+            @CurrentMember Long currentMemberId,
             @Valid @RequestBody ChatMessageSendRequestDto requestDto) {
 
         log.info("메시지 전송 API 호출: chatRoomId={}, memberId={}, type={}",
@@ -61,8 +62,7 @@ public class ChatMessageController {
 
         ChatMessageResponseDto response = chatMessageService.sendMessage(chatRoomId, currentMemberId, requestDto);
 
-        return ResponseEntity.status(201)
-                .body(ApiResponseDto.created(response));
+        return ResultResponse.of(ResultCode.CHAT_MESSAGE_SEND_SUCCESS, response);
     }
 
     /**
@@ -80,11 +80,11 @@ public class ChatMessageController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping
-    public ResponseEntity<ApiResponseDto<ChatMessageListResponseDto>> getMessages(
+    public ResultResponse<ChatMessageListResponseDto> getMessages(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // 변경
+            @CurrentMember Long currentMemberId,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기", example = "50")
@@ -98,7 +98,7 @@ public class ChatMessageController {
         ChatMessageListResponseDto response = chatMessageService.getMessages(
                 chatRoomId, currentMemberId, page, size, lastMessageId);
 
-        return ResponseEntity.ok(ApiResponseDto.success(response));
+        return ResultResponse.of(ResultCode.CHAT_MESSAGE_LIST_SUCCESS, response);
     }
 
     /**
@@ -117,13 +117,13 @@ public class ChatMessageController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PutMapping("/{messageId}")
-    public ResponseEntity<ApiResponseDto<ChatMessageResponseDto>> editMessage(
+    public ResultResponse<ChatMessageResponseDto> editMessage(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "메시지 ID", required = true, example = "456")
             @PathVariable Long messageId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // 변경
+            @CurrentMember Long currentMemberId,
             @Parameter(description = "수정할 메시지 내용", required = true)
             @RequestBody String newContent) {
 
@@ -132,7 +132,7 @@ public class ChatMessageController {
 
         ChatMessageResponseDto response = chatMessageService.editMessage(messageId, currentMemberId, newContent);
 
-        return ResponseEntity.ok(ApiResponseDto.success("메시지가 수정되었습니다.", response));
+        return ResultResponse.of(ResultCode.CHAT_MESSAGE_UPDATE_SUCCESS, response);
     }
 
     /**
@@ -151,20 +151,20 @@ public class ChatMessageController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @DeleteMapping("/{messageId}")
-    public ResponseEntity<ApiResponseDto<Void>> deleteMessage(
+    public ResultResponse<Void> deleteMessage(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "메시지 ID", required = true, example = "456")
             @PathVariable Long messageId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId) { // ✅ 변경
+            @CurrentMember Long currentMemberId) {
 
         log.info("메시지 삭제 API 호출: chatRoomId={}, messageId={}, memberId={}",
                 chatRoomId, messageId, currentMemberId);
 
         chatMessageService.deleteMessage(messageId, currentMemberId);
 
-        return ResponseEntity.ok(ApiResponseDto.success("메시지가 삭제되었습니다.", null));
+        return ResultResponse.ok(ResultCode.CHAT_MESSAGE_DELETE_SUCCESS);
     }
 
     /**
@@ -181,21 +181,17 @@ public class ChatMessageController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping("/last")
-    public ResponseEntity<ApiResponseDto<ChatMessageResponseDto>> getLastMessage(
+    public ResultResponse<ChatMessageResponseDto> getLastMessage(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId) { // ✅ 변경
+            @CurrentMember Long currentMemberId) {
 
         log.info("마지막 메시지 조회 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
         ChatMessageResponseDto response = chatMessageService.getLastMessage(chatRoomId, currentMemberId);
 
-        if (response == null) {
-            return ResponseEntity.ok(ApiResponseDto.success("메시지가 없습니다.", null));
-        }
-
-        return ResponseEntity.ok(ApiResponseDto.success(response));
+        return ResultResponse.of(ResultCode.CHAT_MESSAGE_LIST_SUCCESS, response);
     }
 
     /**
@@ -213,11 +209,11 @@ public class ChatMessageController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping("/unread-count")
-    public ResponseEntity<ApiResponseDto<Integer>> getUnreadCount(
+    public ResultResponse<Integer> getUnreadCount(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // ✅ 변경
+            @CurrentMember Long currentMemberId,
             @Parameter(description = "마지막으로 읽은 메시지 ID", example = "789")
             @RequestParam(required = false) Long lastReadMessageId) {
 
@@ -229,7 +225,7 @@ public class ChatMessageController {
         log.info("읽지않은 메시지 개수 조회 결과: chatRoomId={}, memberId={}, unreadCount={}", 
                 chatRoomId, currentMemberId, unreadCount);
 
-        return ResponseEntity.ok(ApiResponseDto.success(unreadCount));
+        return ResultResponse.of(ResultCode.CHAT_MESSAGE_LIST_SUCCESS, unreadCount);
     }
 
     /**

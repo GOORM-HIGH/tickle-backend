@@ -1,7 +1,8 @@
 package com.profect.tickle.domain.chat.controller;
 
 import com.profect.tickle.domain.chat.annotation.CurrentMember; // ✅ import 추가
-import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
+import com.profect.tickle.global.response.ResultResponse;
+import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.domain.chat.dto.request.ChatRoomJoinRequestDto;
 import com.profect.tickle.domain.chat.dto.request.ReadMessageRequestDto;
 import com.profect.tickle.domain.chat.dto.response.ChatParticipantsResponseDto;
@@ -45,7 +46,7 @@ public class ChatParticipantsController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping("/rooms/{chatRoomId}/join")
-    public ResponseEntity<ApiResponseDto<ChatParticipantsResponseDto>> joinChatRoom(
+    public ResultResponse<ChatParticipantsResponseDto> joinChatRoom(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
@@ -56,8 +57,7 @@ public class ChatParticipantsController {
 
         ChatParticipantsResponseDto response = chatParticipantsService.joinChatRoom(chatRoomId, currentMemberId, requestDto);
 
-        return ResponseEntity.status(201)
-                .body(ApiResponseDto.created(response));
+        return ResultResponse.of(ResultCode.CHAT_PARTICIPANT_JOIN_SUCCESS, response);
     }
 
     /**
@@ -74,7 +74,7 @@ public class ChatParticipantsController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @DeleteMapping("/rooms/{chatRoomId}/leave")
-    public ResponseEntity<ApiResponseDto<Void>> leaveChatRoom(
+    public ResultResponse<Void> leaveChatRoom(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
@@ -84,7 +84,7 @@ public class ChatParticipantsController {
 
         chatParticipantsService.leaveChatRoom(chatRoomId, currentMemberId);
 
-        return ResponseEntity.ok(ApiResponseDto.success("채팅방에서 나갔습니다.", null));
+        return ResultResponse.ok(ResultCode.CHAT_PARTICIPANT_LEAVE_SUCCESS);
     }
 
     /**
@@ -101,7 +101,7 @@ public class ChatParticipantsController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PatchMapping("/rooms/{chatRoomId}/read")
-    public ResponseEntity<ApiResponseDto<Void>> markAsRead(
+    public ResultResponse<Void> markAsRead(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
@@ -113,7 +113,7 @@ public class ChatParticipantsController {
 
         chatParticipantsService.markAsRead(chatRoomId, currentMemberId, requestDto);
 
-        return ResponseEntity.ok(ApiResponseDto.success("메시지를 읽음으로 처리했습니다.", null));
+        return ResultResponse.ok(ResultCode.CHAT_PARTICIPANT_READ_SUCCESS);
     }
 
     /**
@@ -130,7 +130,7 @@ public class ChatParticipantsController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping("/rooms/{chatRoomId}/unread-count")
-    public ResponseEntity<ApiResponseDto<UnreadCountResponseDto>> getUnreadCount(
+    public ResultResponse<UnreadCountResponseDto> getUnreadCount(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
@@ -140,7 +140,7 @@ public class ChatParticipantsController {
 
         UnreadCountResponseDto response = chatParticipantsService.getUnreadCount(chatRoomId, currentMemberId);
 
-        return ResponseEntity.ok(ApiResponseDto.success(response));
+        return ResultResponse.of(ResultCode.CHAT_PARTICIPANT_READ_SUCCESS, response);
     }
 
     /**
@@ -157,7 +157,7 @@ public class ChatParticipantsController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping("/rooms/{chatRoomId}")
-    public ResponseEntity<ApiResponseDto<List<ChatParticipantsResponseDto>>> getParticipants(
+    public ResultResponse<List<ChatParticipantsResponseDto>> getParticipants(
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId) {
 
@@ -165,7 +165,7 @@ public class ChatParticipantsController {
 
         List<ChatParticipantsResponseDto> response = chatParticipantsService.getParticipantsByRoomId(chatRoomId);
 
-        return ResponseEntity.ok(ApiResponseDto.success(response));
+        return ResultResponse.of(ResultCode.CHAT_PARTICIPANT_READ_SUCCESS, response);
     }
 
     /**
@@ -181,7 +181,7 @@ public class ChatParticipantsController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping("/my-rooms")
-    public ResponseEntity<ApiResponseDto<List<ChatParticipantsResponseDto>>> getMyChatRooms(
+    public ResultResponse<List<ChatParticipantsResponseDto>> getMyChatRooms(
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
             @CurrentMember Long currentMemberId) { // ✅ 변경
 
@@ -189,6 +189,6 @@ public class ChatParticipantsController {
 
         List<ChatParticipantsResponseDto> response = chatParticipantsService.getMyChatRooms(currentMemberId);
 
-        return ResponseEntity.ok(ApiResponseDto.success(response));
+        return ResultResponse.of(ResultCode.CHAT_PARTICIPANT_READ_SUCCESS, response);
     }
 }

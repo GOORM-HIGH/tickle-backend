@@ -9,7 +9,8 @@ import com.profect.tickle.domain.chat.entity.Chat;
 import com.profect.tickle.domain.chat.entity.ChatRoom;
 import com.profect.tickle.domain.chat.entity.ChatParticipants;
 import com.profect.tickle.domain.chat.entity.ChatMessageType;
-import com.profect.tickle.global.exception.ChatExceptions;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.domain.chat.repository.ChatRepository;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
 import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
@@ -57,20 +58,20 @@ public class ChatMessageService {
 
         // 1. 채팅방 존재 및 활성 상태 확인
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // 수정
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         if (!chatRoom.isActive()) {
-            throw ChatExceptions.chatRoomInactive(chatRoomId); // 수정
+            throw new BusinessException(ErrorCode.CHAT_ROOM_INACTIVE);
         }
 
         // 2. 발신자 존재 확인
         Member sender = memberRepository.findById(senderId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(senderId)); // 수정
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 3. 채팅방 참여 여부 확인
         boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, sender);
         if (!isParticipant) {
-            throw ChatExceptions.chatNotParticipant(); // 수정
+            throw new BusinessException(ErrorCode.CHAT_NOT_PARTICIPANT);
         }
 
         // 4. 메시지 검증
@@ -124,11 +125,11 @@ public class ChatMessageService {
         try {
             // 1. 채팅방 존재 확인
             ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                    .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
             // 2. 회원 확인
             Member member = memberRepository.findById(currentMemberId)
-                    .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(currentMemberId));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             // 3. 참여 여부 확인
             boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
@@ -169,16 +170,16 @@ public class ChatMessageService {
 
         // 1. 메시지 존재 확인
         Chat message = chatRepository.findById(messageId)
-                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId)); // 수정
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_MESSAGE_NOT_FOUND));
 
         // 2. 수정 권한 확인 (작성자만 수정 가능)
         if (!message.getMember().getId().equals(editorId)) {
-            throw ChatExceptions.chatNotMessageOwner(); // 수정
+            throw new BusinessException(ErrorCode.CHAT_NOT_MESSAGE_OWNER);
         }
 
         // 3. 수정 가능 상태 확인
         if (message.getIsDeleted()) {
-            throw ChatExceptions.chatMessageCannotEdit(); // 수정
+            throw new BusinessException(ErrorCode.CHAT_MESSAGE_ALREADY_DELETED);
         }
 
         // 4. 메시지 수정 (더티 체킹)
@@ -202,16 +203,16 @@ public class ChatMessageService {
 
         // 1. 메시지 존재 확인
         Chat message = chatRepository.findById(messageId)
-                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId)); // 수정
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_MESSAGE_NOT_FOUND));
 
         // 2. 삭제 권한 확인 (작성자만 삭제 가능)
         if (!message.getMember().getId().equals(deleterId)) {
-            throw ChatExceptions.chatNotMessageOwner(); // 수정
+            throw new BusinessException(ErrorCode.CHAT_NOT_MESSAGE_OWNER);
         }
 
         // 3. 이미 삭제된 메시지 확인
         if (message.getIsDeleted()) {
-            throw ChatExceptions.chatMessageAlreadyDeleted(messageId); // 수정
+            throw new BusinessException(ErrorCode.CHAT_MESSAGE_ALREADY_DELETED);
         }
 
         // 4. 논리 삭제 (더티 체킹)
@@ -246,7 +247,7 @@ public class ChatMessageService {
 
         // 채팅방 존재 여부 확인
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         // MyBatis 매퍼 호출 (currentMemberId 추가)
         ChatMessageResponseDto response = chatMessageMapper.findLastMessageByRoomId(chatRoomId, currentMemberId); // 파라미터 추가
@@ -265,11 +266,11 @@ public class ChatMessageService {
         try {
             // 1. 채팅방 존재 확인
             ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                    .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
             // 2. 회원 확인
             Member member = memberRepository.findById(memberId)
-                    .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             // 3. 참여 여부 확인
             boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
@@ -302,20 +303,20 @@ public class ChatMessageService {
         switch (requestDto.getMessageType()) {
             case TEXT:
                 if (requestDto.getContent() == null || requestDto.getContent().trim().isEmpty()) {
-                    throw ChatExceptions.chatMessageEmptyContent(); // 수정
+                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_EMPTY_CONTENT);
                 }
                 if (requestDto.getContent().length() > 255) {
-                    throw ChatExceptions.chatMessageTooLong(); // 수정
+                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_TOO_LONG);
                 }
                 break;
 
             case FILE:
             case IMAGE:
                 if (requestDto.getFilePath() == null || requestDto.getFileName() == null) {
-                    throw ChatExceptions.chatMessageMissingFileInfo(); // 수정
+                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_MISSING_FILE_INFO);
                 }
                 if (requestDto.getFileSize() == null || requestDto.getFileSize() <= 0) {
-                    throw ChatExceptions.chatMessageInvalidFileSize(); // 수정
+                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_INVALID_FILE_SIZE);
                 }
                 break;
 
@@ -341,21 +342,21 @@ public class ChatMessageService {
 
         // 1. 채팅방 존재 확인
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         // 2. 회원 확인
         Member member = memberRepository.findById(currentMemberId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(currentMemberId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 3. 참여 여부 확인
         boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, member);
         if (!isParticipant) {
-            throw ChatExceptions.chatNotParticipant();
+            throw new BusinessException(ErrorCode.CHAT_NOT_PARTICIPANT);
         }
 
         // 4. 메시지 존재 확인
         Chat message = chatRepository.findById(messageId)
-                .orElseThrow(() -> ChatExceptions.chatMessageNotFound(messageId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_MESSAGE_NOT_FOUND));
 
         // 5. 파일 메시지인지 확인
         if (message.getMessageType() != ChatMessageType.FILE && message.getMessageType() != ChatMessageType.IMAGE) {

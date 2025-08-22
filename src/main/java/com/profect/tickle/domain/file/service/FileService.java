@@ -3,7 +3,8 @@ package com.profect.tickle.domain.file.service;
 import com.profect.tickle.domain.file.dto.response.FileUploadResponseDto;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.global.exception.ChatExceptions;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.nas.service.WebDavService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ public class FileService {
 
         // 1. 업로드 사용자 확인
         memberRepository.findById(uploaderId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(uploaderId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 2. 파일 검증
         validateFile(file);
@@ -81,7 +82,7 @@ public class FileService {
 
         // 1. 업로드 사용자 확인
         memberRepository.findById(uploaderId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(uploaderId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 2. 파일 검증
         validateFile(file);

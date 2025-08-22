@@ -1,6 +1,7 @@
 package com.profect.tickle.global.websocket;
 
-import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
+import com.profect.tickle.global.response.ResultResponse;
+import com.profect.tickle.global.response.ResultCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class WebSocketInfoController {
             description = "프론트엔드에서 WebSocket 연결에 필요한 URL 및 설정 정보를 제공합니다."
     )
     @GetMapping("/connection-info")
-    public ResponseEntity<ApiResponseDto<Map<String, Object>>> getConnectionInfo(
+    public ResultResponse<Map<String, Object>> getConnectionInfo(
             @RequestParam(required = false, defaultValue = "localhost") String host) {
 
         Map<String, Object> connectionInfo = new HashMap<>();
@@ -52,7 +53,7 @@ public class WebSocketInfoController {
         examples.put("sockJSConnection", String.format("new SockJS('http://%s:%s/ws/chat/123')", host, serverPort));
         connectionInfo.put("examples", examples);
 
-        return ResponseEntity.ok(ApiResponseDto.success(connectionInfo));
+        return ResultResponse.of(ResultCode.RESPONSE_TEST, connectionInfo);
     }
 
     /**
@@ -63,10 +64,10 @@ public class WebSocketInfoController {
             description = "현재 WebSocket 서버의 연결 상태와 통계 정보를 조회합니다."
     )
     @GetMapping("/status")
-    public ResponseEntity<ApiResponseDto<WebSocketStats>> getWebSocketStatus() {
+    public ResultResponse<WebSocketStats> getWebSocketStatus() {
 
         WebSocketStats stats = sessionManager.getStats();
 
-        return ResponseEntity.ok(ApiResponseDto.success(stats));
+        return ResultResponse.of(ResultCode.RESPONSE_TEST, stats);
     }
 }

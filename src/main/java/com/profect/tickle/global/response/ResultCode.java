@@ -61,7 +61,21 @@ public enum ResultCode {
 
     // SETTLEMENT
     SETTLEMENT_LIST_SUCCESS(HttpStatus.OK, "정산 내역 조회 성공"),
-    SETTLEMENT_UNSETTLED_AMOUNT_SUCCESS(HttpStatus.OK, "미정산 내역 조회 성공")
+    SETTLEMENT_UNSETTLED_AMOUNT_SUCCESS(HttpStatus.OK, "미정산 내역 조회 성공"),
+
+    // CHAT
+    CHAT_ROOM_CREATE_SUCCESS(HttpStatus.CREATED, "채팅방 생성 성공"),
+    CHAT_ROOM_INFO_SUCCESS(HttpStatus.OK, "채팅방 조회 성공"),
+    CHAT_ROOM_LIST_SUCCESS(HttpStatus.OK, "채팅방 목록 조회 성공"),
+    CHAT_ROOM_UPDATE_SUCCESS(HttpStatus.OK, "채팅방 수정 성공"),
+    CHAT_MESSAGE_SEND_SUCCESS(HttpStatus.CREATED, "메시지 전송 성공"),
+    CHAT_MESSAGE_LIST_SUCCESS(HttpStatus.OK, "메시지 목록 조회 성공"),
+    CHAT_MESSAGE_UPDATE_SUCCESS(HttpStatus.OK, "메시지 수정 성공"),
+    CHAT_MESSAGE_DELETE_SUCCESS(HttpStatus.OK, "메시지 삭제 성공"),
+    CHAT_PARTICIPANT_JOIN_SUCCESS(HttpStatus.CREATED, "채팅방 참여 성공"),
+    CHAT_PARTICIPANT_LEAVE_SUCCESS(HttpStatus.OK, "채팅방 나가기 성공"),
+    CHAT_PARTICIPANT_READ_SUCCESS(HttpStatus.OK, "메시지 읽음 처리 성공"),
+    FILE_UPLOAD_SUCCESS(HttpStatus.CREATED, "파일 업로드 성공")
     ;
 
     private final HttpStatus status;

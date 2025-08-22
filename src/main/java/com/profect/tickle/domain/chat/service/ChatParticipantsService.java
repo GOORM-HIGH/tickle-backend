@@ -11,7 +11,8 @@ import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.global.exception.ChatExceptions;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,11 +42,11 @@ public class ChatParticipantsService {
 
         // 1. 채팅방 존재 확인
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         // 2. 회원 존재 확인
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 3. 기존 참여 여부 확인
         Optional<ChatParticipants> existingParticipant = chatParticipantsRepository
@@ -126,13 +127,13 @@ public class ChatParticipantsService {
         log.info("채팅방 나가기 요청: chatRoomId={}, memberId={}", chatRoomId, memberId);
 
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> ChatExceptions.chatRoomNotFound(chatRoomId)); // 수정
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> ChatExceptions.memberNotFoundInChat(memberId)); // 수정
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         ChatParticipants participant = chatParticipantsRepository.findByChatRoomAndMember(chatRoom, member)
-                .orElseThrow(() -> ChatExceptions.chatParticipantNotFound(chatRoomId, memberId)); // 수정
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_PARTICIPANT_NOT_FOUND));
 
         // 상태를 비활성화 (논리 삭제)
         participant.leave(); // Entity에 추가할 메서드
@@ -157,7 +158,7 @@ public class ChatParticipantsService {
         );
 
         if (updated == 0) {
-            throw ChatExceptions.chatParticipantNotFound(chatRoomId, memberId); // 수정
+            throw new BusinessException(ErrorCode.CHAT_PARTICIPANT_NOT_FOUND);
         }
 
         log.info("읽음 처리 완료");
@@ -172,7 +173,7 @@ public class ChatParticipantsService {
         UnreadCountResponseDto result = chatParticipantsMapper.getReadStatus(chatRoomId, memberId);
 
         if (result == null) {
-            throw ChatExceptions.chatParticipantNotFound(chatRoomId, memberId); // 수정
+            throw new BusinessException(ErrorCode.CHAT_PARTICIPANT_NOT_FOUND);
         }
 
         return result;
