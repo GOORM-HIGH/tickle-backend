@@ -27,8 +27,7 @@ public class Event {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id", nullable = false)
+    @OneToOne(mappedBy = "event")
     private Seat seat;
 
     @OneToOne(fetch = FetchType.LAZY)
