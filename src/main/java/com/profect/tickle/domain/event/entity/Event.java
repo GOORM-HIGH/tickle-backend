@@ -5,6 +5,7 @@ import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.StatusIds;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -101,8 +102,9 @@ public class Event {
     }
 
     public void accumulate(Short perPrice) {
-        if (this.status.getId() != 5) {
-            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);}
+        if (!this.status.getId().equals(StatusIds.Event.IN_PROGRESS)) {
+            throw  new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
+        }
         this.accrued += perPrice;
     }
 
