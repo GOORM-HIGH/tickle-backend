@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
         }
 )
 @DisplayName("[통합] RealtimeSender(SseSender)")
-class RealTimeIntegrationTest {
+class RealtimeNotificationIntegrationTest {
 
     @Autowired RealtimeSender sseSender;
     @Autowired SseRepository sseRepository;
