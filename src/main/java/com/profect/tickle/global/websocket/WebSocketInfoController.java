@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -17,7 +16,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/websocket")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "WebSocket 정보", description = "프론트엔드용 WebSocket 연결 정보 제공 API")
+@Tag(name = "WebSocket 정보", description = "WebSocket 연결 상태 및 정보 조회 API")
 public class WebSocketInfoController {
 
     private final WebSocketSessionManager sessionManager;
@@ -26,11 +25,11 @@ public class WebSocketInfoController {
     private String serverPort;
 
     /**
-     * 프론트엔드용 WebSocket 연결 정보 제공
+     * WebSocket 연결 정보 조회
      */
     @Operation(
             summary = "WebSocket 연결 정보 조회",
-            description = "프론트엔드에서 WebSocket 연결에 필요한 URL 및 설정 정보를 제공합니다."
+            description = "WebSocket 연결 URL과 엔드포인트 정보를 조회합니다."
     )
     @GetMapping("/connection-info")
     public ResultResponse<Map<String, Object>> getConnectionInfo(
@@ -57,11 +56,11 @@ public class WebSocketInfoController {
     }
 
     /**
-     * WebSocket 서버 상태 조회
+     * WebSocket 연결 상태 조회
      */
     @Operation(
-            summary = "WebSocket 서버 상태 조회",
-            description = "현재 WebSocket 서버의 연결 상태와 통계 정보를 조회합니다."
+            summary = "WebSocket 연결 상태 조회",
+            description = "현재 WebSocket 연결 상태와 세션 정보를 조회합니다."
     )
     @GetMapping("/status")
     public ResultResponse<WebSocketStats> getWebSocketStatus() {
