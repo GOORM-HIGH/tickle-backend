@@ -1,9 +1,11 @@
 package com.profect.tickle.domain.performance.service;
 
 import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
+import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.paging.PagingResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +14,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 import static org.mockito.Mockito.*;
 
@@ -46,7 +53,7 @@ class PerformanceServiceTest {
     }
 
     @Test
-    @DisplayName("공연이 없거나 삭제됨 → PERFORMANCE_NOT_FOUND 예외, 조회수 증가 호출 없음")
+    @DisplayName("공연이 없거나 삭제되었다면 예외 처리되고 조회되지 않는. 또한 조회수 증가되지 않는다.")
     void TC_PERFORMANCE_002() {
         // given
         Long performanceId = 999L;
@@ -64,5 +71,114 @@ class PerformanceServiceTest {
         verify(performanceMapper, never()).increaseLookCount(anyLong());
         verifyNoMoreInteractions(performanceMapper);
     }
-  
+
+    @Test
+    @DisplayName("장르별 공연 목록을 페이징해 조회에 성공한다.")
+    void TC_PERFORMANCE_003() {
+        // given
+        Long genreId = 1L;
+        int page = 2, size = 10, total = 23;
+        int offset = page * size;
+        when(performanceMapper.countPerformancesByGenre(genreId)).thenReturn(total);
+
+        var items = List.of(
+                PerformanceDto.builder().performanceId(21L).title("A").build(),
+                PerformanceDto.builder().performanceId(22L).title("B").build(),
+                PerformanceDto.builder().performanceId(23L).title("C").build()
+        );
+        when(performanceMapper.findPerformancesByGenre(genreId, offset, size)).thenReturn(items);
+
+        // when
+        PagingResponse<PerformanceDto> result = performanceService.getPerformancesByGenre(genreId, page, size);
+
+        // then
+        assertThat(result.content()).hasSize(3);
+        assertThat(result.totalElements()).isEqualTo(23);
+        assertThat(result.totalPages()).isEqualTo(3);
+        assertThat(result.isLast()).isTrue();
+        assertThat(result.page()).isEqualTo(2);
+        assertThat(result.size()).isEqualTo(10);
+
+        InOrder io = inOrder(performanceMapper);
+        io.verify(performanceMapper).countPerformancesByGenre(genreId);  // 먼저 호출
+        io.verify(performanceMapper).findPerformancesByGenre(genreId, offset, size); // 그 다음
+        io.verifyNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("잘못된 genreId면 INVALID_INPUT_VALUE 예외가 발생한다.")
+    void TC_PERFORMANCE_003_invalid_genreId() {
+        assertThatThrownBy(() -> performanceService.getPerformancesByGenre(0L, 0, 10))
+                .isInstanceOf(BusinessException.class);
+        verifyNoInteractions(performanceMapper);
+    }
+
+    @Test
+    @DisplayName("장르별 인기 공연 상위 10개 공연을 조회 성공한다.")
+    void TC_PERFORMANCE_004() {
+        // Given
+        Long genreId = 1L;
+        List<PerformanceDto> top10 = new ArrayList<>();
+
+        IntStream.rangeClosed(1, 10).forEach(i ->
+                top10.add(PerformanceDto.builder()
+                        .performanceId(100L - i)
+                        .title("TOP-" + i)
+                        .date(Instant.parse("2025-09-" + String.format("%02d", i) + "T00:00:00Z"))
+                        .build()));
+        when(performanceMapper.findTop10ByGenre(genreId)).thenReturn(top10);
+
+        // When
+        List<PerformanceDto> result = performanceService.getTop10ByGenre(genreId);
+
+        // Then
+        assertThat(result).hasSize(10)
+                .containsExactlyElementsOf(top10);
+        verify(performanceMapper).findTop10ByGenre(genreId);
+    }
+
+    @Test
+    @DisplayName("전체 공연중 인기 상위 공연이 10개 조회 성공한다.")
+    void TC_PERFORMANCE_005() {
+        // Given
+        List<PerformanceDto> top10 = IntStream.rangeClosed(1, 10)
+                .mapToObj(i -> PerformanceDto.builder()
+                        .performanceId((long) i)
+                        .title("ALL-" + i)
+                        .date(Instant.parse("2025-10-" + String.format("%02d", i) + "T00:00:00Z"))
+                        .build())
+                .toList();
+        when(performanceMapper.findTop10ByClickCount()).thenReturn(top10);
+
+        // When
+        List<PerformanceDto> result = performanceService.getTop10Performances();
+
+        // Then
+        assertThat(result).hasSize(10).containsExactlyElementsOf(top10);
+        verify(performanceMapper).findTop10ByClickCount();
+    }
+
+    @Test
+    @DisplayName("오늘 이후 시작인 공연 목록 4개를 조회 성공한다.")
+    void TC_PERFORMANCE_006() {
+        // Given
+        List<PerformanceDto> top4 = List.of(
+                PerformanceDto.builder().performanceId(1L).title("UP-1").date(Instant.parse("2025-09-01T00:00:00Z")).build(),
+                PerformanceDto.builder().performanceId(2L).title("UP-2").date(Instant.parse("2025-09-02T00:00:00Z")).build(),
+                PerformanceDto.builder().performanceId(3L).title("UP-3").date(Instant.parse("2025-09-03T00:00:00Z")).build(),
+                PerformanceDto.builder().performanceId(4L).title("UP-4").date(Instant.parse("2025-09-04T00:00:00Z")).build()
+        );
+        when(performanceMapper.findTop4UpcomingPerformances()).thenReturn(top4);
+
+        // When
+        List<PerformanceDto> result = performanceService.getTop4UpcomingPerformances();
+
+        // Then
+        assertThat(result).hasSize(4).containsExactlyElementsOf(top4);
+        assertThat(result).isSortedAccordingTo((a, b) -> a.getDate().compareTo(b.getDate()));
+
+        verify(performanceMapper).findTop4UpcomingPerformances();
+    }
+
+
 }
