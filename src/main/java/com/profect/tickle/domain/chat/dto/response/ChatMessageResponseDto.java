@@ -22,7 +22,7 @@ public class ChatMessageResponseDto {
     private String content;
     private Instant createdAt;
     private Boolean senderStatus;
-    private Boolean isDeleted;  // ✅ 삭제 상태 추가
+    private Boolean isDeleted;  // 삭제 상태 추가
 
     // 파일 관련 정보
     private String filePath;
@@ -65,7 +65,7 @@ public class ChatMessageResponseDto {
                 .content(chat.getIsDeleted() ? "삭제된 메시지입니다" : chat.getContent())
                 .createdAt(chat.getCreatedAt())
                 .senderStatus(chat.getSenderStatus())
-                .isDeleted(chat.getIsDeleted())  // ✅ 삭제 상태 추가
+                .isDeleted(chat.getIsDeleted())  // 삭제 상태 추가
                 .filePath(chat.getFilePath())
                 .fileName(chat.getFileName())
                 .fileSize(chat.getFileSize())
