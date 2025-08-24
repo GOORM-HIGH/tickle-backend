@@ -125,7 +125,10 @@ public class PerformanceService {
         return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
+    @Transactional(readOnly = true)
     public List<PerformanceDto> getRelatedPerformances(Long performanceId) {
+        validatePerfId(performanceId);
+
         Long genreId = performanceMapper.findGenreIdByPerformanceId(performanceId);
         if (genreId == null) {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
