@@ -31,7 +31,7 @@ import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationServiceMarkAsReadTest {
+class NotificationServiceTest {
 
     // SUT
     @InjectMocks
