@@ -1,5 +1,7 @@
 package com.profect.tickle.global.websocket;
 
+import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.global.security.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -18,50 +20,58 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class StompJwtChannelInterceptor implements ChannelInterceptor {
 
-    // private final JwtUtil jwtUtil; // JWT 유틸리티 주입 필요
+    private final JwtUtil jwtUtil;
+    private final MemberRepository memberRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
-        // 모든 STOMP 명령에서 Authorization 헤더 처리
-        String authHeader = accessor.getFirstNativeHeader("Authorization");
-        
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            log.info("STOMP {} 명령에서 JWT 토큰 발견: {}", accessor.getCommand(), token.substring(0, Math.min(50, token.length())) + "...");
+        // CONNECT 명령일 때만 JWT 인증 처리
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String authHeader = accessor.getFirstNativeHeader("Authorization");
             
-            // JWT 토큰을 메시지 헤더에 보존 (메시지 핸들러에서 접근 가능하도록)
-            accessor.setHeader("JWT_TOKEN", token);
-            
-            // CONNECT 명령일 때만 인증 처리
-            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                log.info("STOMP CONNECT에서 JWT 토큰 발견: {}", token.substring(0, Math.min(50, token.length())) + "...");
+                
                 try {
-                    // JWT 토큰 검증 (실제 구현 필요)
-                    // if (jwtUtil.validateToken(token)) {
-                    //     String userId = jwtUtil.extractUserId(token);
-                    //     accessor.setUser(() -> userId);
-                    //     log.info("STOMP JWT 인증 성공: {}", userId);
-                    // } else {
-                    //     log.error("STOMP JWT 토큰 검증 실패");
-                    //     return null; // 연결 거부
-                    // }
-
-                    // 임시로 인증 통과 처리
-                    log.info("STOMP 연결 허용 (임시)");
+                    // JWT 토큰 검증
+                    if (jwtUtil.validateToken(token)) {
+                        // JWT에서 사용자 ID 추출
+                        Long userId = jwtUtil.getUserId(token);
+                        if (userId == null) {
+                            // userId가 없으면 이메일로 조회
+                            String email = jwtUtil.getEmail(token);
+                            var member = memberRepository.findByEmail(email);
+                            if (member.isPresent()) {
+                                userId = member.get().getId();
+                            }
+                        }
+                        
+                        if (userId != null) {
+                            // 세션에 사용자 정보 저장
+                            final Long finalUserId = userId;
+                            accessor.setUser(() -> finalUserId.toString());
+                            accessor.setHeader("userId", finalUserId);
+                            log.info("STOMP JWT 인증 성공: userId={}", finalUserId);
+                        } else {
+                            log.error("STOMP JWT에서 사용자 정보를 추출할 수 없습니다");
+                            return null; // 연결 거부
+                        }
+                    } else {
+                        log.error("STOMP JWT 토큰 검증 실패");
+                        return null; // 연결 거부
+                    }
 
                 } catch (Exception e) {
-                    log.error("STOMP JWT 처리 오류: {}", e.getMessage());
+                    log.error("STOMP JWT 처리 오류: {}", e.getMessage(), e);
                     return null; // 연결 거부
                 }
-            }
-        } else {
-            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            } else {
                 log.warn("STOMP CONNECT에서 Authorization 헤더 없음");
                 // 개발 환경에서는 허용, 운영에서는 거부
                 // return null;
-            } else if (StompCommand.SEND.equals(accessor.getCommand())) {
-                log.warn("STOMP SEND에서 Authorization 헤더 없음 - 메시지: {}", accessor.getDestination());
             }
         }
 
