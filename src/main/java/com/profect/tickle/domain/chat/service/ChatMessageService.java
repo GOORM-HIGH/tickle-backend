@@ -1,35 +1,31 @@
 package com.profect.tickle.domain.chat.service;
 
+import com.profect.tickle.domain.chat.dto.common.PaginationDto;
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
 import com.profect.tickle.domain.chat.dto.websocket.WebSocketMessageResponseDto;
 import com.profect.tickle.domain.chat.entity.Chat;
-import com.profect.tickle.domain.chat.entity.ChatRoom;
-import com.profect.tickle.domain.chat.entity.ChatParticipants;
 import com.profect.tickle.domain.chat.entity.ChatMessageType;
-import com.profect.tickle.global.exception.BusinessException;
-import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.domain.chat.entity.ChatRoom;
+import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
+import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
 import com.profect.tickle.domain.chat.repository.ChatRepository;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
-import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
-import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
 import com.profect.tickle.domain.file.service.FileService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.chat.dto.common.PaginationDto;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +40,7 @@ public class ChatMessageService {
     private final ChatMessageMapper chatMessageMapper; // MyBatis
     private final FileService fileService;
     private final SimpMessagingTemplate simpMessagingTemplate; // WebSocket 템플릿
-
-    // ChatParticipantsService 의존성 제거
-    // private final ChatParticipantsService chatParticipantsService;
+    private final ChatMessageValidator chatMessageValidator; // 메시지 검증 전용
 
     /**
      * 메시지 전송 (JPA 사용)
@@ -65,8 +59,7 @@ public class ChatMessageService {
         }
 
         // 2. 발신자 존재 확인
-        Member sender = memberRepository.findById(senderId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        Member sender = memberRepository.findById(senderId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 3. 채팅방 참여 여부 확인
         boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, sender);
@@ -74,8 +67,8 @@ public class ChatMessageService {
             throw new BusinessException(ErrorCode.CHAT_NOT_PARTICIPANT);
         }
 
-        // 4. 메시지 검증
-        validateMessage(requestDto);
+        // 4. 메시지 검증 (SRP 준수: 검증 로직을 별도 클래스로 분리)
+        chatMessageValidator.validateMessage(requestDto);
 
         // 5. 메시지 엔티티 생성
         Chat message = Chat.builder()
@@ -100,12 +93,10 @@ public class ChatMessageService {
         // 7. 채팅방 업데이트 시간 갱신
         updateChatRoomTimestamp(chatRoom);
 
-        // 8. DTO 변환 및 반환
-        ChatMessageResponseDto response = ChatMessageResponseDto.fromEntityWithDetails(
-                savedMessage,
-                sender.getNickname(),
-                true
-        );
+        // 8. DTO 변환 및 반환 (개선된 Factory 패턴 사용)
+        ChatMessageResponseDto.ChatMessageContext context = 
+                new ChatMessageResponseDto.ChatMessageContext(savedMessage, sender.getNickname(), true);
+        ChatMessageResponseDto response = ChatMessageResponseDto.fromContext(context);
 
         log.info("메시지 전송 완료: messageId={}, senderId={}, senderNickname={}, actualNickname={}", 
                 savedMessage.getId(), savedMessage.getMember().getId(), 
@@ -187,11 +178,10 @@ public class ChatMessageService {
 
         log.info("메시지 수정 완료: messageId={}", messageId);
 
-        return ChatMessageResponseDto.fromEntityWithDetails(
-                message,
-                message.getMember().getNickname(),
-                true
-        );
+        // 5. DTO 변환 (개선된 Factory 패턴 사용)
+        ChatMessageResponseDto.ChatMessageContext context = 
+                new ChatMessageResponseDto.ChatMessageContext(message, message.getMember().getNickname(), true);
+        return ChatMessageResponseDto.fromContext(context);
     }
 
     /**
@@ -241,20 +231,18 @@ public class ChatMessageService {
     /**
      * 채팅방의 마지막 메시지 조회 (MyBatis 사용)
      */
-    // ChatMessageService에서 getLastMessage 메서드 수정
-    public ChatMessageResponseDto getLastMessage(Long chatRoomId, Long currentMemberId) { // 파라미터 추가
+    public ChatMessageResponseDto getLastMessage(Long chatRoomId, Long currentMemberId) {
         log.info("마지막 메시지 조회: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
         // 채팅방 존재 여부 확인
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
-        // MyBatis 매퍼 호출 (currentMemberId 추가)
-        ChatMessageResponseDto response = chatMessageMapper.findLastMessageByRoomId(chatRoomId, currentMemberId); // 파라미터 추가
+        // MyBatis 매퍼 호출
+        ChatMessageResponseDto response = chatMessageMapper.findLastMessageByRoomId(chatRoomId, currentMemberId);
 
         return response;
     }
-
 
     /**
      * 읽지않은 메시지 개수 조회 (MyBatis 사용)
@@ -297,42 +285,11 @@ public class ChatMessageService {
     // ===== Private 헬퍼 메서드들 =====
 
     /**
-     * 메시지 내용 검증
-     */
-    private void validateMessage(ChatMessageSendRequestDto requestDto) {
-        switch (requestDto.getMessageType()) {
-            case TEXT:
-                if (requestDto.getContent() == null || requestDto.getContent().trim().isEmpty()) {
-                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_EMPTY_CONTENT);
-                }
-                if (requestDto.getContent().length() > 255) {
-                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_TOO_LONG);
-                }
-                break;
-
-            case FILE:
-            case IMAGE:
-                if (requestDto.getFilePath() == null || requestDto.getFileName() == null) {
-                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_MISSING_FILE_INFO);
-                }
-                if (requestDto.getFileSize() == null || requestDto.getFileSize() <= 0) {
-                    throw new BusinessException(ErrorCode.CHAT_MESSAGE_INVALID_FILE_SIZE);
-                }
-                break;
-
-            case SYSTEM:
-                // 시스템 메시지는 별도 검증 로직
-                break;
-        }
-    }
-
-    /**
      * 채팅방 타임스탬프 업데이트
      */
     private void updateChatRoomTimestamp(ChatRoom chatRoom) {
         chatRoom.updateTimestamp();
     }
-
 
     /**
      * 메시지 첨부 파일 다운로드용 정보 조회
@@ -375,5 +332,4 @@ public class ChatMessageService {
                 .fileSize(message.getFileSize())
                 .build();
     }
-
 }
