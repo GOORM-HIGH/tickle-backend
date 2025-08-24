@@ -180,5 +180,69 @@ class PerformanceServiceTest {
         verify(performanceMapper).findTop4UpcomingPerformances();
     }
 
+    @Test
+    @DisplayName("키워드 '뮤지'로 검색하면 2번째 페이지가 반환되고 전체 개수·페이지 수·마지막 여부가 올바르게 계산된다.")
+    void TC_PERFORMANCE_007() {
+        // Given
+        String keyword = "뮤지";
+        int page = 1, size = 10;
+        long total = 25L; // (참고) count는 종료 포함일 수 있음 - 현재 쿼리 기준
+        int expectedOffset = page * size; // 10
+
+        when(performanceMapper.countPerformancesByKeyword(keyword)).thenReturn(total);
+
+        List<PerformanceDto> items = IntStream.range(0, 10)
+                .mapToObj(i -> PerformanceDto.builder()
+                        .performanceId(100L + i)
+                        .title("뮤지컬-" + i)
+                        .date(Instant.parse("2025-09-" + String.format("%02d", (i % 28) + 1) + "T00:00:00Z"))
+                        .build())
+                .toList();
+        when(performanceMapper.searchPerformancesByKeyword(keyword, expectedOffset, size))
+                .thenReturn(items);
+
+        // When
+        PagingResponse<PerformanceDto> result = performanceService.searchPerformances(keyword, page, size);
+
+        // Then
+        assertThat(result.content()).hasSize(10);
+        assertThat(result.page()).isEqualTo(1);
+        assertThat(result.size()).isEqualTo(10);
+        assertThat(result.totalElements()).isEqualTo(25);
+        assertThat(result.totalPages()).isEqualTo(3); // ceil(25/10)=3
+        assertThat(result.isLast()).isFalse();
+
+        verify(performanceMapper).countPerformancesByKeyword(keyword);
+        verify(performanceMapper).searchPerformancesByKeyword(keyword, expectedOffset, size);
+        verifyNoMoreInteractions(performanceMapper);
+    }
+
+    @Test
+    @DisplayName("키워드 'zzxy'과 같이 관련 없는 키워드를 검색하면 결과가 없어 빈 목록과 total=0,totalPages=0, 마지막 페이지가 반환된다.")
+    void TC_PERFORMANCE_008() {
+        // Given
+        String keyword = "zzxy";
+        int page = 0, size = 10;
+
+        when(performanceMapper.countPerformancesByKeyword(keyword)).thenReturn(0L);
+
+        // When
+        PagingResponse<PerformanceDto> result = performanceService.searchPerformances(keyword, page, size);
+
+        // Then
+        assertThat(result.content()).isEmpty();
+        assertThat(result.page()).isEqualTo(0);
+        assertThat(result.size()).isEqualTo(10);
+        assertThat(result.totalElements()).isZero();
+        assertThat(result.totalPages()).isZero();
+        assertThat(result.isLast()).isTrue();
+
+        verify(performanceMapper).countPerformancesByKeyword(keyword);
+        verify(performanceMapper, never()).searchPerformancesByKeyword(anyString(), anyInt(), anyInt());
+        verifyNoMoreInteractions(performanceMapper);
+    }
+
+
+
 
 }
