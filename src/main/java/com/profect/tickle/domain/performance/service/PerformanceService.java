@@ -25,11 +25,11 @@ import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -81,7 +81,10 @@ public class PerformanceService {
         return performanceMapper.findTop10ByClickCount();
     }
 
+    @Transactional
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {
+        validateId(performanceId);
+
         PerformanceDetailDto result = performanceMapper.findDetailById(performanceId);
         if (result == null) {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
@@ -213,5 +216,11 @@ public class PerformanceService {
         Member signinMember = memberMapper.findByEmail(SecurityUtil.getSignInMemberEmail()).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         eventPublisher.publishEvent(new PerformanceModifiedEvent(performance, reservationList, signinMember));
+    }
+
+    private void validateId(Long performanceId) {
+        if(performanceId == null || performanceId <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 }
