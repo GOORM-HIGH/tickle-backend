@@ -38,31 +38,12 @@ public class SseSender implements RealtimeSender {
     private final Supplier<UUID> uuidSupplier;
     private final Executor sseExecutor;
 
+    private final ConcurrentMap<String, SerialExecutor> lanes = new ConcurrentHashMap<>(); // 순서 저장용 맵
+    private final AtomicLong lastEventId = new AtomicLong(0); // SSE 아이디 카운터
+
     // repositories / properties
     private final NotificationProperty notificationProperty;
     private final SseRepository sseRepository;
-
-    // ---- per-emitter 직렬 실행기(동일 emitter는 순서 보장, emitter 간 병렬 허용)
-    private final ConcurrentMap<String, SerialExecutor> lanes = new ConcurrentHashMap<>();
-
-    private SerialExecutor laneOf(String emitterId) {
-        return lanes.computeIfAbsent(emitterId, id -> new SerialExecutor(sseExecutor));
-    }
-
-    private void removeLane(String emitterId) {
-        lanes.remove(emitterId);
-    }
-
-    // ---- 단조 증가 event id (system clock 역행에도 보정)
-    private final AtomicLong lastEventId = new AtomicLong(0);
-
-    private long nextEventId() {
-        while (true) {
-            long prev = lastEventId.get();
-            long candidate = Math.max(prev + 1, clock.millis());
-            if (lastEventId.compareAndSet(prev, candidate)) return candidate;
-        }
-    }
 
     @Override
     public SseEmitter connect(@NotNull Long memberId, @Nullable String lastEventIdHeader) {
@@ -140,7 +121,9 @@ public class SseSender implements RealtimeSender {
         resendInternal(memberId, /*emitterId*/ null, emitter, lastEventIdHeader);
     }
 
+
     // lane을 사용할 수 있도록 emitterId를 받는 내부 구현
+
     private void resendInternal(long memberId, @Nullable String emitterId, SseEmitter emitter, String lastEventIdHeader) {
         final long last;
         try {
@@ -251,8 +234,26 @@ public class SseSender implements RealtimeSender {
         });
     }
 
+    private SerialExecutor laneOf(String emitterId) {
+        return lanes.computeIfAbsent(emitterId, id -> new SerialExecutor(sseExecutor));
+    }
+
+    private long nextEventId() {
+        while (true) {
+            long prev = lastEventId.get();
+            long candidate = Math.max(prev + 1, clock.millis());
+            if (lastEventId.compareAndSet(prev, candidate)) return candidate;
+        }
+    }
+
+    private void removeLane(String emitterId) {
+        lanes.remove(emitterId);
+    }
+
     // ---- 간단한 직렬 실행기 (Guava SerializingExecutor 유사)
     static final class SerialExecutor implements Executor {
+
+
         private final Executor backend;
         private final ArrayDeque<Runnable> tasks = new ArrayDeque<>();
         private Runnable active;
