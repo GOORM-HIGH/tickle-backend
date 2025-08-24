@@ -242,7 +242,49 @@ class PerformanceServiceTest {
         verifyNoMoreInteractions(performanceMapper);
     }
 
+    @Test
+    @DisplayName("같은 장르의 다른 공연을 조회하면 자기 자신과 종료 공연을 제외한 목록이 반환된다.")
+    void TC_PERFORMANCE_009() {
+        // Given
+        Long performanceId = 10L;
+        Long genreId = 7L;
 
+        when(performanceMapper.findGenreIdByPerformanceId(performanceId)).thenReturn(genreId);
+
+        List<PerformanceDto> related = List.of(
+                PerformanceDto.builder().performanceId(101L).title("동장르-공연1")
+                        .date(Instant.parse("2025-09-01T00:00:00Z")).build(),
+                PerformanceDto.builder().performanceId(102L).title("동장르-공연2")
+                        .date(Instant.parse("2025-09-10T00:00:00Z")).build()
+        );
+        when(performanceMapper.findRelatedPerformances(genreId, performanceId)).thenReturn(related);
+
+        // When
+        List<PerformanceDto> result = performanceService.getRelatedPerformances(performanceId);
+
+        // Then
+        assertThat(result).hasSize(2).containsExactlyElementsOf(related);
+
+        verify(performanceMapper).findGenreIdByPerformanceId(performanceId);
+        verify(performanceMapper).findRelatedPerformances(genreId, performanceId);
+        verifyNoMoreInteractions(performanceMapper);
+    }
+
+    @Test
+    @DisplayName("대상 공연의 장르를 찾지 못하면 '공연을 찾을 수 없음' 오류가 발생한다.")
+    void TC_PERFORMANCE_010() {
+        // Given
+        Long performanceId = 10L;
+        when(performanceMapper.findGenreIdByPerformanceId(performanceId)).thenReturn(null);
+
+        // When & Then
+        assertThatThrownBy(() -> performanceService.getRelatedPerformances(performanceId))
+                .isInstanceOf(BusinessException.class);
+
+        verify(performanceMapper).findGenreIdByPerformanceId(performanceId);
+        verify(performanceMapper, never()).findRelatedPerformances(anyLong(), anyLong());
+        verifyNoMoreInteractions(performanceMapper);
+    }
 
 
 }
