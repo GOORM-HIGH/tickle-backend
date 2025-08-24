@@ -21,6 +21,7 @@ import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
 import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.paging.PageRequest;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
@@ -50,40 +51,45 @@ public class PerformanceService {
     private final MemberMapper memberMapper;
     private final ReservationMapper reservationMapper;
 
+    @Transactional(readOnly = true)
     public List<GenreDto> getAllGenre() {
         return performanceMapper.findAllGenres();
     }
 
+    @Transactional(readOnly = true)
     public PagingResponse<PerformanceDto> getPerformancesByGenre(Long genreId, int page, int size) {
-        int offset = page * size;
+        validateGenreId(genreId);
+        var pr = PageRequest.of(page, size);
 
-        List<PerformanceDto> contents = performanceMapper.findPerformancesByGenre(genreId, offset, size);
-        int totalCount = performanceMapper.countPerformancesByGenre(genreId);
+        long total = performanceMapper.countPerformancesByGenre(genreId);
+        if (total == 0) {
+            return emptyResponse(pr, total);
+        }
 
-        int totalPages = (int) Math.ceil((double) totalCount / size);
-        boolean isLast = page + 1 >= totalPages;
+        int totalPages = PageRequest.calcTotalPages(total, pr.size());
+        if (pr.page() >= totalPages) {
+            return emptyResponse(pr, total);
+        }
 
-        return new PagingResponse<>(
-                contents,
-                page,
-                size,
-                totalCount,
-                totalPages,
-                isLast
-        );
+        List<PerformanceDto> content =
+                performanceMapper.findPerformancesByGenre(genreId, pr.offset(), pr.size());
+        return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
+    @Transactional(readOnly = true)
     public List<PerformanceDto> getTop10ByGenre(Long genreId) {
+        validateGenreId(genreId);
         return performanceMapper.findTop10ByGenre(genreId);
     }
 
+    @Transactional(readOnly = true)
     public List<PerformanceDto> getTop10Performances() {
         return performanceMapper.findTop10ByClickCount();
     }
 
     @Transactional
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {
-        validateId(performanceId);
+        validatePerfId(performanceId);
 
         PerformanceDetailDto result = performanceMapper.findDetailById(performanceId);
         if (result == null) {
@@ -95,27 +101,28 @@ public class PerformanceService {
         return result;
     }
 
+    @Transactional(readOnly = true)
     public List<PerformanceDto> getTop4UpcomingPerformances() {
         return performanceMapper.findTop4UpcomingPerformances();
     }
 
+    @Transactional(readOnly = true)
     public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
-        int offset = page * size;
+        var pr = PageRequest.of(page, size);
 
-        List<PerformanceDto> searchResult = performanceMapper.searchPerformancesByKeyword(keyword, size, offset);
-        long totalCount = performanceMapper.countPerformancesByKeyword(keyword);
+        long total = performanceMapper.countPerformancesByKeyword(keyword);
+        if (total == 0) {
+            return emptyResponse(pr, total);
+        }
 
-        int totalPages = (int) Math.ceil((double) totalCount / size);
-        boolean isLast = page + 1 >= totalPages;
+        int totalPages = PageRequest.calcTotalPages(total, pr.size());
+        if (pr.page() >= totalPages) {
+            return emptyResponse(pr, total);
+        }
 
-        return new PagingResponse<>(
-                searchResult,
-                page,
-                size,
-                totalCount,
-                totalPages,
-                isLast
-        );
+        List<PerformanceDto> content =
+                performanceMapper.searchPerformancesByKeyword(keyword, pr.offset(), pr.size());
+        return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
     public List<PerformanceDto> getRelatedPerformances(Long performanceId) {
@@ -193,6 +200,7 @@ public class PerformanceService {
         performance.markAsDeleted();
     }
 
+    @Transactional(readOnly = true)
     public List<PerformanceHostDto> getMyPerformances(Long memberId) {
         return performanceMapper.findPerformancesByMemberId(memberId);
     }
@@ -218,9 +226,19 @@ public class PerformanceService {
         eventPublisher.publishEvent(new PerformanceModifiedEvent(performance, reservationList, signinMember));
     }
 
-    private void validateId(Long performanceId) {
+    private void validatePerfId(Long performanceId) {
         if(performanceId == null || performanceId <= 0) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private void validateGenreId(Long genreId) {
+        if (genreId == null || genreId <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private <T> PagingResponse<T> emptyResponse(PageRequest pr, long total) {
+        return PagingResponse.from(List.of(), pr.page(), pr.size(), total);
     }
 }
