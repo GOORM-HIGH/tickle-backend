@@ -19,7 +19,7 @@ public class ChatRoom {
     private Long id;
 
     @Column(name = "performance_id", nullable = false)
-    private Long performanceId;  // 단순한 FK
+    private Long performanceId;
 
     @Column(name = "chat_room_name", length = 20, nullable = false)
     private String name;
@@ -47,7 +47,7 @@ public class ChatRoom {
         updatedAt = Instant.now();
     }
 
-    // ✅ 비즈니스 메서드들
+    // 비즈니스 메서드들
     public void updateStatus(boolean status) {
         this.status = status;
         this.updatedAt = Instant.now();
@@ -61,7 +61,7 @@ public class ChatRoom {
         return isActive() && currentParticipantCount < maxParticipants;
     }
 
-    // ✅ 추가: 외부에서 호출 가능한 public 메서드
+    // 추가: 외부에서 호출 가능한 public 메서드
     public void updateTimestamp() {
         this.updatedAt = Instant.now();
     }
