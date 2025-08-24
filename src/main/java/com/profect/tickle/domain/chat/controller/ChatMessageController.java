@@ -1,12 +1,14 @@
 package com.profect.tickle.domain.chat.controller;
 
-import com.profect.tickle.domain.chat.annotation.CurrentMember; // import 추가
-import com.profect.tickle.global.response.ResultResponse;
-import com.profect.tickle.global.response.ResultCode;
+import com.profect.tickle.domain.chat.annotation.CurrentMember;
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
 import com.profect.tickle.domain.chat.service.ChatMessageService;
+import com.profect.tickle.domain.file.service.FileService;
+import com.profect.tickle.global.response.ResultCode;
+import com.profect.tickle.global.response.ResultResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,8 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
-import com.profect.tickle.domain.file.service.FileService;
 
 @RestController
 @RequestMapping("/api/v1/chat/rooms/{chatRoomId}/messages")

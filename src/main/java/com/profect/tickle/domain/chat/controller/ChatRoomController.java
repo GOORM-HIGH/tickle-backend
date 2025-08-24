@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.chat.controller;
 
-import com.profect.tickle.domain.chat.annotation.CurrentMember; // ✅ import 추가
+import com.profect.tickle.domain.chat.annotation.CurrentMember;
 import com.profect.tickle.global.response.ResultResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.domain.chat.dto.request.ChatRoomCreateRequestDto;
@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -72,7 +71,7 @@ public class ChatRoomController {
             @Parameter(description = "공연 ID", required = true, example = "123")
             @PathVariable Long performanceId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId) { // ✅ 변경
+            @CurrentMember Long currentMemberId) {
 
         log.info("공연별 채팅방 조회 API 호출: performanceId={}, memberId={}", performanceId, currentMemberId);
 
@@ -152,7 +151,7 @@ public class ChatRoomController {
             @Parameter(description = "채팅방 ID", required = true, example = "456")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId) { // ✅ 변경
+            @CurrentMember Long currentMemberId) {
 
         log.info("채팅방 참여 여부 확인 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 

@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.chat.controller;
 
-import com.profect.tickle.domain.chat.annotation.CurrentMember; // ✅ import 추가
+import com.profect.tickle.domain.chat.annotation.CurrentMember;
 import com.profect.tickle.global.response.ResultResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.domain.chat.dto.request.ChatRoomJoinRequestDto;
@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -50,7 +49,7 @@ public class ChatParticipantsController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // ✅ 변경
+            @CurrentMember Long currentMemberId,
             @Valid @RequestBody ChatRoomJoinRequestDto requestDto) {
 
         log.info("채팅방 참여 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
@@ -78,7 +77,7 @@ public class ChatParticipantsController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId) { // ✅ 변경
+            @CurrentMember Long currentMemberId) {
 
         log.info("채팅방 나가기 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
@@ -105,7 +104,7 @@ public class ChatParticipantsController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId, // ✅ 변경
+            @CurrentMember Long currentMemberId,
             @Valid @RequestBody ReadMessageRequestDto requestDto) {
 
         log.info("메시지 읽음 처리 API 호출: chatRoomId={}, memberId={}, messageId={}",
@@ -134,7 +133,7 @@ public class ChatParticipantsController {
             @Parameter(description = "채팅방 ID", required = true, example = "123")
             @PathVariable Long chatRoomId,
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId) { // ✅ 변경
+            @CurrentMember Long currentMemberId) {
 
         log.info("읽지않은 메시지 개수 조회 API 호출: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
@@ -183,7 +182,7 @@ public class ChatParticipantsController {
     @GetMapping("/my-rooms")
     public ResultResponse<List<ChatParticipantsResponseDto>> getMyChatRooms(
             @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @CurrentMember Long currentMemberId) { // ✅ 변경
+            @CurrentMember Long currentMemberId) {
 
         log.info("내 채팅방 목록 조회 API 호출: memberId={}", currentMemberId);
 
