@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.performance.service;
 
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.event.reservation.event.PerformanceModifiedEvent;
@@ -205,6 +206,18 @@ public class PerformanceService {
 
     @Transactional(readOnly = true)
     public List<PerformanceHostDto> getMyPerformances(Long memberId) {
+        Long signInMemberId = SecurityUtil.getSignInMemberId();
+        Member me = memberRepository.findById(signInMemberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (me.getMemberRole() != MemberRole.HOST) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        if (!signInMemberId.equals(memberId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
         return performanceMapper.findPerformancesByMemberId(memberId);
     }
 
@@ -244,4 +257,5 @@ public class PerformanceService {
     private <T> PagingResponse<T> emptyResponse(PageRequest pr, long total) {
         return PagingResponse.from(List.of(), pr.page(), pr.size(), total);
     }
+
 }
