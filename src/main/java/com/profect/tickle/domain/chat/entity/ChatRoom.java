@@ -1,6 +1,5 @@
 package com.profect.tickle.domain.chat.entity;
 
-import com.profect.tickle.domain.performance.entity.Performance;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,7 +19,7 @@ public class ChatRoom {
     private Long id;
 
     @Column(name = "performance_id", nullable = false)
-    private Long performanceId;  // ✅ 단순한 FK
+    private Long performanceId;  // 단순한 FK
 
     @Column(name = "chat_room_name", length = 20, nullable = false)
     private String name;
@@ -55,7 +54,7 @@ public class ChatRoom {
     }
 
     public boolean isActive() {
-        return this.status == true;
+        return this.status;
     }
 
     public boolean canJoin(int currentParticipantCount) {
