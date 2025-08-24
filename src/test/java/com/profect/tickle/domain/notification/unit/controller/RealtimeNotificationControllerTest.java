@@ -1,6 +1,7 @@
-package com.profect.tickle.domain.notification.controller;
+package com.profect.tickle.domain.notification.unit.controller;
 
 import com.profect.tickle.domain.chat.config.ChatJwtAuthenticationInterceptor;
+import com.profect.tickle.domain.notification.controller.RealtimeNotificationController;
 import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
 import com.profect.tickle.testsecurity.WithMockMember;
 import org.junit.jupiter.api.BeforeEach;

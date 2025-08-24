@@ -1,9 +1,10 @@
-package com.profect.tickle.domain.notification.service.realtime;
+package com.profect.tickle.domain.notification.unit.service.realtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
+import com.profect.tickle.domain.notification.service.realtime.SseSender;
 import com.profect.tickle.domain.notification.util.NotificationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,7 +1,9 @@
-package com.profect.tickle.domain.notification.service.mail;
+package com.profect.tickle.domain.notification.unit.service.mail;
 
 import com.profect.tickle.domain.notification.config.NonRetryableMailException;
 import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
+import com.profect.tickle.domain.notification.service.mail.MailErrorInspector;
+import com.profect.tickle.domain.notification.service.mail.SmtpMailSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
