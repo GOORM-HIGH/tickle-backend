@@ -1,23 +1,31 @@
 package com.profect.tickle.domain.performance.service;
 
+import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.entity.MemberRole;
+import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
+import com.profect.tickle.domain.performance.dto.response.PerformanceHostDto;
 import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
+import com.profect.tickle.global.security.util.SecurityUtil;
+import com.profect.tickle.testsecurity.WithMockMember;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
@@ -28,6 +36,9 @@ class PerformanceServiceTest {
 
     @Mock
     PerformanceMapper performanceMapper;
+
+    @Mock
+    MemberRepository memberRepository;
 
     @InjectMocks
     PerformanceService performanceService;
@@ -286,5 +297,106 @@ class PerformanceServiceTest {
         verifyNoMoreInteractions(performanceMapper);
     }
 
+    @Test
+    @DisplayName("HOST 본인이 자신의 공연 목록을 조회하면 최신 생성일 순으로 반환된다.")
+    void TC_PERFORMANCE_011_HOST_OK() {
+        // Given
+        Long memberId = 100L;
+        Member me = stubMember(MemberRole.HOST);
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(me));
+
+        var now = Instant.parse("2025-08-24T12:00:00Z");
+        List<PerformanceHostDto> expected = List.of(
+                PerformanceHostDto.builder().performanceId(3L).title("최신").createdDate(now.plusSeconds(120)).build(),
+                PerformanceHostDto.builder().performanceId(2L).title("이전").createdDate(now.plusSeconds(60)).build(),
+                PerformanceHostDto.builder().performanceId(1L).title("더이전").createdDate(now).build()
+        );
+        when(performanceMapper.findPerformancesByMemberId(memberId)).thenReturn(expected);
+
+        try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
+            mocked.when(SecurityUtil::getSignInMemberId).thenReturn(memberId);
+
+            // When
+            List<PerformanceHostDto> result = performanceService.getMyPerformances(memberId);
+
+            // Then
+            assertThat(result).containsExactlyElementsOf(expected);
+            assertThat(result.get(0).getCreatedDate()).isAfter(result.get(1).getCreatedDate());
+            assertThat(result.get(1).getCreatedDate()).isAfter(result.get(2).getCreatedDate());
+
+            verify(memberRepository).findById(memberId);
+            verify(performanceMapper).findPerformancesByMemberId(memberId);
+            verifyNoMoreInteractions(performanceMapper);
+        }
+    }
+
+    @Test
+    @DisplayName("HOST가 아니면 내 공연 목록 조회가 NO_PERMISSION으로 거절된다.")
+    void TC_PERFORMANCE_011_FORBIDDEN_NON_HOST() {
+        // Given
+        Long signInId = 100L;
+        Long targetId = 100L;
+
+        Member me = stubMember(MemberRole.MEMBER); // HOST 아님
+        when(memberRepository.findById(signInId)).thenReturn(Optional.of(me));
+
+        try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
+            mocked.when(SecurityUtil::getSignInMemberId).thenReturn(signInId);
+
+            // When & Then
+            assertThatThrownBy(() -> performanceService.getMyPerformances(targetId))
+                    .isInstanceOf(BusinessException.class);
+
+            verify(memberRepository).findById(signInId);
+            verify(performanceMapper, never()).findPerformancesByMemberId(anyLong());
+        }
+    }
+
+    @Test
+    @DisplayName("HOST라도 본인이 아닌 memberId로 요청하면 NO_PERMISSION으로 거절된다.")
+    void TC_PERFORMANCE_011_FORBIDDEN_NOT_SELF() {
+        // Given
+        Long signInId = 100L;
+        Long otherId = 200L;
+
+        Member me = stubMember(MemberRole.HOST);
+        when(memberRepository.findById(signInId)).thenReturn(Optional.of(me));
+
+        try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
+            mocked.when(SecurityUtil::getSignInMemberId).thenReturn(signInId);
+
+            // When & Then
+            assertThatThrownBy(() -> performanceService.getMyPerformances(otherId))
+                    .isInstanceOf(BusinessException.class);
+
+            verify(memberRepository).findById(signInId);
+            verify(performanceMapper, never()).findPerformancesByMemberId(anyLong());
+        }
+    }
+
+    @Test
+    @DisplayName("로그인 사용자를 찾지 못하면 MEMBER_NOT_FOUND 오류가 발생한다.")
+    void TC_PERFORMANCE_011_MEMBER_NOT_FOUND() {
+        // Given
+        Long signInId = 100L;
+        when(memberRepository.findById(signInId)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
+            mocked.when(SecurityUtil::getSignInMemberId).thenReturn(signInId);
+
+            // When & Then
+            assertThatThrownBy(() -> performanceService.getMyPerformances(signInId))
+                    .isInstanceOf(BusinessException.class);
+
+            verify(memberRepository).findById(signInId);
+            verify(performanceMapper, never()).findPerformancesByMemberId(anyLong());
+        }
+    }
+
+    private Member stubMember(MemberRole role) {
+        Member m = mock(Member.class);
+        when(m.getMemberRole()).thenReturn(role);
+        return m;
+    }
 
 }
