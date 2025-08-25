@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
-public class NotificationUtil {
+public class JsonUtil {
 
     public static String toJson(ObjectMapper mapper, Object obj) {
         try {
