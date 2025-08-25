@@ -18,8 +18,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +30,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ActiveProfiles("test")
 @SpringBootTest
-@Sql(scripts = {"classpath:sql/cleanup.sql", "classpath:sql/data.sql"},
-        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY) // <- 반드시 추가
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:tickle;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
+})
+@Sql(scripts = "classpath:sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "classpath:sql/schema.sql",  executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "classpath:sql/data.sql",    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class EventServiceImplTest{
 
     @Autowired

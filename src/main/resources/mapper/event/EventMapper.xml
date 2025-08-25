@@ -54,7 +54,7 @@
         JOIN performance p ON s.performance_id = p.performance_id
         JOIN status st ON e.status_id = st.status_id
         WHERE p.performance_end_date &gt;= NOW()
-        ORDER BY e.event_created_at DESC
+        ORDER BY e.event_created_at
         LIMIT #{size} OFFSET #{offset}
     </select>
 
