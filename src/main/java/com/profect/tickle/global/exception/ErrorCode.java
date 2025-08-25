@@ -16,7 +16,7 @@ public enum ErrorCode {
 
     //EVENT
     EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "이벤트 정보를 찾을 수 없습니다."),
-    EVENT_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "이벤트가 진행 중이 아닙니다."),
+    EVENT_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "진행중인 이벤트가 아닙니다."),
 
     //COUPON
     COUPON_SOLD_OUT(HttpStatus.CONFLICT, "쿠폰이 모두 소진되었습니다."),
