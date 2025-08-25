@@ -6,7 +6,7 @@ import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
 import com.profect.tickle.domain.notification.service.realtime.SseSender;
-import com.profect.tickle.domain.notification.util.NotificationUtil;
+import com.profect.tickle.global.util.JsonUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
@@ -49,9 +49,9 @@ class RealtimeNotificationIntegrationTest {
                     Mockito.doNothing().when(mock).send(Mockito.any(SseEmitter.SseEventBuilder.class));
                     Mockito.doNothing().when(mock).send(Mockito.any(), Mockito.any());
                 });
-             MockedStatic<NotificationUtil> st = Mockito.mockStatic(NotificationUtil.class)) {
+             MockedStatic<JsonUtils> st = Mockito.mockStatic(JsonUtils.class)) {
 
-            st.when(() -> NotificationUtil.toJson(any(ObjectMapper.class), any()))
+            st.when(() -> JsonUtils.toJson(any(ObjectMapper.class), any()))
                     .thenReturn("{\"x\":1}");
 
             // when
@@ -82,9 +82,9 @@ class RealtimeNotificationIntegrationTest {
                     Mockito.doNothing().when(mock).send(Mockito.any(SseEmitter.SseEventBuilder.class));
                     Mockito.doNothing().when(mock).send(Mockito.any(), Mockito.any());
                 });
-             MockedStatic<NotificationUtil> st = Mockito.mockStatic(NotificationUtil.class)) {
+             MockedStatic<JsonUtils> st = Mockito.mockStatic(JsonUtils.class)) {
 
-            st.when(() -> NotificationUtil.toJson(any(ObjectMapper.class), any()))
+            st.when(() -> JsonUtils.toJson(any(ObjectMapper.class), any()))
                     .thenReturn("{\"n\":1}");
 
             // given: emitter 두 개 연결(테스트 config의 uuidSupplier가 서로 다른 ID 보장)
@@ -111,9 +111,9 @@ class RealtimeNotificationIntegrationTest {
         try (MockedConstruction<SseEmitter> cons = Mockito.mockConstruction(
                 SseEmitter.class,
                 (mock, ctx) -> Mockito.doNothing().when(mock).send(Mockito.any(SseEmitter.SseEventBuilder.class)));
-             MockedStatic<NotificationUtil> st = Mockito.mockStatic(NotificationUtil.class)) {
+             MockedStatic<JsonUtils> st = Mockito.mockStatic(JsonUtils.class)) {
 
-            st.when(() -> NotificationUtil.toJson(any(ObjectMapper.class), any()))
+            st.when(() -> JsonUtils.toJson(any(ObjectMapper.class), any()))
                     .thenReturn("{\"n\":1}");
 
             // given
