@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.file.controller;
 
-import com.profect.tickle.domain.chat.dto.common.ApiResponseDto;
+import com.profect.tickle.domain.chat.annotation.CurrentMember;
 import com.profect.tickle.domain.file.dto.response.FileUploadResponseDto;
 import com.profect.tickle.domain.file.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/files")
@@ -39,18 +42,78 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping("/upload")
-    public ResponseEntity<ApiResponseDto<FileUploadResponseDto>> uploadFile(
-            @Parameter(description = "업로드할 파일", required = true)
+    public ResponseEntity<FileUploadResponseDto> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
-            @RequestHeader("X-Member-Id") Long uploaderId) {
-
-        log.info("파일 업로드 API 호출: fileName={}, size={}, uploaderId={}",
-                file.getOriginalFilename(), file.getSize(), uploaderId);
-
+            @CurrentMember Long uploaderId) {
+        
         FileUploadResponseDto response = fileService.uploadFile(file, uploaderId);
+        return ResponseEntity.ok(response);
+    }
 
-        return ResponseEntity.status(201)
-                .body(ApiResponseDto.created(response));
+    // 사용자별 커스텀 이미지 업로드 (프로필 사진, 공연 이미지 등)
+    @PostMapping("/custom-image")
+    public ResponseEntity<FileUploadResponseDto> uploadCustomImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("imageType") String imageType, // "profile" 또는 "performance"
+            @CurrentMember Long uploaderId) {
+        
+        // 이미지 파일 검증
+        if (!file.getContentType().startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
+        }
+        
+        // 이미지 타입 검증
+        if (!imageType.equals("profile") && !imageType.equals("performance")) {
+            throw new IllegalArgumentException("imageType은 'profile' 또는 'performance'만 가능합니다.");
+        }
+        
+        FileUploadResponseDto response = fileService.uploadUserFile(file, uploaderId, imageType);
+        return ResponseEntity.ok(response);
+    }
+
+    // 사용자별 커스텀 이미지 다운로드 (PreSigned URL 반환)
+    @GetMapping("/custom-image/download")
+    public ResponseEntity<Map<String, Object>> downloadCustomImage(
+            @RequestParam("fileName") String fileName,
+            @RequestParam("imageType") String imageType,
+            @CurrentMember Long requestUserId) {
+        
+        try {
+            String downloadUrl = fileService.generatePreSignedUrl(fileName, requestUserId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("downloadUrl", downloadUrl);
+            response.put("fileName", fileName);
+            response.put("imageType", imageType);
+            response.put("message", "다운로드 URL이 생성되었습니다.");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "다운로드 URL 생성에 실패했습니다: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    // 채팅 메시지 첨부 파일 다운로드 (PreSigned URL 반환)
+    @GetMapping("/chat/download")
+    public ResponseEntity<Map<String, Object>> downloadChatFile(
+            @RequestParam("fileName") String fileName,
+            @CurrentMember Long requestUserId) {
+        
+        try {
+            String downloadUrl = fileService.generatePreSignedUrl(fileName);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("downloadUrl", downloadUrl);
+            response.put("fileName", fileName);
+            response.put("message", "채팅 파일 다운로드 URL이 생성되었습니다.");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "다운로드 URL 생성에 실패했습니다: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
     }
 }

@@ -51,7 +51,7 @@ public interface PerformanceMapper {
 
     Boolean isScrapped(Long memberId, Long performanceId);
 
-    PerformanceDto findByReservationId(Long reservationId);
+    PerformanceServiceDto findByReservationId(Long reservationId);
 
-    Optional<PerformanceDto> findById(@Param("performanceId") Long performanceId);
+    Optional<PerformanceServiceDto> findById(@Param("id") Long id);
 }

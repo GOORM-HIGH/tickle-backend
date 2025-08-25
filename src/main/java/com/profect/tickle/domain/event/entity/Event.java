@@ -5,6 +5,7 @@ import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
+import com.profect.tickle.global.status.StatusIds;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -27,8 +28,7 @@ public class Event {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id", nullable = false)
+    @OneToOne(mappedBy = "event")
     private Seat seat;
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -102,8 +102,9 @@ public class Event {
     }
 
     public void accumulate(Short perPrice) {
-        if (this.status.getId() != 5) {
-            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);}
+        if (!this.status.getId().equals(StatusIds.Event.IN_PROGRESS)) {
+            throw  new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
+        }
         this.accrued += perPrice;
     }
 

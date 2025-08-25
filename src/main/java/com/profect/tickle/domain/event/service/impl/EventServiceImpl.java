@@ -32,10 +32,12 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -46,21 +48,25 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
+
+    // utils
+    private final PointTarget eventTarget = PointTarget.EVENT;
+    private final StatusProvider statusProvider;
+    private final Clock clock;
+    private final ZoneId zone = ZoneId.systemDefault();
+
+    // mapper & repositories
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
     private final CouponReceivedRepository couponReceivedRepository;
+    private final PerformanceRepository performanceRepository;
     private final PointRepository pointRepository;
-
     private final EventMapper eventMapper;
     private final CouponMapper couponMapper;
     private final CouponReceivedMapper couponReceivedMapper;
-
-    private final PointTarget eventTarget = PointTarget.EVENT;
-    private final PerformanceRepository performanceRepository;
-    private final StatusProvider statusProvider;
 
     @Override
     @Transactional
@@ -174,20 +180,15 @@ public class EventServiceImpl implements EventService {
         Coupon coupon = event.getCoupon();
         Member member = getMemberOrThrow();
 
-        if (coupon == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
+        checkDuplicateCoupon(member, coupon);
+        checkEventInProgress(event);
 
-        if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
-            throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
-        }
-
-        if (coupon.getCount() <= 0) {
-            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
-            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
-        }
-
-        coupon.decreaseCount();
         Status issuedStatus = statusProvider.provide(StatusIds.Coupon.AVAILABLE);
         couponReceivedRepository.save(CouponReceived.create(member, coupon, issuedStatus));
+
+        coupon.decreaseCount();
+
+        endEventIfCouponOutOfStock(coupon, event);
     }
 
     @Override
@@ -240,6 +241,18 @@ public class EventServiceImpl implements EventService {
         return PagingResponse.from(list, page, size, total);
     }
 
+    @Override
+    public List<ExpiringSoonCouponResponseDto> getCouponListExpiringUntil(@NotNull LocalDate untilDate) {
+        Instant now = Instant.now(clock);
+        Instant endExclusive = untilDate.plusDays(1).atStartOfDay(zone).toInstant();
+
+        if (endExclusive.isBefore(now)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        return couponMapper.findCouponListExpiringBefore(endExclusive);
+    }
+
     private Event getEventOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
@@ -261,13 +274,24 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
     }
 
-    public List<ExpiringSoonCouponResponseDto> getCouponsExpiringWithinOneDay() {
-        // 오늘 날짜 + 1일 (내일 날짜)
-        Instant targetDate = LocalDate.now()
-                .plusDays(1) // 내일
-                .atStartOfDay(ZoneId.systemDefault()) // 자정 기준 ZonedDateTime
-                .toInstant(); // Instant 변환
+    private void checkEventInProgress(Event event) {
+        if (StatusIds.Event.SCHEDULED.equals(event.getStatus().getId())) {
+            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
+        }
+        if (StatusIds.Event.COMPLETED.equals(event.getStatus().getId())) {
+            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
+        }
+    }
 
-        return couponMapper.findCouponsExpiringBefore(targetDate);
+    private void checkDuplicateCoupon(Member member, Coupon coupon) {
+        if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
+            throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
+        }
+    }
+
+    private void endEventIfCouponOutOfStock(Coupon coupon, Event event) {
+        if (coupon.getCount() == 0) {
+            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
+        }
     }
 }
