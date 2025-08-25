@@ -25,5 +25,5 @@ public class ChatMessageSendRequestDto {
     private String fileName;
     private Integer fileSize;
     private String fileType;
-    
+
 }
