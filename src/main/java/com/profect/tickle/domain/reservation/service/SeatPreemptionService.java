@@ -64,13 +64,13 @@ public class SeatPreemptionService {
                 .toList();
 
         log.info("🪑좌석 배치 선점 완료! 선점된 좌석 수: {}, 토큰: {}",
-                availableSeats.size(), context.getPreemptionToken());
+                preemptedSeats.size(), context.getPreemptionToken());
 
         return SeatPreemptionResponseDto.success(
                 context.getPreemptionToken(),
                 context.getPreemptedUntil(),
                 preemptedSeatInfos,
-                String.format("%d개 좌석을 선점했습니다.", availableSeats.size()));
+                String.format("%d개 좌석을 선점했습니다.", preemptedSeats.size()));
     }
 
     private PreemptionContext createPreemptionContext(Long userId) {
