@@ -30,7 +30,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class SseTestConfig {
+class SseSenderTest {
 
     @Mock
     SseRepository sseRepository;
@@ -159,7 +159,10 @@ class SseTestConfig {
                     // onCompletion 등록 시 콜백을 보관
                     final java.util.concurrent.atomic.AtomicReference<Runnable> completionRef =
                             new java.util.concurrent.atomic.AtomicReference<>();
-                    doAnswer(inv -> { completionRef.set(inv.getArgument(0)); return null; })
+                    doAnswer(inv -> {
+                        completionRef.set(inv.getArgument(0));
+                        return null;
+                    })
                             .when(mock).onCompletion(any(Runnable.class));
 
                     // 불필요한 부수효과 방지
@@ -168,7 +171,10 @@ class SseTestConfig {
                     doNothing().when(mock).send(any(SseEmitter.SseEventBuilder.class));
 
                     // complete() 호출되면 onCompletion 콜백 실행
-                    doAnswer(inv -> { Optional.ofNullable(completionRef.get()).ifPresent(Runnable::run); return null; })
+                    doAnswer(inv -> {
+                        Optional.ofNullable(completionRef.get()).ifPresent(Runnable::run);
+                        return null;
+                    })
                             .when(mock).complete();
                 })) {
 
@@ -202,11 +208,20 @@ class SseTestConfig {
                     final AtomicReference<Runnable> onCompletionRef = new AtomicReference<>();
                     final AtomicReference<java.util.function.Consumer<Throwable>> onErrorRef = new AtomicReference<>();
 
-                    doAnswer(inv -> { onTimeoutRef.set(inv.getArgument(0)); return null; })
+                    doAnswer(inv -> {
+                        onTimeoutRef.set(inv.getArgument(0));
+                        return null;
+                    })
                             .when(mock).onTimeout(any(Runnable.class));
-                    doAnswer(inv -> { onCompletionRef.set(inv.getArgument(0)); return null; })
+                    doAnswer(inv -> {
+                        onCompletionRef.set(inv.getArgument(0));
+                        return null;
+                    })
                             .when(mock).onCompletion(any(Runnable.class));
-                    doAnswer(inv -> { onErrorRef.set(inv.getArgument(0)); return null; })
+                    doAnswer(inv -> {
+                        onErrorRef.set(inv.getArgument(0));
+                        return null;
+                    })
                             .when(mock).onError(any());
 
                     // send 는 아무것도 안함(예외 없이 통과)
