@@ -37,7 +37,7 @@ public class EmailAuthenticationCode {
     @Column(name = "email_authentication_code_expires_at", nullable = false)
     private Instant expiresAt;
 
-    // ✅ 엔티티가 스스로 규칙을 수행 (호출부는 내부 필드를 열람하지 않음)
+    // 엔티티가 스스로 규칙을 수행 (호출부는 내부 필드를 열람하지 않음)
     public boolean isInResendCooldown(Clock clock) {
         Instant now = Instant.now(clock);
         return createdAt.isAfter(now.minus(RESEND_COOLDOWN));
@@ -64,7 +64,7 @@ public class EmailAuthenticationCode {
         }
     }
 
-    // ✅ 팩토리: @PrePersist 없이도 테스트 가능한 생성 방식
+    // 팩토리: @PrePersist 없이도 테스트 가능한 생성 방식
     public static EmailAuthenticationCode issue(String email, String code, Clock clock) {
         Instant now = Instant.now(clock);
         return EmailAuthenticationCode.builder()
