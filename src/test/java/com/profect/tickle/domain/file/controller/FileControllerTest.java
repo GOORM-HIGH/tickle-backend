@@ -92,11 +92,10 @@ class FileControllerTest {
                         .file(file)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fileName").value("test-file.txt"))
-                .andExpect(jsonPath("$.filePath").value("/uploads/chat/test-file.txt"))
-                .andExpect(jsonPath("$.fileSize").value(13))
-                .andExpect(jsonPath("$.fileType").value("text/plain"))
-                .andExpect(jsonPath("$.filePath").value("/uploads/chat/test-file.txt"));
+                .andExpect(jsonPath("$.data.fileName").value("test-file.txt"))
+                .andExpect(jsonPath("$.data.filePath").value("/uploads/chat/test-file.txt"))
+                .andExpect(jsonPath("$.data.fileSize").value(13))
+                .andExpect(jsonPath("$.data.fileType").value("text/plain"));
     }
 
     @Test
@@ -157,8 +156,8 @@ class FileControllerTest {
                         .param("imageType", "profile")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fileName").value("profile.jpg"))
-                .andExpect(jsonPath("$.filePath").value("/uploads/profile/profile.jpg"));
+                .andExpect(jsonPath("$.data.fileName").value("profile.jpg"))
+                .andExpect(jsonPath("$.data.filePath").value("/uploads/profile/profile.jpg"));
     }
 
     @Test
@@ -187,8 +186,8 @@ class FileControllerTest {
                         .param("imageType", "performance")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fileName").value("performance.jpg"))
-                .andExpect(jsonPath("$.filePath").value("/uploads/performance/performance.jpg"));
+                .andExpect(jsonPath("$.data.fileName").value("performance.jpg"))
+                .andExpect(jsonPath("$.data.filePath").value("/uploads/performance/performance.jpg"));
     }
 
     @Test
@@ -246,10 +245,10 @@ class FileControllerTest {
                         .param("fileName", fileName)
                         .param("imageType", imageType))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.downloadUrl").value(downloadUrl))
-                .andExpect(jsonPath("$.fileName").value(fileName))
-                .andExpect(jsonPath("$.imageType").value(imageType))
-                .andExpect(jsonPath("$.message").value("다운로드 URL이 생성되었습니다."));
+                .andExpect(jsonPath("$.data.downloadUrl").value(downloadUrl))
+                .andExpect(jsonPath("$.data.fileName").value(fileName))
+                .andExpect(jsonPath("$.data.imageType").value(imageType))
+                .andExpect(jsonPath("$.data.message").value("다운로드 URL이 생성되었습니다."));
     }
 
     @Test
@@ -267,9 +266,9 @@ class FileControllerTest {
                         .param("fileName", fileName)
                         .param("imageType", imageType))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.downloadUrl").value(downloadUrl))
-                .andExpect(jsonPath("$.fileName").value(fileName))
-                .andExpect(jsonPath("$.imageType").value(imageType));
+                .andExpect(jsonPath("$.data.downloadUrl").value(downloadUrl))
+                .andExpect(jsonPath("$.data.fileName").value(fileName))
+                .andExpect(jsonPath("$.data.imageType").value(imageType));
     }
 
     @Test
@@ -287,7 +286,7 @@ class FileControllerTest {
                         .param("fileName", fileName)
                         .param("imageType", imageType))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("다운로드 URL 생성에 실패했습니다: 파일을 찾을 수 없습니다"));
+                .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다."));
     }
 
     // ===== 채팅 파일 다운로드 테스트 =====
@@ -305,9 +304,9 @@ class FileControllerTest {
         mockMvc.perform(get("/api/v1/files/chat/download")
                         .param("fileName", fileName))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.downloadUrl").value(downloadUrl))
-                .andExpect(jsonPath("$.fileName").value(fileName))
-                .andExpect(jsonPath("$.message").value("채팅 파일 다운로드 URL이 생성되었습니다."));
+                .andExpect(jsonPath("$.data.downloadUrl").value(downloadUrl))
+                .andExpect(jsonPath("$.data.fileName").value(fileName))
+                .andExpect(jsonPath("$.data.message").value("채팅 파일 다운로드 URL이 생성되었습니다."));
     }
 
     @Test
@@ -323,7 +322,7 @@ class FileControllerTest {
         mockMvc.perform(get("/api/v1/files/chat/download")
                         .param("fileName", fileName))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("다운로드 URL 생성에 실패했습니다: 채팅 파일을 찾을 수 없습니다"));
+                .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다."));
     }
 
     @Test

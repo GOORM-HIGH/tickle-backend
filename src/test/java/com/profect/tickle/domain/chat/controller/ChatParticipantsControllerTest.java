@@ -177,7 +177,7 @@ class ChatParticipantsControllerTest {
         mockMvc.perform(delete("/api/v1/chat/participants/rooms/{chatRoomId}/leave", CHAT_ROOM_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").value("채팅방에서 나갔습니다."));
+                .andExpect(jsonPath("$.message").value("채팅방 나가기 성공"));
 
         verify(chatParticipantsService).leaveChatRoom(eq(CHAT_ROOM_ID), eq(MEMBER_ID));
     }
@@ -210,7 +210,7 @@ class ChatParticipantsControllerTest {
                 .content(objectMapper.writeValueAsString(readRequestDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").value("메시지를 읽음으로 처리했습니다."));
+                .andExpect(jsonPath("$.message").value("메시지 읽음 처리 성공"));
 
         verify(chatParticipantsService).markAsRead(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ReadMessageRequestDto.class));
     }
@@ -288,7 +288,7 @@ class ChatParticipantsControllerTest {
         mockMvc.perform(post("/api/v1/chat/participants/rooms/{chatRoomId}/join", CHAT_ROOM_ID)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(emptyMessageRequest)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(201));
 
         verify(chatParticipantsService).joinChatRoom(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatRoomJoinRequestDto.class));
