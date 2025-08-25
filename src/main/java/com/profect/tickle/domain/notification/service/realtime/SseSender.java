@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
-import com.profect.tickle.domain.notification.util.NotificationUtil;
+import com.profect.tickle.global.util.JsonUtils;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -83,7 +83,7 @@ public class SseSender implements RealtimeSender {
     public void send(long memberId, NotificationEnvelope<?> payload) {
         // 0) 이벤트 ID/페이로드 준비
         long eventId = nextEventId();
-        String json = NotificationUtil.toJson(objectMapper, payload);
+        String json = JsonUtils.toJson(objectMapper, payload);
 
         // 1) 유저별 이벤트 캐시 저장(오프라인일 때 재전송용)
         sseRepository.saveEvent(memberId, eventId, json);
@@ -123,7 +123,6 @@ public class SseSender implements RealtimeSender {
 
 
     // lane을 사용할 수 있도록 emitterId를 받는 내부 구현
-
     private void resendInternal(long memberId, @Nullable String emitterId, SseEmitter emitter, String lastEventIdHeader) {
         final long last;
         try {
