@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.*;
 class ChatParticipantsTest {
 
     @Test
-    @DisplayName("TC-ENTITY-006: ChatParticipants.updateLastReadMessage() - 마지막 읽은 메시지 업데이트")
+    @DisplayName("TC-PARTICIPANT-010: ChatParticipants 읽음 처리 - 마지막 읽은 메시지 정보를 업데이트한다")
     void shouldUpdateLastReadMessageSuccessfully() {
         // Given
         ChatParticipants participant = createTestParticipant();
@@ -32,7 +32,7 @@ class ChatParticipantsTest {
     }
 
     @Test
-    @DisplayName("ChatParticipants.rejoin() - 재참여 처리")
+    @DisplayName("TC-PARTICIPANT-009: ChatParticipants 참여 처리 - 유효한 ChatParticipants 엔티티의 참여 상태를 변경한다")
     void shouldRejoinSuccessfully() {
         // Given
         ChatParticipants participant = createTestParticipant();
