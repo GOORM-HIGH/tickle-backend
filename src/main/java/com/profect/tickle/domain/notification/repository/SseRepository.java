@@ -116,12 +116,6 @@ public class SseRepository {
         return map;
     }
 
-    // 온라인 여부
-    public boolean hasEmitters(long memberId) {
-        CopyOnWriteArraySet<String> set = emitterIdsByMember.get(memberId);
-        return set != null && !set.isEmpty();
-    }
-
     // 시간+개수 기준으로 리플레이 캐시 정리
     public void trimEvents(long memberId, int maxEntries, long ttlCutoffExclusive) {
         ConcurrentSkipListMap<Long, String> map = eventsByMember.get(memberId);
