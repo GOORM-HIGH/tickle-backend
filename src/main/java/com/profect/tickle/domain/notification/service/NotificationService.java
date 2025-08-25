@@ -47,5 +47,6 @@ public class NotificationService {
 
         // 읽음 처리한다.
         notification.markAsRead(statusProvider.provide(StatusIds.Notification.READ));
+        log.info("{}님의 {}번 알림 읽음 처리 완료", memberId, notificationId);
     }
 }
