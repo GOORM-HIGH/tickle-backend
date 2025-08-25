@@ -2,15 +2,19 @@ package com.profect.tickle.domain.notification.integration;
 
 import com.profect.tickle.domain.notification.controller.NotificationController;
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
+import com.profect.tickle.domain.notification.service.mail.MailSender;
 import com.profect.tickle.global.response.ResultResponse;
 import com.profect.tickle.testsecurity.WithMockMember;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,12 +23,17 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@DisplayName("[통합테스트] 알림 서비스")
 @ActiveProfiles("test")
 @Transactional
 @Sql(scripts = "classpath:/sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "classpath:/sql/data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@DisabledInAotMode
 class NotificationIntegrationTest {
+
+    @MockBean
+    private MailSender smtpMailSender;
 
     @Autowired
     private NotificationController notificationController;
@@ -33,10 +42,10 @@ class NotificationIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private jakarta.persistence.EntityManager em;
+    private EntityManager em;
 
     @Test
-    @DisplayName("알림 조회 통합테스트 - 로그인 사용자의 최신 알림 목록 반환")
+    @DisplayName("[알림 조회 성공] - 로그인 사용자의 최신 알림 목록 반환")
     @WithMockMember(id = 1, email = "user1@test.com")
     void getNotificationList_success() {
         // when
@@ -53,7 +62,7 @@ class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("알림 읽음 처리 통합테스트 - 상태가 읽음(8)으로 변경")
+    @DisplayName("[알림 읽음 처리 성공] - 로그인 1번 유저의 8번 알림의 상태를 읽음(8)으로 변경")
     @WithMockMember(id = 1, email = "user1@test.com")
     void markAsRead_success() {
         // given

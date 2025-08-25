@@ -1,7 +1,8 @@
 package com.profect.tickle.domain.notification.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.profect.tickle.domain.notification.config.SseTestConfig;
+import com.profect.tickle.domain.notification.config.NotificationTestConfig;
+import com.profect.tickle.domain.notification.config.SseNotificationTestConfig;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
@@ -25,7 +26,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 
 @SpringBootTest(
-        classes = {SseSender.class, SseTestConfig.class},
+        classes = {SseSender.class, NotificationTestConfig.class, SseNotificationTestConfig.class},
         properties = {
                 "spring.autoconfigure.exclude=" +
                         "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration," +
@@ -35,8 +36,10 @@ import static org.mockito.Mockito.mock;
 @DisplayName("[통합] RealtimeSender(SseSender)")
 class RealtimeNotificationIntegrationTest {
 
-    @Autowired RealtimeSender sseSender;
-    @Autowired SseRepository sseRepository;
+    @Autowired
+    RealtimeSender sseSender;
+    @Autowired
+    SseRepository sseRepository;
 
     @Test
     @DisplayName("[connect→replay→send] 재연결 후 새 이벤트까지 전송된다")
@@ -239,5 +242,4 @@ class RealtimeNotificationIntegrationTest {
             assertThat(sseRepository.getAll(memberId)).isEmpty();
         }
     }
-
 }
