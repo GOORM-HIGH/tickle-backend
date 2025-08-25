@@ -1,86 +1,69 @@
 package com.profect.tickle.domain.notification.service.mail;
 
+import com.profect.tickle.domain.notification.config.NonRetryableMailException;
 import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.retry.ExhaustedRetryException;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
+// SmtpMailSender.java
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SmtpMailSender implements MailSender {
+public class SmtpMailSender {
 
-    private final JavaMailSender javaMailSender;
+    private final JavaMailSender mailSender;
 
-    @Async(value = "mailExecutor")
-    @Override
-    public void sendText(MailCreateServiceRequestDto request) {
-        log.info("{} 주소로 메일 전송", request.to());
-        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+    @Qualifier("mailRetryTemplate")
+    private final RetryTemplate retryTemplate;
 
+    public void sendText(MailCreateServiceRequestDto req) {
         try {
-            simpleMailMessage.setTo(request.to());
-            simpleMailMessage.setSubject(request.subject());
-            simpleMailMessage.setText(request.content());
+            retryTemplate.execute(ctx -> {
+                log.info("[TEXT] 메일 전송 시도 #{} → to={}", ctx.getRetryCount() + 1, req.to());
 
-            javaMailSender.send(simpleMailMessage);
-            log.info("메일 발송 성공");
-        } catch (Exception e) {
-            log.error("메일 발송 실패");
-            log.error(e.getMessage());
-            throw new RuntimeException("메일 발송 실패", e);
+                try {
+                    SimpleMailMessage msg = new SimpleMailMessage();
+                    msg.setTo(req.to());
+                    msg.setSubject(req.subject());
+                    msg.setText(req.content());
+                    mailSender.send(msg);
+                    return null;
+
+                } catch (MailException ex) {
+                    var info = MailErrorInspector.inspect(ex);
+
+                    boolean permanent =
+                            (info.smtpStatus != null && info.smtpStatus >= 500) ||
+                                    "ADDRESS_REJECTED".equals(info.category) ||
+                                    "USER_UNKNOWN".equals(info.category);
+
+                    if (permanent) {
+                        log.info("[TEXT] 재시도 불가 오류로 중단 → to={}, err={}", req.to(), info);
+                        // 즉시 NonRetryable 던져서 try 블록 바깥으로 전파 (재시도 X)
+                        throw new NonRetryableMailException("Permanent mail error: " + info.category, ex);
+                    }
+
+                    log.info("[TEXT] 메일 실패(attempt #{}): category={}, status={}, reply={}",
+                            ctx.getRetryCount() + 1, info.category, info.smtpStatus, info.serverReply);
+                    // 일시 오류 → RetryTemplate이 재시도
+                    throw ex;
+                }
+            });
+
+        } catch (NonRetryableMailException e) {
+            // 영구 오류는 그대로 테스트 기대대로 전파
+            throw e;
+
+        } catch (MailException exhausted) {
+            // 재시도 대상(일시 오류)이 계속 실패하여 소진된 경우만 여기로 온다.
+            throw new org.springframework.retry.ExhaustedRetryException("Mail send exhausted", exhausted);
         }
     }
-
-    @Async(value = "mailExecutor")
-    @Override
-    public void sendHtml(MailCreateServiceRequestDto request) {
-        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-
-        try {
-            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
-
-            // 메일을 받을 수신자 설정
-            mimeMessageHelper.setTo(request.to());
-            // 메일의 제목 설정
-            mimeMessageHelper.setSubject(request.subject());
-
-            // html 문법 적용한 메일의 내용
-            String content = """
-                    <!DOCTYPE html>
-                    <html xmlns:th="http://www.thymeleaf.org">
-                                        
-                    <body>
-                    <div style="margin:100px;">
-                        <h1> 테스트 메일 </h1>
-                        <br>
-                                        
-                                        
-                        <div align="center" style="border:1px solid black;">
-                            <h3> 테스트 메일 내용 </h3>
-                        </div>
-                        <br/>
-                    </div>
-                                        
-                    </body>
-                    </html>
-                    """;
-
-            // 메일의 내용 설정
-            mimeMessageHelper.setText(content, true);
-
-            javaMailSender.send(mimeMessage);
-
-            log.info("메일 발송 성공");
-        } catch (Exception e) {
-            log.info("메일 발송 실패");
-            throw new RuntimeException(e);
-        }
-    }
-
 }

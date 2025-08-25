@@ -41,11 +41,12 @@ public class NotificationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
         // 회원의 알림인지 확인한다.
-        if (!notification.getReceivedMember().getId().equals(memberId)) {
+        if (!notification.isForMember(memberId)) {
             throw new BusinessException(ErrorCode.NOTIFICATION_ACCESS_DENIED);
         }
 
         // 읽음 처리한다.
         notification.markAsRead(statusProvider.provide(StatusIds.Notification.READ));
+        log.info("{}님의 {}번 알림 읽음 처리 완료", memberId, notificationId);
     }
 }
