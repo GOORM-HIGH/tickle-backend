@@ -59,16 +59,15 @@ class NotificationMapperTest {
         Notification n2 = createNotification(memberRef, templateRef, statusRef, "알림 제목 2", "알림 내용 2", now);
         em.persist(n2);
 
-        // 3) DB 반영 (MyBatis가 같은 트랜잭션이라도 flush 전엔 못 볼 수 있음)
         em.flush();
-        // em.clear(); // 필요하면 1차 캐시 비우기
 
-        // 4) MyBatis로 조회
+        // when
         List<NotificationResponseDto> rows =
                 notificationMapper.getNotificationListByMemberId(memberId, 10);
 
-        // 5) 검증: 우리가 막 넣은 두 건이 포함되어야 함
-        assertThat(rows).extracting(NotificationResponseDto::getTitle)
+        // then
+        assertThat(rows)
+                .extracting(NotificationResponseDto::getTitle)
                 .contains("알림 1", "알림 2");
     }
 
