@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -32,11 +34,11 @@ public class NotificationController {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResultResponse<List<NotificationResponseDto>> getRecentNotificationList(@RequestParam(defaultValue = "10") int size) {
+    public ResultResponse<List<NotificationResponseDto>> getNotificationList(@RequestParam(defaultValue = "10") @Positive @Max(10) final int size) {
         log.info("{}님의 최신 {}건의 알림을 조회합니다.", SecurityUtil.getSignInMemberEmail(), size);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
-        List<NotificationResponseDto> data = notificationService.getRecentNotificationListByMemberId(signInMemberId, size);
+        List<NotificationResponseDto> data = notificationService.getNotificationListByMemberId(signInMemberId, size);
 
         return new ResultResponse<>(
                 ResultCode.NOTIFICATION_INFO_SUCCESS,
@@ -51,7 +53,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "403", description = "접근 권한이 없는 알림"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    public ResultResponse<String> markAsRead(@PathVariable Long notificationId) {
+    public ResultResponse<String> markAsRead(@PathVariable @Positive final Long notificationId) {
         log.info("{}님이 {}번 알림을 읽음 처리합니다.", SecurityUtil.getSignInMemberEmail(), notificationId);
 
         Long signInMemberId = SecurityUtil.getSignInMemberId(); // 로그인한 회원의 Id
@@ -61,13 +63,5 @@ public class NotificationController {
                 ResultCode.NOTIFICATION_READ_SUCCESS,
                 ResultCode.NOTIFICATION_INFO_SUCCESS.getMessage()
         );
-    }
-
-    @Operation(summary = "SSE 통신 연결 요청", description = "이벤트 내용을 전달하기 위한 SSE 통신을 연결합니다.")
-    @GetMapping(value = "/sse-connect", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter connect(
-            @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") final String lastEventId) {
-        log.info("SSE 통신 연결 요청");
-        return notificationService.sseConnect(lastEventId);
     }
 }

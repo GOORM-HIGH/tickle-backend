@@ -4,6 +4,7 @@ import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.event.reservation.event.PerformanceModifiedEvent;
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
@@ -15,7 +16,7 @@ import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.performance.repository.GenreRepository;
 import com.profect.tickle.domain.performance.repository.HallRepository;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
-import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationDto;
+import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationServiceDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservedSeatDto;
 import com.profect.tickle.domain.reservation.mapper.ReservationMapper;
 import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
@@ -28,6 +29,7 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -36,8 +38,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PerformanceService {
 
     private final ApplicationEventPublisher eventPublisher;
@@ -216,23 +220,29 @@ public class PerformanceService {
 
     // 알림 수정 이벤트 발생 메서드
     private void publishPerformanceModifiedEvent(Long performanceId) {
-        // 공연 정보 + 유저 정보 => 예약 정보
-        PerformanceDto performance = performanceMapper.findById(performanceId).orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
+        // 1) 공연정보 조회
+        PerformanceServiceDto performanceServiceDto = performanceMapper.findById(performanceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
 
-        // 예매 정보
-        List<ReservationDto> reservationList = reservationMapper.findByPerformanceId(performanceId);
+        // 2) 예매정보 조회
+        List<ReservationServiceDto> reservationList = reservationMapper.findByPerformanceId(performanceId);
 
-        // 예매별 자리 정보 조회
-        for (ReservationDto reservation : reservationList) {
-            List<ReservedSeatDto> seatList = reservationMapper.findReservedSeatById(reservation.getId());
+        if (reservationList == null || reservationList.isEmpty()) {
+            return; // 알림 이벤트를 발생시킬 필요가 없다.
+        }
 
+        // 3) 예매별 자리 정보 조회
+        for (ReservationServiceDto reservation : reservationList) {
+            List<ReservedSeatDto> seatList = reservationMapper.findReservedSeatListByReservationId(reservation.getId());
             reservation.setSeatList(seatList);
         }
 
-        // 로그인한유저
-        Member signinMember = memberMapper.findByEmail(SecurityUtil.getSignInMemberEmail()).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
-        eventPublisher.publishEvent(new PerformanceModifiedEvent(performance, reservationList, signinMember));
+        // 4) 이벤트 발행
+        eventPublisher.publishEvent(new PerformanceModifiedEvent(
+                performanceServiceDto,
+                reservationList)
+        );
+        log.info("[{} 이벤트 발행]", NotificationKind.PERFORMANCE_MODIFIED);
     }
 
     private void validatePerfId(Long performanceId) {

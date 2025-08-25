@@ -11,10 +11,12 @@ import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.EmailAuthenticationCodeRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
-import com.profect.tickle.domain.notification.entity.NotificationTemplateId;
-import com.profect.tickle.domain.notification.service.MailService;
+import com.profect.tickle.domain.notification.entity.NotificationKind;
+import com.profect.tickle.domain.notification.event.member.event.EmailAuthenticationCodePublishEvent;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
+import com.profect.tickle.domain.notification.service.mail.MailSender;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
@@ -22,6 +24,7 @@ import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,13 +46,17 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class MemberService implements UserDetailsService {
 
+    // utils
     private final PasswordEncoder passwordEncoder;
     private final HostChargePolicy hostChargePolicy;
+    private final MailSender mailSender;
+    private final ApplicationEventPublisher eventPublisher;
 
-    private final MailService mailService;
+    // services
     private final NotificationTemplateService notificationTemplateService;
     private final ContractService contractService;
 
+    // mappers & repositories
     private final MemberMapper memberMapper;
     private final MemberRepository memberRepository;
     private final EmailAuthenticationCodeRepository emailAuthenticationRepository;
@@ -151,11 +158,13 @@ public class MemberService implements UserDetailsService {
 
         // 4. 메일 발송
         log.info("인증코드 이메일 발송 준비");
-        NotificationTemplate template = notificationTemplateService.getNotificationTemplateById(NotificationTemplateId.AUTH_CODE_SENT.getId());
+        NotificationTemplate template = notificationTemplateService.getNotificationTemplateById(NotificationKind.AUTH_CODE_SENT.getId());
         String title = template.getTitle();
         String content = String.format(template.getContent(), newAuthenticationCode);
-        mailService.sendSimpleMailMessage(email, title, content);
-        log.info("인증코드 발송 완료");
+
+        MailCreateServiceRequestDto req = new MailCreateServiceRequestDto(email, title, content);
+        eventPublisher.publishEvent(new EmailAuthenticationCodePublishEvent(req));
+        log.info("인증코드 메일 발송 이벤트 발행 완료: {}", email);
     }
 
     // 랜덤 인증번호 생성 함수

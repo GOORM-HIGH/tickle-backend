@@ -1,5 +1,6 @@
 package com.profect.tickle.global.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static com.profect.tickle.global.exception.ErrorCode.*;
@@ -15,13 +17,27 @@ import static com.profect.tickle.global.exception.ErrorCode.*;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-        // @Valid @RequestBody 검증 실패
+//    @ExceptionHandler(MethodArgumentNotValidException.class)
+//    protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
+//        return ResponseEntity
+//                .status(HttpStatus.BAD_REQUEST)
+//                .body(ErrorResponse.of(INVALID_INPUT_VALUE, e.getBindingResult()));
+//    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    protected ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException e) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(INVALID_INPUT_VALUE, e.getBindingResult()));
+                .body(ErrorResponse.of(INVALID_INPUT_VALUE));
     }
+
+// @ExceptionHandler(ConstraintViolationException.class) // @Validated 예외
+//    protected ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException e) {
+//        return ResponseEntity
+//                .status(HttpStatus.BAD_REQUEST)
+//                .body(ErrorResponse.of(INVALID_INPUT_VALUE));
+//    }
+
 
     @ExceptionHandler
     protected ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {

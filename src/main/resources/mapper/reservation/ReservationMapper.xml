@@ -4,45 +4,64 @@
 
 <mapper namespace="com.profect.tickle.domain.reservation.mapper.ReservationMapper">
 
-    <select id="findReservedSeatById"
-            resultType="ReservedSeatDto">
+    <select id="findReservedSeatListByReservationId"
+            resultType="ReservedSeatDto"
+            parameterType="java.lang.Long">
         SELECT
-            s.seat_id,
-            s.seat_number,
-            s.seat_grade,
-            s.seat_price,
-            s.seat_code
-        FROM seat AS s
-        WHERE s.reservation_id = #{reservationId}
+            s.seat_id     AS seatId,
+            s.seat_number AS seatNumber,
+            s.seat_grade  AS seatGrade,
+            s.seat_price  AS seatPrice,
+            s.seat_code   AS seatCode
+        FROM reserved_seat rs
+                 JOIN seat s ON s.seat_id = rs.seat_id
+        WHERE rs.reservation_id = #{reservationId}
     </select>
+
 
     <!-- 예매Id로 예매정보 조회 쿼리-->
     <select id="findById"
-            resultType="ReservationDto"
-            parameterType="long">
+            resultType="ReservationServiceDto"
+            parameterType="java.lang.Long">
         SELECT
-            reservation_id AS id,
-            reservation_code AS code,
-            reservation_price AS totalPrice,
-            reservation_is_notify AS isNotify
-        FROM reservation
-        WHERE reservation_id = #{reservationId}
+        r.reservation_id          AS id,
+        r.member_id               AS memberId,
+        m.member_email            AS memberEmail,
+        r.performance_id          AS performanceId,
+        r.status_id               AS statusId,
+        r.reservation_code        AS code,
+        r.reservation_price       AS price,          <!-- ⬅ price 로 맞춤 -->
+        r.reservation_is_notify   AS isNotify,
+        r.reservation_created_at  AS createdAt,
+        r.reservation_updated_at  AS updatedAt
+        FROM reservation r
+        JOIN member m ON r.member_id = m.member_id
+        WHERE r.reservation_id = #{reservationId}
     </select>
 
     <!-- 공연Id로 예매정보 조회 쿼리 -->
     <!-- 취소된 예매는 조회 X -->
     <!-- 알림 설정된 것만 조회 -->
     <select id="findByPerformanceId"
-            resultType="ReservationDto"
-            parameterType="long">
+            resultType="ReservationServiceDto"
+            parameterType="java.lang.Long">
         SELECT
-            reservation_id AS id,
-            reservation_code AS code,
-            reservation_price AS totalPrice,
-            reservation_is_notify AS isNotify
-        FROM reservation
-        WHERE performance_id = #{performanceId}
-          AND reservation_updated_at IS NULL
-          AND reservation_is_notify = true
+        r.reservation_id          AS id,
+        r.member_id               AS memberId,
+        m.member_email            AS memberEmail,
+        r.performance_id          AS performanceId,
+        r.status_id               AS statusId,
+        r.reservation_code        AS code,
+        r.reservation_price       AS price,
+        r.reservation_is_notify   AS isNotify,
+        r.reservation_created_at  AS createdAt,
+        r.reservation_updated_at  AS updatedAt
+        FROM reservation r
+        JOIN member      m ON r.member_id      = m.member_id
+        JOIN performance p ON r.performance_id = p.performance_id
+        JOIN status      s ON r.status_id      = s.status_id
+        WHERE r.performance_id = #{performanceId}
+        AND r.reservation_is_notify = TRUE
+        AND r.reservation_deleted_at IS NULL
     </select>
 </mapper>

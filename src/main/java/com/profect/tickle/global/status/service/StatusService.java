@@ -23,18 +23,6 @@ public class StatusService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Transactional(readOnly = true)
-    public Status getReadStatusForNotification() {
-        return statusRepository.findById(NOTIFICATION_READ_STATUS)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
-    }
-
-    @Transactional(readOnly = true)
-    public Status getReadYetStatusForNotification() {
-        return statusRepository.findById(NOTIFICATION_READ_YET_STATUS)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STATUS_NOT_FOUND));
-    }
-
-    @Transactional(readOnly = true)
     public Status getStatusByDate(Instant performanceDate) {
         LocalDate perf = performanceDate.atZone(KST).toLocalDate();
         LocalDate today = Instant.now().atZone(KST).toLocalDate();

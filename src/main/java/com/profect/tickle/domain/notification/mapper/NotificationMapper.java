@@ -9,7 +9,7 @@ import java.util.List;
 @Mapper
 public interface NotificationMapper {
 
-    List<NotificationResponseDto> getRecentNotificationListByMemberId(
+    List<NotificationResponseDto> getNotificationListByMemberId(
             @Param("memberId") Long memberId,
             @Param("limit") int limit
     );
