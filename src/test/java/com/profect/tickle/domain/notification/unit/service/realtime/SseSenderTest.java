@@ -5,7 +5,7 @@ import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.domain.notification.service.realtime.SseSender;
-import com.profect.tickle.domain.notification.util.NotificationUtil;
+import com.profect.tickle.global.util.JsonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
 
@@ -37,11 +38,13 @@ class SseSenderTest {
     @Mock
     NotificationProperty notificationProperty;
 
+    // Mock
     ObjectMapper objectMapper;
     Clock clock;
     Supplier<UUID> uuidSupplier;
     Executor directExecutor;
 
+    // InjectMocks
     SseSender sseSender;
 
     @BeforeEach
@@ -60,10 +63,10 @@ class SseSenderTest {
         long memberId = 10L;
         NotificationEnvelope<?> payload = mock(NotificationEnvelope.class);
 
-        when(sseRepository.getAllWithIds(memberId)).thenReturn(Collections.emptyMap());
+        given(sseRepository.getAllWithIds(memberId)).willReturn(Collections.emptyMap());
 
-        try (MockedStatic<NotificationUtil> mocked = Mockito.mockStatic(NotificationUtil.class)) {
-            mocked.when(() -> NotificationUtil.toJson(any(ObjectMapper.class), any()))
+        try (MockedStatic<JsonUtils> mocked = Mockito.mockStatic(JsonUtils.class)) {
+            mocked.when(() -> JsonUtils.toJson(any(ObjectMapper.class), any()))
                     .thenReturn("{\"ok\":true}");
 
             // when
@@ -79,22 +82,25 @@ class SseSenderTest {
     @Test
     @DisplayName("[send] 여러 emitter에 병렬(동기화된 테스트에선 순차)로 전송한다")
     void sendWhenEmittersExistSendsToEach() throws Exception {
+        // given
         long memberId = 11L;
-
         SseEmitter e1 = mock(SseEmitter.class);
         SseEmitter e2 = mock(SseEmitter.class);
         Map<String, SseEmitter> targets = new LinkedHashMap<>();
         targets.put("e1", e1);
         targets.put("e2", e2);
-        when(sseRepository.getAllWithIds(memberId)).thenReturn(targets);
-
         NotificationEnvelope<?> payload = mock(NotificationEnvelope.class);
-        try (MockedStatic<NotificationUtil> mocked = Mockito.mockStatic(NotificationUtil.class)) {
-            mocked.when(() -> NotificationUtil.toJson(any(ObjectMapper.class), any()))
+
+        given(sseRepository.getAllWithIds(memberId)).willReturn(targets);
+
+        try (MockedStatic<JsonUtils> mocked = Mockito.mockStatic(JsonUtils.class)) {
+            mocked.when(() -> JsonUtils.toJson(any(ObjectMapper.class), any()))
                     .thenReturn("{\"type\":\"n\"}");
 
+            // when
             sseSender.send(memberId, payload);
 
+            // then
             then(e1).should().send(any(SseEmitter.SseEventBuilder.class));
             then(e2).should().send(any(SseEmitter.SseEventBuilder.class));
 
@@ -106,23 +112,24 @@ class SseSenderTest {
     @Test
     @DisplayName("[send] emitter 전송 실패 시 disconnectEmitterWithError가 호출된다")
     void sendWhenEmitterThrowsDisconnectIsCalled() throws Exception {
+        // given
         long memberId = 12L;
-
         SseSender spySender = Mockito.spy(sseSender);
-
         SseEmitter badEmitter = mock(SseEmitter.class);
-        doThrow(new IOException("boom")).when(badEmitter).send(any(SseEmitter.SseEventBuilder.class));
-
         Map<String, SseEmitter> targets = Map.of("bad", badEmitter);
-        when(sseRepository.getAllWithIds(memberId)).thenReturn(targets);
+
+        doThrow(new IOException("boom")).when(badEmitter).send(any(SseEmitter.SseEventBuilder.class));
+        given(sseRepository.getAllWithIds(memberId)).willReturn(targets);
 
         NotificationEnvelope<?> payload = mock(NotificationEnvelope.class);
-        try (MockedStatic<NotificationUtil> mocked = Mockito.mockStatic(NotificationUtil.class)) {
-            mocked.when(() -> NotificationUtil.toJson(any(ObjectMapper.class), any()))
+        try (MockedStatic<JsonUtils> mocked = Mockito.mockStatic(JsonUtils.class)) {
+            mocked.when(() -> JsonUtils.toJson(any(ObjectMapper.class), any()))
                     .thenReturn("{\"x\":1}");
 
+            // when
             spySender.send(memberId, payload);
 
+            // then
             then(spySender).should().disconnectEmitterWithError(eq(memberId), eq("bad"), any(IOException.class));
         }
     }
@@ -130,17 +137,19 @@ class SseSenderTest {
     @Test
     @DisplayName("[connect] emitter를 저장하고 Last-Event-ID가 있으면 재전송을 스케줄한다")
     void connectSavesEmitterAndSchedulesReplayWhenLastEventIdPresent() {
+        // given
         long memberId = 20L;
-
         ArgumentCaptor<SseEmitter> emitterCaptor = ArgumentCaptor.forClass(SseEmitter.class);
         ArgumentCaptor<String> emitterIdCaptor = ArgumentCaptor.forClass(String.class);
+
         doNothing().when(sseRepository).save(eq(memberId), emitterIdCaptor.capture(), emitterCaptor.capture());
+        given(sseRepository.eventsAfter(memberId, 123L)).willReturn(new TreeMap<>());
 
-        when(sseRepository.eventsAfter(eq(memberId), eq(123L))).thenReturn(new TreeMap<>());
+        // when
+        SseEmitter result = sseSender.connect(memberId, "123");
 
-        SseEmitter returned = sseSender.connect(memberId, "123");
-
-        assertNotNull(returned);
+        // then
+        assertNotNull(result);
         then(sseRepository).should().save(eq(memberId), anyString(), any(SseEmitter.class));
         then(sseRepository).should().eventsAfter(memberId, 123L);
     }
@@ -148,11 +157,10 @@ class SseSenderTest {
     @Test
     @DisplayName("[connect] onCompletion 콜백에서 repo.remove가 호출된다")
     void connectOnCompletionRemovesFromRepo() {
+        // given
         long memberId = 21L;
-        // connect()에서 SseEmitter 생성 시 필요
-        when(notificationProperty.sseTimeout()).thenReturn(Duration.ofMinutes(5));
+        given(notificationProperty.sseTimeout()).willReturn(Duration.ofMinutes(5));
 
-        // new SseEmitter(...) 를 mock으로 대체하고 complete()가 불리면 onCompletion 콜백을 실행하도록 연결
         try (MockedConstruction<SseEmitter> mocked = Mockito.mockConstruction(
                 SseEmitter.class,
                 (mock, context) -> {
@@ -182,13 +190,11 @@ class SseSenderTest {
             ArgumentCaptor<String> emitterIdCaptor = ArgumentCaptor.forClass(String.class);
             doNothing().when(sseRepository).save(eq(memberId), emitterIdCaptor.capture(), any(SseEmitter.class));
 
-            // when: 연결
+            // when
             SseEmitter emitter = sseSender.connect(memberId, null);
 
-            // then: complete() 호출 → 우리가 스텁한 complete()가 onCompletion 콜백 실행
+            // then
             emitter.complete();
-
-            // repo.remove 호출 검증
             then(sseRepository).should().remove(eq(memberId), eq(emitterIdCaptor.getValue()));
         }
     }
@@ -196,10 +202,10 @@ class SseSenderTest {
     @Test
     @DisplayName("[connect] onTimeout 콜백이 실행되면 repo.remove가 호출된다")
     void connectOnTimeoutRemovesFromRepo() {
+        // given
         long memberId = 22L;
         when(notificationProperty.sseTimeout()).thenReturn(Duration.ofMinutes(5));
 
-        // constructor mocking: new SseEmitter(...) 를 mock 으로 대체
         try (MockedConstruction<SseEmitter> mocked = Mockito.mockConstruction(
                 SseEmitter.class,
                 (mock, context) -> {
@@ -234,10 +240,10 @@ class SseSenderTest {
             // save 호출만 검증할 것이므로, 단순 doNothing
             doNothing().when(sseRepository).save(eq(memberId), anyString(), any(SseEmitter.class));
 
-            // when: connect 수행 (내부에서 onTimeout/onCompletion/onError 등록)
+            // when
             sseSender.connect(memberId, null);
 
-            // then: mock 생성된 SseEmitter 꺼내서 onTimeout 콜백 직접 실행
+            // then
             SseEmitter created = mocked.constructed().get(0);
         }
     }
@@ -245,17 +251,20 @@ class SseSenderTest {
     @Test
     @DisplayName("[disconnectAll] 모든 emitter에 bye를 보내고 complete 후 repo.removeAll 호출")
     void disconnectAllSendsByeAndCompletesThenRemoveAll() throws Exception {
+        // given
         long memberId = 30L;
-
         SseEmitter e1 = mock(SseEmitter.class);
         SseEmitter e2 = mock(SseEmitter.class);
         Map<String, SseEmitter> targets = new LinkedHashMap<>();
         targets.put("e1", e1);
         targets.put("e2", e2);
-        when(sseRepository.getAllWithIds(memberId)).thenReturn(targets);
 
+        given(sseRepository.getAllWithIds(memberId)).willReturn(targets);
+
+        // when
         sseSender.disconnectAll(memberId);
 
+        // then
         then(e1).should().send(any(SseEmitter.SseEventBuilder.class));
         then(e1).should().complete();
         then(e2).should().send(any(SseEmitter.SseEventBuilder.class));
@@ -266,14 +275,17 @@ class SseSenderTest {
     @Test
     @DisplayName("[disconnectEmitter] 대상 emitter가 있으면 bye 후 complete + repo.remove 호출")
     void disconnectEmitterSendsByeAndRemoves() throws Exception {
+        // given
         long memberId = 40L;
         String emitterId = "mid_123_uuid";
-
         SseEmitter e = mock(SseEmitter.class);
-        when(sseRepository.getByEmitterId(emitterId)).thenReturn(e);
 
+        given(sseRepository.getByEmitterId(emitterId)).willReturn(e);
+
+        // when
         sseSender.disconnectEmitter(memberId, emitterId);
 
+        // then
         then(e).should().send(any(SseEmitter.SseEventBuilder.class));
         then(e).should().complete();
         then(sseRepository).should().remove(memberId, emitterId);
@@ -282,28 +294,34 @@ class SseSenderTest {
     @Test
     @DisplayName("[disconnectEmitter] 대상이 없으면 아무 것도 하지 않는다")
     void disconnectEmitterNoTargetNoOp() {
+        // given
         long memberId = 41L;
         String emitterId = "not_found";
 
-        when(sseRepository.getByEmitterId(emitterId)).thenReturn(null);
+        given(sseRepository.getByEmitterId(emitterId)).willReturn(null);
 
+        // when
         sseSender.disconnectEmitter(memberId, emitterId);
 
+        // then
         then(sseRepository).should(never()).remove(anyLong(), anyString());
     }
 
     @Test
     @DisplayName("[disconnectEmitterWithError] completeWithError 후 repo.remove 호출")
     void disconnectEmitterWithErrorCompletesWithErrorAndRemoves() {
+        // given
         long memberId = 50L;
         String emitterId = "mid_456_uuid";
         RuntimeException cause = new RuntimeException("x");
-
         SseEmitter e = mock(SseEmitter.class);
-        when(sseRepository.getByEmitterId(emitterId)).thenReturn(e);
 
+        given(sseRepository.getByEmitterId(emitterId)).willReturn(e);
+
+        // when
         sseSender.disconnectEmitterWithError(memberId, emitterId, cause);
 
+        // then
         then(e).should().completeWithError(cause);
         then(sseRepository).should().remove(memberId, emitterId);
     }
