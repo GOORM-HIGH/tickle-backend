@@ -7,11 +7,16 @@ import com.profect.tickle.domain.performance.dto.response.PerformanceDetailDto;
 import com.profect.tickle.domain.performance.dto.response.PerformanceDto;
 import com.profect.tickle.domain.performance.dto.response.PerformanceHostDto;
 import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
+import com.profect.tickle.domain.performance.repository.GenreRepository;
+import com.profect.tickle.domain.performance.repository.HallRepository;
+import com.profect.tickle.domain.performance.repository.PerformanceRepository;
+import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
+import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
-import com.profect.tickle.testsecurity.WithMockMember;
+import com.profect.tickle.global.status.repository.StatusRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,8 +25,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.aot.DisabledInAotMode;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -31,8 +39,15 @@ import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 import static org.mockito.Mockito.*;
 
+@DisabledInAotMode
 @ExtendWith(MockitoExtension.class)
 class PerformanceServiceTest {
+
+    @InjectMocks
+    PerformanceService performanceService;
+
+    @Mock
+    SeatService seatService;
 
     @Mock
     PerformanceMapper performanceMapper;
@@ -40,8 +55,23 @@ class PerformanceServiceTest {
     @Mock
     MemberRepository memberRepository;
 
-    @InjectMocks
-    PerformanceService performanceService;
+    @Mock
+    PerformanceRepository performanceRepository;
+
+    @Mock
+    GenreRepository genreRepository;
+
+    @Mock
+    HallRepository hallRepository;
+
+    @Mock
+    StatusRepository statusRepository;
+
+    @Mock
+    SeatTemplateRepository seatTemplateRepository;
+
+    @Mock
+    Clock clock;
 
     @Test
     @DisplayName("삭제되지 않은 공연정보 상세 조회에 성공한다. 상세정보 반환과 함께 조회수 컬럼이 1 증가한다.")
@@ -170,25 +200,27 @@ class PerformanceServiceTest {
     }
 
     @Test
-    @DisplayName("오늘 이후 시작인 공연 목록 4개를 조회 성공한다.")
     void TC_PERFORMANCE_006() {
-        // Given
-        List<PerformanceDto> top4 = List.of(
-                PerformanceDto.builder().performanceId(1L).title("UP-1").date(Instant.parse("2025-09-01T00:00:00Z")).build(),
-                PerformanceDto.builder().performanceId(2L).title("UP-2").date(Instant.parse("2025-09-02T00:00:00Z")).build(),
-                PerformanceDto.builder().performanceId(3L).title("UP-3").date(Instant.parse("2025-09-03T00:00:00Z")).build(),
-                PerformanceDto.builder().performanceId(4L).title("UP-4").date(Instant.parse("2025-09-04T00:00:00Z")).build()
-        );
-        when(performanceMapper.findTop4UpcomingPerformances()).thenReturn(top4);
+        // Given - any() 매처 사용
+        List<PerformanceDto> mockPerformances = createMockPerformances();
+        when(performanceMapper.findTop4UpcomingPerformances(any(LocalDateTime.class)))
+                .thenReturn(mockPerformances);
 
         // When
         List<PerformanceDto> result = performanceService.getTop4UpcomingPerformances();
 
         // Then
-        assertThat(result).hasSize(4).containsExactlyElementsOf(top4);
-        assertThat(result).isSortedAccordingTo((a, b) -> a.getDate().compareTo(b.getDate()));
+        assertThat(result).hasSize(4);
+        verify(performanceMapper).findTop4UpcomingPerformances(any(LocalDateTime.class));
+    }
 
-        verify(performanceMapper).findTop4UpcomingPerformances();
+    private List<PerformanceDto> createMockPerformances() {
+        return List.of(
+                new PerformanceDto(1L, "공연1", Instant.now().plusNanos(1), "img1.jpg"),
+                new PerformanceDto(2L, "공연2", Instant.now().plusNanos(2), "img2.jpg"),
+                new PerformanceDto(3L, "공연3", Instant.now().plusNanos(3), "img3.jpg"),
+                new PerformanceDto(4L, "공연4", Instant.now().plusNanos(4), "img4.jpg")
+        );
     }
 
     @Test

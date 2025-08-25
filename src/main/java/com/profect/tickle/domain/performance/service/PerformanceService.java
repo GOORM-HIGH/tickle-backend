@@ -35,6 +35,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -103,7 +106,8 @@ public class PerformanceService {
     }
 
     public List<PerformanceDto> getTop4UpcomingPerformances() {
-        return performanceMapper.findTop4UpcomingPerformances();
+        LocalDateTime now =  LocalDateTime.now();
+        return performanceMapper.findTop4UpcomingPerformances(now);
     }
 
     public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
@@ -245,7 +249,7 @@ public class PerformanceService {
     }
 
     private void validatePerfId(Long performanceId) {
-        if(performanceId == null || performanceId <= 0) {
+        if (performanceId == null || performanceId <= 0) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

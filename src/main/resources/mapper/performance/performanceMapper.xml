@@ -103,12 +103,15 @@
             p.performance_id AS performanceId,
             p.performance_title AS title,
             p.performance_date AS date,
-        p.performance_img AS img
+            p.performance_img AS img
         FROM performance p
-        WHERE p.performance_start_date > NOW()
-        ORDER BY p.performance_start_date ASC, p.performance_date ASC
+        WHERE p.performance_start_date > #{now}
+          AND p.performance_deleted_at IS NULL
+        ORDER BY p.performance_start_date ASC,
+            p.performance_date ASC
             LIMIT 4
     </select>
+
 
     <!--  공연 키워드로 검색  -->
     <select id="searchPerformancesByKeyword" resultType="PerformanceDto">
@@ -132,7 +135,7 @@
     </select>
 
     <!--  관련공연 조회  -->
-    <select id="findRelatedPerformances" resultType="com.profect.tickle.domain.performance.dto.response.PerformanceDto">
+    <select id="findRelatedPerformances" resultType="PerformanceDto">
         SELECT
             p.performance_id AS performanceId,
             p.performance_title AS title,
@@ -227,7 +230,7 @@
 
     <!-- 공연ID로 공연정보 조회 쿼리-->
     <select id="findById"
-            resultType="com.profect.tickle.domain.performance.dto.response.PerformanceServiceDto"
+            resultType="PerformanceServiceDto"
             parameterType="long">
         SELECT
             p.performance_id              AS id,
