@@ -37,6 +37,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PerformanceService {
 
     private final ApplicationEventPublisher eventPublisher;
@@ -52,12 +53,10 @@ public class PerformanceService {
     private final MemberMapper memberMapper;
     private final ReservationMapper reservationMapper;
 
-    @Transactional(readOnly = true)
     public List<GenreDto> getAllGenre() {
         return performanceMapper.findAllGenres();
     }
 
-    @Transactional(readOnly = true)
     public PagingResponse<PerformanceDto> getPerformancesByGenre(Long genreId, int page, int size) {
         validateGenreId(genreId);
         var pr = PageRequest.of(page, size);
@@ -77,13 +76,11 @@ public class PerformanceService {
         return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
-    @Transactional(readOnly = true)
     public List<PerformanceDto> getTop10ByGenre(Long genreId) {
         validateGenreId(genreId);
         return performanceMapper.findTop10ByGenre(genreId);
     }
 
-    @Transactional(readOnly = true)
     public List<PerformanceDto> getTop10Performances() {
         return performanceMapper.findTop10ByClickCount();
     }
@@ -102,12 +99,10 @@ public class PerformanceService {
         return result;
     }
 
-    @Transactional(readOnly = true)
     public List<PerformanceDto> getTop4UpcomingPerformances() {
         return performanceMapper.findTop4UpcomingPerformances();
     }
 
-    @Transactional(readOnly = true)
     public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
         var pr = PageRequest.of(page, size);
 
@@ -126,7 +121,6 @@ public class PerformanceService {
         return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
-    @Transactional(readOnly = true)
     public List<PerformanceDto> getRelatedPerformances(Long performanceId) {
         validatePerfId(performanceId);
 
@@ -204,7 +198,6 @@ public class PerformanceService {
         performance.markAsDeleted();
     }
 
-    @Transactional(readOnly = true)
     public List<PerformanceHostDto> getMyPerformances(Long memberId) {
         Long signInMemberId = SecurityUtil.getSignInMemberId();
         Member me = memberRepository.findById(signInMemberId)
