@@ -1,14 +1,15 @@
-package com.profect.tickle.domain.notification.util;
+package com.profect.tickle.global.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Component
+@RequiredArgsConstructor
 @Slf4j
-public class JsonUtil {
+public class JsonUtils {
 
     public static String toJson(ObjectMapper mapper, Object obj) {
         try {
