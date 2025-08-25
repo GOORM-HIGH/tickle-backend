@@ -54,6 +54,10 @@ public class StompJwtChannelInterceptor implements ChannelInterceptor {
                             final Long finalUserId = userId;
                             accessor.setUser(() -> finalUserId.toString());
                             accessor.setHeader("userId", finalUserId);
+                            
+                            // 메시지를 다시 래핑하여 헤더 변경사항을 반영
+                            MessageHeaderAccessor.getMutableAccessor(message);
+                            
                             log.info("STOMP JWT 인증 성공: userId={}", finalUserId);
                         } else {
                             log.error("STOMP JWT에서 사용자 정보를 추출할 수 없습니다");
