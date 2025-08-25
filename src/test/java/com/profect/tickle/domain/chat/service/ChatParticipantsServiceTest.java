@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.profect.tickle.testsecurity.WithMockMember;
 
 import java.time.Instant;
 import java.util.List;
@@ -50,7 +51,8 @@ class ChatParticipantsServiceTest {
     // ===== 채팅방 참여 테스트 =====
 
     @Test
-    @DisplayName("TC-PARTICIPANT-001: 채팅방 첫 참여 성공")
+    @DisplayName("TC-PARTICIPANT-001: 유효한 채팅방에 첫 참여를 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldJoinChatRoomSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -84,7 +86,8 @@ class ChatParticipantsServiceTest {
     }
 
     @Test
-    @DisplayName("TC-PARTICIPANT-002: 채팅방 재참여 성공")
+    @DisplayName("TC-PARTICIPANT-002: 이전에 참여했던 채팅방에 재참여를 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldRejoinChatRoomSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -112,7 +115,8 @@ class ChatParticipantsServiceTest {
     }
 
     @Test
-    @DisplayName("TC-PARTICIPANT-003: 이미 참여 중인 사용자의 중복 참여")
+    @DisplayName("TC-PARTICIPANT-003: 이미 참여 중인 사용자가 중복 참여를 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldReturnExistingParticipantWhenAlreadyJoined() {
         // Given
         Long chatRoomId = 1L;
@@ -138,7 +142,8 @@ class ChatParticipantsServiceTest {
     }
 
     @Test
-    @DisplayName("TC-PARTICIPANT-004: 정원 초과로 참여 실패")
+    @DisplayName("TC-PARTICIPANT-004: 정원이 가득 찬 채팅방에 참여를 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailWhenChatRoomIsFull() {
         // Given
         Long chatRoomId = 1L;
@@ -162,7 +167,8 @@ class ChatParticipantsServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 채팅방 참여 시도 실패")
+    @DisplayName("TC-PARTICIPANT-005: 존재하지 않는 채팅방에 참여를 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailWhenJoiningNonExistentChatRoom() {
         // Given
         Long chatRoomId = 999L;
@@ -181,7 +187,8 @@ class ChatParticipantsServiceTest {
     // ===== 채팅방 나가기 테스트 =====
 
     @Test
-    @DisplayName("TC-PARTICIPANT-005: 채팅방 나가기 성공")
+    @DisplayName("TC-PARTICIPANT-006: 참여 중인 사용자가 채팅방을 나간다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldLeaveChatRoomSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -205,7 +212,8 @@ class ChatParticipantsServiceTest {
     }
 
     @Test
-    @DisplayName("TC-PARTICIPANT-006: 존재하지 않는 참여자 나가기 시도 실패")
+    @DisplayName("TC-PARTICIPANT-007: 참여하지 않은 사용자가 나가기를 시도한다")
+    @WithMockMember(id = 999, email = "non-participant@example.com", roles = {"MEMBER"})
     void shouldFailWhenLeavingAsNonParticipant() {
         // Given
         Long chatRoomId = 1L;
@@ -230,7 +238,8 @@ class ChatParticipantsServiceTest {
     // ===== 읽음 처리 테스트 =====
 
     @Test
-    @DisplayName("TC-READ-001: 메시지 읽음 처리 성공")
+    @DisplayName("TC-READ-001: 유효한 메시지를 읽음 처리한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldMarkAsReadSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -248,7 +257,8 @@ class ChatParticipantsServiceTest {
     }
 
     @Test
-    @DisplayName("TC-READ-002: 비참여자 읽음 처리 실패")
+    @DisplayName("TC-READ-002: 채팅방에 참여하지 않은 사용자가 읽음 처리를 시도한다")
+    @WithMockMember(id = 999, email = "non-participant@example.com", roles = {"MEMBER"})
     void shouldFailWhenMarkingAsReadForNonParticipant() {
         // Given
         Long chatRoomId = 1L;
@@ -268,7 +278,8 @@ class ChatParticipantsServiceTest {
     // ===== 읽음 상태 조회 테스트 =====
 
     @Test
-    @DisplayName("TC-READ-003: 읽음 상태 조회 성공")
+    @DisplayName("TC-READ-003: 유효한 사용자의 읽음 상태를 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldGetUnreadCountSuccessfully() {
         // Given
         Long chatRoomId = 1L;

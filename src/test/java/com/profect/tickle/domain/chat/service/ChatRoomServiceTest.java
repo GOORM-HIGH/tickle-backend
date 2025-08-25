@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.profect.tickle.testsecurity.WithMockMember;
 
 import java.time.Instant;
 import java.util.Map;
@@ -46,7 +47,8 @@ class ChatRoomServiceTest {
     // ===== 채팅방 생성 테스트 =====
 
     @Test
-    @DisplayName("TC-CHATROOM-001: 채팅방 생성 성공")
+    @DisplayName("TC-CHATROOM-001: 유효한 공연 정보로 채팅방을 생성한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldCreateChatRoomSuccessfully() {
         // Given
         ChatRoomCreateRequestDto requestDto = createChatRoomCreateRequest();
@@ -74,7 +76,8 @@ class ChatRoomServiceTest {
     }
 
     @Test
-    @DisplayName("TC-CHATROOM-002: 존재하지 않는 공연으로 채팅방 생성 실패")
+    @DisplayName("TC-CHATROOM-002: 존재하지 않는 공연으로 채팅방 생성을 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailWhenCreatingChatRoomWithNonExistentPerformance() {
         // Given
         ChatRoomCreateRequestDto requestDto = createChatRoomCreateRequest();
@@ -90,7 +93,8 @@ class ChatRoomServiceTest {
     }
 
     @Test
-    @DisplayName("TC-CHATROOM-003: 이미 채팅방이 있는 공연에 중복 생성 실패")
+    @DisplayName("TC-CHATROOM-003: 이미 채팅방이 있는 공연에 중복 생성을 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailWhenCreatingDuplicateChatRoom() {
         // Given
         ChatRoomCreateRequestDto requestDto = createChatRoomCreateRequest();
@@ -112,7 +116,8 @@ class ChatRoomServiceTest {
     // ===== 채팅방 조회 테스트 =====
 
     @Test
-    @DisplayName("TC-CHATROOM-004: 공연별 채팅방 조회 성공")
+    @DisplayName("TC-CHATROOM-004: 공연 ID로 채팅방을 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldGetChatRoomByPerformanceIdSuccessfully() {
         // Given
         Long performanceId = 1L;
@@ -134,7 +139,8 @@ class ChatRoomServiceTest {
     }
 
     @Test
-    @DisplayName("TC-CHATROOM-005: 채팅방이 없는 공연 조회 실패")
+    @DisplayName("TC-CHATROOM-005: 존재하지 않는 공연의 채팅방을 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailWhenGettingNonExistentChatRoom() {
         // Given
         Long performanceId = 999L;
@@ -151,7 +157,8 @@ class ChatRoomServiceTest {
     }
 
     @Test
-    @DisplayName("채팅방 기본 정보 조회 성공")
+    @DisplayName("TC-CHATROOM-006: 유효한 채팅방 ID로 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldGetChatRoomByIdSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -171,7 +178,8 @@ class ChatRoomServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 채팅방 조회 실패")
+    @DisplayName("TC-CHATROOM-007: 존재하지 않는 채팅방 ID로 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldFailWhenGettingNonExistentChatRoomById() {
         // Given
         Long chatRoomId = 999L;
@@ -188,7 +196,8 @@ class ChatRoomServiceTest {
     // ===== 채팅방 상태 관리 테스트 =====
 
     @Test
-    @DisplayName("TC-CHATROOM-006: 채팅방 상태 변경 성공")
+    @DisplayName("TC-CHATROOM-008: 유효한 채팅방의 상태를 변경한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
     void shouldUpdateChatRoomStatusSuccessfully() {
         // Given
         Long chatRoomId = 1L;
