@@ -38,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
