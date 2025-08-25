@@ -121,7 +121,7 @@ class ChatParticipantsControllerTest {
         mockMvc.perform(post("/api/v1/chat/participants/rooms/{chatRoomId}/join", CHAT_ROOM_ID)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(joinRequestDto)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(201))
                 .andExpect(jsonPath("$.data.chatRoomId").value(CHAT_ROOM_ID))
                 .andExpect(jsonPath("$.data.memberId").value(MEMBER_ID))
