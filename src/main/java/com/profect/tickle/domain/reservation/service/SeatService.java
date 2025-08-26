@@ -102,14 +102,14 @@ public class SeatService {
         Instant now = Instant.now();
 
         return seatTemplates.stream()
-                .map(template -> Seat.builder()
-                        .performance(performance)
-                        .seatNumber(template.getSeatNumber())
-                        .seatGrade(template.getSeatGrade())
-                        .seatPrice(template.getPrice())
-                        .status(availableStatus)
-                        .createdAt(now)
-                        .build())
+                .map(template -> Seat.create(
+                        performance,
+                        template.getSeatGrade(),
+                        template.getSeatNumber(),
+                        template.getPrice(),
+                        availableStatus,
+                        now
+                ))
                 .toList();
     }
 
@@ -119,7 +119,8 @@ public class SeatService {
                 .seatNumber(seat.getSeatNumber())
                 .seatGrade(seat.getSeatGrade())
                 .seatPrice(seat.getSeatPrice())
-                .statusId(seat.getStatus() != null ? seat.getStatus().getId() : StatusIds.Seat.AVAILABLE) // 기본값: 예매가능
+                .statusId(seat.getStatus() != null ? seat.getStatus().getId()
+                        : StatusIds.Seat.AVAILABLE) // 기본값: 예매가능
                 .build();
     }
 }

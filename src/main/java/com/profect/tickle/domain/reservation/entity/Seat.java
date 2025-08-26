@@ -8,8 +8,6 @@ import com.profect.tickle.global.status.StatusIds;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,8 +15,6 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "seat")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class Seat {
 
     @Id
@@ -71,15 +67,33 @@ public class Seat {
     @Column(name = "preemption_token")
     private String preemptionToken;
 
-    public void assignEvent(Event event) {this.event = event;}
+    public void assignEvent(Event event) {
+        this.event = event;
+    }
 
     void assignReservation(Reservation reservation) {
         this.reservation = reservation;
     }
 
+    private Seat(Performance performance, SeatGrade seatGrade, String seatNumber,
+            Integer seatPrice, Status status, Instant createdAt) {
+        this.performance = performance;
+        this.seatGrade = seatGrade;
+        this.seatNumber = seatNumber;
+        this.seatPrice = seatPrice;
+        this.status = status;
+        this.createdAt = createdAt;
+    }
+
+    public static Seat create(Performance performance, SeatGrade seatGrade, String seatNumber,
+            Integer seatPrice, Status status, Instant createdAt) {
+        return new Seat(performance, seatGrade, seatNumber, seatPrice, status, createdAt);
+    }
+
     // ==== 좌석 상태 관리 메서드들 ====
 
-    public void preempt(String preemptionToken, Instant preemptedAt, Instant preemptedUntil, Member member, Status preemptedStatus) {
+    public void preempt(String preemptionToken, Instant preemptedAt, Instant preemptedUntil,
+            Member member, Status preemptedStatus) {
         this.preemptionToken = preemptionToken;
         this.preemptedAt = preemptedAt;
         this.preemptedUntil = preemptedUntil;
@@ -104,8 +118,7 @@ public class Seat {
     }
 
     /**
-     * 예매 취소 시 좌석 상태 초기화
-     * Reservation.cancel()에서 호출되는 내부 메서드
+     * 예매 취소 시 좌석 상태 초기화 Reservation.cancel()에서 호출되는 내부 메서드
      */
     public void resetForCancellation(Status availableStatus) {
         this.status = availableStatus;
@@ -114,7 +127,7 @@ public class Seat {
         // reservation은 Reservation에서 처리하므로 건드리지 않음
     }
 
-    public void setStatusTo(Status status){
+    public void setStatusTo(Status status) {
         this.status = status;
     }
 
