@@ -90,11 +90,5 @@ public class SseNotificationTestConfig {
             return new TreeMap<>(events.getOrDefault(memberId, new ConcurrentSkipListMap<>())
                     .tailMap(lastEventId, false));
         }
-
-        @Override
-        public void clearEventsBefore(long memberId, long thresholdEventId) {
-            var m = events.get(memberId);
-            if (m != null) m.headMap(thresholdEventId, false).clear();
-        }
     }
 }
