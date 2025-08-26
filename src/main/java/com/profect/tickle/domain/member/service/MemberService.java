@@ -21,6 +21,8 @@ import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.security.util.principal.CustomUserDetails;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -332,7 +334,7 @@ public class MemberService implements UserDetailsService {
     }
 
     // 로그아웃 메서드
-    public void signout() {
-        sseSender.disconnectAll(SecurityUtil.getSignInMemberId());
+    public void signout(@NotNull @Positive Long signInMemberId) {
+        sseSender.disconnectAll(signInMemberId);
     }
 }

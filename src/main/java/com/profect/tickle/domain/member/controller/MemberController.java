@@ -127,9 +127,10 @@ public class MemberController {
     @PostMapping(value = "/sign-out")
     public ResultResponse<?> signout() {
         String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
+        Long signInMemberId = SecurityUtil.getSignInMemberId();
         log.info("{}님의 로그아웃 요청이 수신되었습니다.", signInMemberEmail);
 
-        memberService.signout();
+        memberService.signout(signInMemberId);
 
         log.info("{}님의 로그아웃 요청 처리가 완료되었습니다.", signInMemberEmail);
         return ResultResponse.ok(ResultCode.MEMBER_SIGN_OUT_SUCCES);
