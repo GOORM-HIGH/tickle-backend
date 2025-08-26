@@ -13,6 +13,7 @@ import com.profect.tickle.global.security.util.JwtUtil;
 import com.profect.tickle.global.security.util.properties.TokenProperties;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -80,7 +81,7 @@ public class SecurityConfig {
 
 
     @Bean
-    protected SecurityFilterChain configure(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
+    protected SecurityFilterChain configure(HttpSecurity http, @Qualifier("localCorsConfigurationSource") CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
                 .cors(c -> c.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
