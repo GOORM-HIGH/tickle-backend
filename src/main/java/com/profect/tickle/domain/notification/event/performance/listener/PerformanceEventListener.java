@@ -1,5 +1,7 @@
 package com.profect.tickle.domain.notification.event.performance.listener;
 
+import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
+import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
 import com.profect.tickle.domain.notification.entity.NotificationKind;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class PerformanceEventListener {
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
     private final RealtimeSender realtimeSender;
+    private final MemberService memberService;
 
     // 제휴 업체 공연 게시 시 알림 전송 (브로드캐스트)
     @EventListener
@@ -57,7 +61,11 @@ public class PerformanceEventListener {
         String subject = String.format(template.getTitle(), event.performance().title());
         String content = String.format(template.getContent(), contentBody);
 
-        // 3) SSE 브로드캐스트
+        // 3) 회원 알림 저장
+        List<MemberResponseDto> memberList = memberService.findMemberListByDeletedAtIsNull(true);
+        memberList.forEach(member -> notificationService.saveNotification(member.getEmail(), template, subject, content, now));
+
+        // 4) SSE 브로드캐스트
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                 NotificationKind.PARTNER_PERFORMANCE_PUBLISHED,
                 subject,
@@ -67,7 +75,6 @@ public class PerformanceEventListener {
                 null
         );
 
-        // 현재 접속 중인 모든 사용자에게 전송 (오프라인 사용자는 다음 접속 때 API pull로 동기화)
         realtimeSender.sendAll(payload);
     }
 
