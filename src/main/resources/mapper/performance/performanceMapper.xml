@@ -185,6 +185,7 @@
             JOIN performance p ON pf.performance_id = p.performance_id
             JOIN status s ON p.status_id = s.status_id
         WHERE pf.member_id = #{memberId}
+          AND s.status_code != 102
         ORDER BY pf.performance_favorite_created_at DESC
     </select>
 
