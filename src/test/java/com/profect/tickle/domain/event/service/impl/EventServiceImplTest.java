@@ -10,8 +10,11 @@ import com.profect.tickle.domain.event.service.EventService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.member.service.MemberService;
+import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.security.util.principal.CustomUserDetails;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.testsecurity.WithMockMember;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,24 +23,27 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hibernate.query.sqm.tree.SqmNode.log;
 
 @ActiveProfiles("test")
 @SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY) // <- 반드시 추가
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:tickle;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
-})
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Sql(scripts = "classpath:sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "classpath:sql/schema.sql",  executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "classpath:sql/data.sql",    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -47,13 +53,23 @@ class EventServiceImplTest{
     EventService eventService;
 
     @Autowired
+    PointRepository pointRepository;
+
+    @Autowired
     EventRepository eventRepository;
 
     @Autowired
     MemberRepository memberRepository;
 
+
+    @Autowired
+    Clock clock;
+
     @Autowired
     CouponRepository couponRepository;
+
+    @Autowired
+    MemberService memberService;
 
     @Autowired
     CouponReceivedRepository couponReceivedRepository;
@@ -67,7 +83,8 @@ class EventServiceImplTest{
         memberRepository.save(member);
     }
 
-    @Transactional
+
+
     @WithMockMember(id = 1L, email = "user1@test.com", roles = {"MEMBER"})
     @DisplayName("사용자가 진행중인 티켓 이벤트에 참여한다.")
     @Test
@@ -85,7 +102,7 @@ class EventServiceImplTest{
         assertThat(result.memberId()).isEqualTo(1L);
         assertThat(result.isWinner()).isFalse();
         assertThat(result.message()).isEqualTo("아쉽네요. 다음 기회에...");
-        assertThat(updateEvent.getAccrued()).isEqualTo(2000);
+        assertThat(updateEvent.getAccrued()).isEqualTo(1000);
     }
 
     @WithMockMember(id = 1L, email = "user1@test.com", roles = {"MEMBER"})
@@ -125,7 +142,6 @@ class EventServiceImplTest{
                 .hasMessage(ErrorCode.INSUFFICIENT_POINT.getMessage());
     }
 
-    @Transactional
     @WithMockMember(id = 1L, email = "user1@test.com", roles = {"MEMBER"})
     @DisplayName("사용자는 종료된 티켓 이벤트에 참여할 수 없다.")
     @Test
@@ -229,4 +245,69 @@ class EventServiceImplTest{
         assertThat(before).isEqualTo(before);
         assertThat(couponReceivedRepository.existsByMemberIdAndCouponId(1L, couponId)).isTrue();
     }
+
+    @DisplayName("티켓 이벤트에 여러 사용자가 동시에 응모할 수 있다.")
+    @Test
+    void applyTicketEventWithMultipleMembers() throws InterruptedException {
+        // given
+        int memberCount = 100;
+        final long eventId = 6L;
+        final int perPrice = 10000;
+        int eventAmount = 100000;
+
+        Event event = eventRepository.findById(eventId).orElseThrow();
+
+        ExecutorService pool = Executors.newFixedThreadPool(memberCount);
+        CountDownLatch startGate = new CountDownLatch(1);
+        CountDownLatch doneGate = new CountDownLatch(memberCount);
+
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failCount = new AtomicInteger();
+
+        for (long id = 1; id <= memberCount; id++) {
+            Member m = memberRepository.findById(id).orElseThrow();
+            m.addPoint(perPrice);
+            memberRepository.save(m);
+        }
+
+        // when
+        for (long id = 1; id <= memberCount; id++) {
+            final long memberId = id;
+            pool.submit(() -> {
+                try {
+                    startGate.await(); // 스레드 준비 완료
+                    var authorities = List.of(new SimpleGrantedAuthority("MEMBER")); // 스레드 별 로그인 컨텍스트 세팅
+                    var principal = new CustomUserDetails(
+                            memberId,
+                            "user" + memberId + "@test.com",
+                            "pw" + memberId,
+                            "유저" + memberId,
+                            authorities
+                    );
+                    var authentication =
+                            new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
+                    TestSecurityContextHolder.setAuthentication(authentication);
+
+                    eventService.applyTicketEvent(eventId);
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    failCount.incrementAndGet();
+                    log.error("apply failed for member {}: {}", memberId, new String[]{e.getMessage()}, e);
+                } finally {
+                    doneGate.countDown();
+                    TestSecurityContextHolder.clearContext();
+                }
+            });
+        }
+        startGate.countDown(); // 모든 작업자 준비 후 동시에 출발
+        doneGate.await(); // 모두 끝날 때까지 대기
+        pool.shutdown();
+        // then
+        log.info("successCount = " + successCount.get());
+        log.info("failCount = " + failCount.get());
+
+        Event updated = eventRepository.findById(event.getId()).orElseThrow();
+        assertThat(updated.getAccrued()).isEqualTo(eventAmount);
+    }
 }
+

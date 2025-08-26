@@ -11,6 +11,7 @@ import com.profect.tickle.domain.event.mapper.CouponReceivedMapper;
 import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
+import com.profect.tickle.domain.event.service.EventApplyExecutor;
 import com.profect.tickle.domain.event.service.EventService;
 import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
@@ -32,9 +33,12 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -43,6 +47,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 @Service
@@ -51,22 +56,23 @@ public class EventServiceImpl implements EventService {
 
     // utils
     private final PointTarget eventTarget = PointTarget.EVENT;
-    private final StatusProvider statusProvider;
     private final Clock clock;
     private final ZoneId zone = ZoneId.systemDefault();
 
     // mapper & repositories
+    private final EventApplyExecutor executor;
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
     private final CouponReceivedRepository couponReceivedRepository;
-    private final PerformanceRepository performanceRepository;
     private final PointRepository pointRepository;
     private final EventMapper eventMapper;
     private final CouponMapper couponMapper;
     private final CouponReceivedMapper couponReceivedMapper;
+    private final PerformanceRepository performanceRepository;
+    private final StatusProvider statusProvider;
 
     @Override
     @Transactional
@@ -109,38 +115,23 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    @Transactional
     public TicketApplyResponseDto applyTicketEvent(Long eventId) {
-        Event event = getEventOrThrow(eventId);
-        Member member = getMemberOrThrow();
-
-        Point point = member.deductPoint(event.getPerPrice(), eventTarget);
-        pointRepository.save(point);
-
-        event.accumulate(event.getPerPrice());
-
-        boolean isWinner = (event.getAccrued() >= event.getGoalPrice());
-        if (isWinner) {
-            Seat seat = getSeatOrThrow(event.getSeat().getId());
-            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
-
-            Status paidStatus = statusProvider.provide(StatusIds.Reservation.PAID);
-            Reservation reservation = Reservation.create(
-                    member,
-                    seat.getPerformance(),
-                    paidStatus,
-                    event.getAccrued()
-            );
-
-            reservation.assignSeat(seat);
-
-            Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
-            seat.completeReservation(member, reservedStatus, null);
-
-            reservationRepository.save(reservation);
+        int maxTry = 20;
+        for (int i = 0; i < maxTry; i++) {
+            try {
+                return executor.applyTicketEventOnce(eventId);
+            } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
+                if (i == maxTry - 1) throw e;
+                // 재시도 대기: 지수 백오프 + 지터
+                try {
+                    long base = 5L;  // 기본 단위
+                    long backoff = (long) (base * Math.pow(2, i)); // 지수적으로 증가
+                    long jitter = ThreadLocalRandom.current().nextLong(0, 5); // 약간 랜덤 섞기
+                    Thread.sleep(Math.min(200L, backoff + jitter)); // 너무 길지 않게 상한 200ms
+                } catch (InterruptedException ignored) {}
+            }
         }
-
-        return TicketApplyResponseDto.from(eventId, member.getId(), isWinner);
+        throw new IllegalStateException("unreachable");
     }
 
     @Override
