@@ -5,6 +5,7 @@ import com.profect.tickle.domain.notification.dto.request.MailCreateServiceReque
 import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
 import com.profect.tickle.domain.notification.event.reservation.event.ReservationSuccessEvent;
+import com.profect.tickle.domain.notification.service.NotificationService;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.domain.notification.service.mail.MailSender;
 import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
@@ -21,10 +22,14 @@ import java.time.Instant;
 @Slf4j
 public class ReservationEventListener {
 
+    // utils
+    private final Clock clock;
+
+    // services
+    private final NotificationService notificationService;
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
     private final RealtimeSender realtimeSender;
-    private final Clock clock;
 
     // 예매 성공 시 알림 전송
     @EventListener
@@ -44,6 +49,10 @@ public class ReservationEventListener {
                 event.performance().performanceDateAndTime(),
                 event.reservation().getPrice()
         );
+        Instant now = clock.instant();
+
+        // 알림 저장
+        notificationService.saveNotification(event.reservation().getMemberEmail(), template, subject, content, now);
 
         // 메일 전송
         mailSender.sendText(new MailCreateServiceRequestDto(event.reservation().getMemberEmail(), subject, content));
@@ -53,8 +62,8 @@ public class ReservationEventListener {
                 NotificationKind.RESERVATION_SUCCESS,
                 subject,
                 content,
-                Instant.now(clock),
-                "/mypage/reservations",
+                now,
+                "https://tickle.kr/mypage/reservations",
                 null
         );
         realtimeSender.send(event.reservation().getMemberId(), payload);
