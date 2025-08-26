@@ -144,4 +144,7 @@ public class Performance {
         this.deletedAt = Instant.now();
     }
 
+    public boolean isReservationPeriod() {
+        return this.startDate.isBefore(Instant.now()) && this.endDate.isAfter(Instant.now());
+    }
 }
