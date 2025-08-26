@@ -323,4 +323,9 @@ public class MemberService implements UserDetailsService {
     private boolean hasText(String s) {
         return s != null && !s.trim().isEmpty();
     }
+
+    // 활성(비활성) 회원들의 정보를 반환하는 메서드
+    public List<MemberResponseDto> findMemberListByDeletedAtIsNull(boolean deletedAtIsNull) {
+        return memberMapper.findMemberListByDeletedAtIsNull(deletedAtIsNull);
+    }
 }
