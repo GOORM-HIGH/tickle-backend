@@ -63,7 +63,8 @@ class SseSenderTest {
         long memberId = 10L;
         NotificationEnvelope<?> payload = mock(NotificationEnvelope.class);
 
-        given(sseRepository.getAllWithIds(memberId)).willReturn(Collections.emptyMap());
+        given(sseRepository.getAllWithIds(memberId))
+                .willReturn(Collections.emptyMap());
 
         try (MockedStatic<JsonUtils> mocked = Mockito.mockStatic(JsonUtils.class)) {
             mocked.when(() -> JsonUtils.toJson(any(ObjectMapper.class), any()))
@@ -73,9 +74,9 @@ class SseSenderTest {
             sseSender.send(memberId, payload);
 
             // then
-            then(sseRepository).should().saveEvent(eq(memberId), anyLong(), anyString());
-            then(sseRepository).should().clearEventsBefore(eq(memberId), anyLong());
-            then(sseRepository).should().getAllWithIds(memberId);
+            then(sseRepository).should(times(1)).saveEvent(eq(memberId), anyLong(), anyString());
+            then(sseRepository).should(times(1)).trimEvents(eq(memberId), anyInt(), anyLong());
+            then(sseRepository).should(times(1)).getAllWithIds(memberId);
         }
     }
 
@@ -105,7 +106,7 @@ class SseSenderTest {
             then(e2).should().send(any(SseEmitter.SseEventBuilder.class));
 
             then(sseRepository).should().saveEvent(eq(memberId), anyLong(), anyString());
-            then(sseRepository).should().clearEventsBefore(eq(memberId), anyLong());
+            then(sseRepository).should(times(1)).trimEvents(eq(memberId), anyInt(), anyLong());
         }
     }
 

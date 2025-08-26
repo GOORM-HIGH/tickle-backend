@@ -65,12 +65,6 @@ public class SseRepository {
                 .tailMap(lastEventId, false);
     }
 
-    // 너무 오래된 이벤트 정리 (남겨둠: 사용처가 있으면 그대로 사용)
-    public void clearEventsBefore(long memberId, long thresholdEventId) {
-        ConcurrentSkipListMap<Long, String> map = eventsByMember.get(memberId);
-        if (map != null) map.headMap(thresholdEventId, false).clear();
-    }
-
     public void removeAll(long memberId) {
         removeAll(memberId, true); // 기본: 캐시까지 제거
     }

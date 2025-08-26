@@ -85,22 +85,22 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void send(long memberId, NotificationEnvelope<?> payload) {
+        // 1) 이벤트 생성 + 직렬화 (항상 수행)
         long eventId = nextEventId();
         String json = JsonUtils.toJson(objectMapper, payload);
 
-        // 1) 활성 emitter 조회 (스냅샷)
-        Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
-        if (targets.isEmpty()) {
-            // 오프라인이면 캐시 저장 생략 (클라가 API Pull로 동기화)
-            log.debug("no active SSE emitters; skip caching. memberId={}, eventId={}", memberId, eventId);
-            return;
-        }
-
-        // 2) 유실 이벤트 캐시 저장 + 트리밍
+        // 2) 유실 캐시 저장 + TTL 정리 (항상 수행)
         sseRepository.saveEvent(memberId, eventId, json);
         sseRepository.trimEvents(memberId, MAX_REPLAY_PER_MEMBER, eventId - REPLAY_TTL_MS);
 
-        // 3) emitter별 전송, 같은 emitter 내에서는 lane으로 직렬화
+        // 3) 활성 emitter 스냅샷 조회
+        Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
+        if (targets.isEmpty()) {
+            log.debug("no active SSE emitters; cached event for replay. memberId={}, eventId={}", memberId, eventId);
+            return; // 전송은 하지 않음
+        }
+
+        // 4) 전송 (같은 emitter 내에서는 직렬화된 순서 유지)
         targets.forEach((emitterId, emitter) -> {
             laneOf(emitterId).execute(() -> {
                 try {
@@ -111,7 +111,7 @@ public class SseSender implements RealtimeSender {
                 } catch (IOException ex) {
                     log.warn("send failed - memberId={}, emitterId={}, err={}", memberId, emitterId, ex.toString());
                     disconnectEmitterWithError(memberId, emitterId, ex);
-                    removeLane(emitterId); // lane 정리
+                    removeLane(emitterId);
                 }
             });
         });
