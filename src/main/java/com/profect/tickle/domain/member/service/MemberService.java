@@ -16,6 +16,7 @@ import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.entity.NotificationTemplate;
 import com.profect.tickle.domain.notification.event.member.event.EmailAuthenticationCodePublishEvent;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
+import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.security.util.SecurityUtil;
@@ -53,6 +54,7 @@ public class MemberService implements UserDetailsService {
     // services
     private final NotificationTemplateService notificationTemplateService;
     private final ContractService contractService;
+    private final RealtimeSender sseSender;
 
     // mappers & repositories
     private final MemberMapper memberMapper;
@@ -327,5 +329,10 @@ public class MemberService implements UserDetailsService {
     // 활성(비활성) 회원들의 정보를 반환하는 메서드
     public List<MemberResponseDto> findMemberListByDeletedAtIsNull(boolean deletedAtIsNull) {
         return memberMapper.findMemberListByDeletedAtIsNull(deletedAtIsNull);
+    }
+
+    // 로그아웃 메서드
+    public void signout() {
+        sseSender.disconnectAll(SecurityUtil.getSignInMemberId());
     }
 }

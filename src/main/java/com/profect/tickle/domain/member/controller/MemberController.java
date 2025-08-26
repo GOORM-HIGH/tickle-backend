@@ -117,4 +117,21 @@ public class MemberController {
                 ResultCode.MEMBER_UPDATE_SUCCESS.getMessage()
         );
     }
+
+    @Operation(summary = "로그아웃", description = "로그인한 회원을 로그아웃합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원정보수정 성공"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping(value = "/sign-out")
+    public ResultResponse<?> signout() {
+        String signInMemberEmail = SecurityUtil.getSignInMemberEmail();
+        log.info("{}님의 로그아웃 요청이 수신되었습니다.", signInMemberEmail);
+
+        memberService.signout();
+
+        log.info("{}님의 로그아웃 요청 처리가 완료되었습니다.", signInMemberEmail);
+        return ResultResponse.ok(ResultCode.MEMBER_SIGN_OUT_SUCCES);
+    }
 }
