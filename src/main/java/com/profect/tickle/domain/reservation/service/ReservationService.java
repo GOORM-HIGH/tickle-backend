@@ -158,6 +158,11 @@ public class ReservationService {
 
     private Reservation createReservation(List<Seat> seats, Member member, Integer price) {
         Performance performance = seats.getFirst().getPerformance();
+
+        if (!performance.isReservationPeriod()) {
+            throw new BusinessException(ErrorCode.RESERVATION_PERIOD_CLOSED);
+        }
+
         Status paidStatus = statusProvider.provide(StatusIds.Reservation.PAID);
 
         Reservation reservation = Reservation.create(member, performance, paidStatus, price);
