@@ -38,6 +38,7 @@ public enum ErrorCode {
     NO_PERMISSION(HttpStatus.FORBIDDEN,"공연을 삭제할 권한이 없습니다."),
     ALREADY_SCRAPPED(HttpStatus.CONFLICT,"이미 스크랩된 공연입니다."),
     FAVORITE_NOT_FOUND(HttpStatus.NOT_FOUND,"스크랩된 공연이 존재하지 않습니다."),
+    RESERVATION_PERIOD_CLOSED(HttpStatus.BAD_REQUEST, "예매 기간이 아닙니다."),
 
     //SEAT
     SEAT_CLASS_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 등급 정보를 찾을 수 없습니다."),
