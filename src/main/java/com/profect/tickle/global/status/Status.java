@@ -4,9 +4,7 @@ import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -16,6 +14,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "status")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Status {
 
     @Id
@@ -34,5 +34,6 @@ public class Status {
 
     @Column(name = "status_created_at", nullable = false)
     private Instant createdAt;
+
 }
 
