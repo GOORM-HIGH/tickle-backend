@@ -56,16 +56,18 @@ public class Reservation {
     @OneToMany(mappedBy = "reservation", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Seat> seats = new ArrayList<>();
 
+    private Reservation(Member member, Performance performance, Status status, String code, Integer price, Boolean isNotify) {
+        this.member = member;
+        this.performance = performance;
+        this.status = status;
+        this.code = code;
+        this.price = price;
+        this.isNotify = isNotify;
+        this.createdAt = Instant.now();
+    }
+
     public static Reservation create(Member member, Performance performance, Status status, Integer price) {
-        Reservation reservation = new Reservation();
-        reservation.member = member;
-        reservation.performance = performance;
-        reservation.status = status;
-        reservation.code = generateReservationCode();
-        reservation.price = price;
-        reservation.isNotify = true;
-        reservation.createdAt = Instant.now();
-        return reservation;
+        return new Reservation(member, performance, status, generateReservationCode(), price, true);
     }
 
     // 연관관계 편의 메서드 - 양방향 설정
