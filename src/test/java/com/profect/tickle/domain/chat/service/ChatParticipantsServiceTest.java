@@ -52,7 +52,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-PARTICIPANT-001: 유효한 채팅방에 첫 참여를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldJoinChatRoomSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -87,7 +87,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-PARTICIPANT-002: 이전에 참여했던 채팅방에 재참여를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldRejoinChatRoomSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -116,7 +116,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-PARTICIPANT-003: 이미 참여 중인 사용자가 중복 참여를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldReturnExistingParticipantWhenAlreadyJoined() {
         // Given
         Long chatRoomId = 1L;
@@ -143,7 +143,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-PARTICIPANT-004: 정원이 가득 찬 채팅방에 참여를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenChatRoomIsFull() {
         // Given
         Long chatRoomId = 1L;
@@ -168,7 +168,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-PARTICIPANT-005: 존재하지 않는 채팅방에 참여를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenJoiningNonExistentChatRoom() {
         // Given
         Long chatRoomId = 999L;
@@ -188,7 +188,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-PARTICIPANT-006: 참여 중인 사용자가 채팅방을 나간다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldLeaveChatRoomSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -239,7 +239,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-READ-001: 유효한 메시지를 읽음 처리한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldMarkAsReadSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -279,7 +279,7 @@ class ChatParticipantsServiceTest {
 
     @Test
     @DisplayName("TC-READ-003: 유효한 사용자의 읽음 상태를 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetUnreadCountSuccessfully() {
         // Given
         Long chatRoomId = 1L;

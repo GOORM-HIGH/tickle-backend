@@ -149,7 +149,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-001: 채팅방에 참여한 사용자가 유효한 텍스트 메시지를 전송한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldSendTextMessageSuccessfully() throws Exception {
         // Given
         given(chatMessageService.sendMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatMessageSendRequestDto.class)))
@@ -166,7 +166,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-002: 채팅방에 참여한 사용자가 유효한 파일 정보와 함께 메시지를 전송한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldSendFileMessageSuccessfully() throws Exception {
         // Given
         given(chatMessageService.sendMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatMessageSendRequestDto.class)))
@@ -183,7 +183,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-003: 빈 내용으로 텍스트 메시지 전송을 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldReturnBadRequestWhenContentIsEmpty() throws Exception {
         // Given
         ChatMessageSendRequestDto emptyContentRequest = ChatMessageSendRequestDto.builder()
@@ -202,7 +202,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-004: 255자를 초과하는 내용으로 메시지 전송을 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldReturnBadRequestWhenContentIsTooLong() throws Exception {
         // Given
         String longContent = "a".repeat(256);
@@ -222,7 +222,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-006: 채팅방에 참여한 사용자가 메시지 목록을 페이징으로 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetMessageListWithPaging() throws Exception {
         // Given
         given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(0), eq(50), eq(null)))
@@ -238,7 +238,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-007: 페이징 정보가 포함된 메시지 목록을 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetMessageListWithPagingDetails() throws Exception {
         // Given
         given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(1), eq(10), eq(null)))
@@ -254,7 +254,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-008: 음수 페이지 값으로 조회를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldAllowNegativePageNumber() throws Exception {
         // Given
         given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(-1), eq(50), eq(null)))
@@ -270,7 +270,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-009: 메시지 작성자가 자신의 메시지를 수정한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldUpdateMessageSuccessfully() throws Exception {
         // Given
         String updateContent = "수정된 메시지 내용";
@@ -286,7 +286,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-012: 메시지 작성자가 자신의 메시지를 삭제한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldDeleteMessageSuccessfully() throws Exception {
         // Given
         doNothing().when(chatMessageService).deleteMessage(eq(MESSAGE_ID), eq(MEMBER_ID));
@@ -298,7 +298,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-READ-003: 채팅방 참여자가 읽지 않은 메시지 개수를 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetUnreadMessageCount() throws Exception {
         // Given
         given(chatMessageService.getUnreadCount(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(null)))
@@ -314,7 +314,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-007: 메시지 목록 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetMessageListSuccessfully() throws Exception {
         // Given
         given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(0), eq(50), any()))
@@ -336,7 +336,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-008: 음수 페이지 값으로 메시지 목록 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetMessageListWithNegativePage() throws Exception {
         // When & Then
         mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
@@ -351,7 +351,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-009: 메시지 수정 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldEditMessageSuccessfully() throws Exception {
         // Given
         String newContent = "수정된 메시지 내용";
@@ -382,7 +382,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-010: 다른 사용자의 메시지 수정 실패")
-    @WithMockMember(id = 999, email = "other@example.com", roles = {"HOST"})
+    @WithMockMember(id = 999, email = "other@example.com", roles = {"ADMIN"})
     void shouldFailToEditOtherUserMessage() throws Exception {
         // Given
         String newContent = "수정 시도";
@@ -407,7 +407,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-014: 마지막 메시지 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetLastMessageSuccessfully() throws Exception {
         // Given
         given(chatMessageService.getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
@@ -425,7 +425,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-MESSAGE-015: 메시지가 없는 채팅방의 마지막 메시지 조회")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetLastMessageWhenNoMessages() throws Exception {
         // Given
         given(chatMessageService.getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
@@ -443,7 +443,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-READ-003: 읽지않은 메시지 개수 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetUnreadCountSuccessfully() throws Exception {
         // Given
         int unreadCount = 3;
@@ -464,7 +464,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-FILE-001: 파일 다운로드 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldDownloadFileSuccessfully() throws Exception {
         // Given
         ChatMessageFileDownloadDto fileInfo = ChatMessageFileDownloadDto.builder()
@@ -493,7 +493,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-FILE-002: 파일 다운로드 실패 - 권한 없음")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenDownloadingFileWithoutPermission() throws Exception {
         // Given
         given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
@@ -509,7 +509,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-FILE-003: 파일 다운로드 실패 - 파일이 첨부되지 않은 메시지")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenDownloadingNonFileMessage() throws Exception {
         // Given
         given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
@@ -525,7 +525,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-FILE-004: 파일 다운로드 실패 - 파일 경로 없음")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenDownloadingFileWithNoPath() throws Exception {
         // Given
         given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
@@ -541,7 +541,7 @@ class ChatMessageControllerTest {
 
     @Test
     @DisplayName("TC-FILE-005: 파일 다운로드 실패 - 파일 서비스 오류")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenFileServiceThrowsException() throws Exception {
         // Given
         ChatMessageFileDownloadDto fileInfo = ChatMessageFileDownloadDto.builder()

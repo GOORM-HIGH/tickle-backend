@@ -71,7 +71,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-001: 유효한 텍스트 메시지를 전송한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldSendTextMessageSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -106,7 +106,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-002: 빈 내용으로 메시지 전송을 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenSendingEmptyTextMessage() {
         // Given
         Long chatRoomId = 1L;
@@ -130,7 +130,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-003: 255자를 초과하는 텍스트 메시지 전송을 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenSendingTooLongTextMessage() {
         // Given
         Long chatRoomId = 1L;
@@ -155,7 +155,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-004: 유효한 파일 메시지를 전송한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldSendFileMessageSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -186,7 +186,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-005: 파일 정보가 누락된 메시지 전송을 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenSendingFileMessageWithMissingInfo() {
         // Given
         Long chatRoomId = 1L;
@@ -240,7 +240,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-007: 유효한 메시지를 수정한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldEditMessageSuccessfully() {
         // Given
         Long messageId = 1L;
@@ -287,7 +287,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-009: 삭제된 메시지 수정을 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenEditingDeletedMessage() {
         // Given
         Long messageId = 1L;
@@ -311,7 +311,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-010: 유효한 메시지를 삭제한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldDeleteMessageSuccessfully() {
         // Given
         Long messageId = 1L;
@@ -335,7 +335,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-011: 이미 삭제된 메시지 삭제를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenDeletingAlreadyDeletedMessage() {
         // Given
         Long messageId = 1L;
@@ -376,7 +376,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-013: 채팅방의 메시지 목록을 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetMessageListSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -409,7 +409,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-MESSAGE-014: 음수 페이지 번호로 메시지 목록 조회를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldAllowNegativePageNumber() {
         // Given
         Long chatRoomId = 1L;
@@ -441,7 +441,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-FILE-001: 유효한 파일 메시지의 다운로드 정보를 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetFileDownloadInfoSuccessfully() {
         // Given
         Long chatRoomId = 1L;
@@ -470,7 +470,7 @@ class ChatMessageServiceTest {
 
     @Test
     @DisplayName("TC-FILE-002: 텍스트 메시지에서 파일 다운로드를 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWhenDownloadingNonFileMessage() {
         // Given
         Long chatRoomId = 1L;

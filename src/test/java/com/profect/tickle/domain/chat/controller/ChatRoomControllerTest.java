@@ -103,7 +103,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-CHATROOM-001: 유효한 공연 정보로 채팅방을 생성한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldCreateChatRoomSuccessfully() throws Exception {
         // Given
         when(chatRoomService.createChatRoom(any(ChatRoomCreateRequestDto.class))).thenReturn(responseDto);
@@ -121,7 +121,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-CHATROOM-004: 필수 필드가 누락된 요청으로 생성을 시도한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldReturnBadRequestWhenRequiredFieldsMissing() throws Exception {
         // Given - performanceId 누락
         ChatRoomCreateRequestDto invalidRequest = new ChatRoomCreateRequestDto(null, ROOM_NAME, (short) 100);
@@ -135,7 +135,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-CHATROOM-005: 유효한 채팅방 ID로 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetChatRoomByIdSuccessfully() throws Exception {
         // Given
         when(chatRoomService.getChatRoomById(CHAT_ROOM_ID)).thenReturn(responseDto);
@@ -149,7 +149,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-CHATROOM-007: 채팅방 온라인 사용자 정보를 조회한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetOnlineUsersSuccessfully() throws Exception {
         // Given - 실제 서비스 메서드에 맞게 수정
         when(chatRoomService.getOnlineUserInfo(CHAT_ROOM_ID)).thenReturn(Map.of(
@@ -183,7 +183,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-CHATROOM-010: 관리자가 채팅방을 비활성화한다")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldDeactivateChatRoomSuccessfully() throws Exception {
         // Given - 실제 서비스 메서드에 맞게 수정
         doNothing().when(chatRoomService).updateChatRoomStatus(CHAT_ROOM_ID, false);
@@ -211,7 +211,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-002: 유효하지 않은 요청으로 채팅방 생성 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToCreateChatRoomWithInvalidRequest() throws Exception {
         // Given - 필수 필드 누락
         ChatRoomCreateRequestDto invalidRequest = new ChatRoomCreateRequestDto(null, "", (short) -1);
@@ -227,7 +227,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-003: 중복 채팅방 생성 시도 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToCreateDuplicateChatRoom() throws Exception {
         // Given
         when(chatRoomService.createChatRoom(any(ChatRoomCreateRequestDto.class)))
@@ -244,7 +244,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-004: 공연별 채팅방 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetChatRoomByPerformanceIdSuccessfully() throws Exception {
         // Given
         when(chatRoomService.getChatRoomByPerformanceId(eq(PERFORMANCE_ID), eq(MEMBER_ID)))
@@ -262,7 +262,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-005: 존재하지 않는 공연의 채팅방 조회 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToGetChatRoomForNonExistentPerformance() throws Exception {
         // Given
         Long nonExistentPerformanceId = 999L;
@@ -280,7 +280,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-007: 존재하지 않는 채팅방 조회 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToGetNonExistentChatRoom() throws Exception {
         // Given
         Long nonExistentChatRoomId = 999L;
@@ -296,7 +296,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-008: 채팅방 상태 변경 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldUpdateChatRoomStatusSuccessfully() throws Exception {
         // Given
         doNothing().when(chatRoomService).updateChatRoomStatus(eq(CHAT_ROOM_ID), eq(false));
@@ -312,7 +312,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-009: 권한 없는 사용자의 채팅방 상태 변경 시도 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToUpdateChatRoomStatusWithoutPermission() throws Exception {
         // Given
         doThrow(new BusinessException(ErrorCode.NO_PERMISSION))
@@ -328,7 +328,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-010: 채팅방 참여 여부 확인 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldCheckParticipationSuccessfully() throws Exception {
         // Given
         when(chatRoomService.isParticipant(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
@@ -347,7 +347,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-012: 인증되지 않은 사용자의 API 접근 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToAccessApiWithoutAuthentication() throws Exception {
         // Given - 인증된 사용자이지만 권한이 없는 경우
         when(chatRoomService.getChatRoomById(eq(CHAT_ROOM_ID)))
@@ -362,7 +362,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-013: 잘못된 HTTP 메서드로 API 호출 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWithWrongHttpMethod() throws Exception {
         // When & Then - 잘못된 HTTP 메서드로 테스트
         mockMvc.perform(delete("/api/v1/chat/rooms")
@@ -374,7 +374,7 @@ class ChatRoomControllerTest {
 
     @Test
     @DisplayName("TC-API-014: 잘못된 Content-Type으로 API 호출 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailWithWrongContentType() throws Exception {
         // When & Then - 잘못된 Content-Type으로 요청
         mockMvc.perform(post("/api/v1/chat/rooms")

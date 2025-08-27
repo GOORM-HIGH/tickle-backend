@@ -111,7 +111,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-001: 채팅방 참여 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldJoinChatRoomSuccessfully() throws Exception {
         // Given
         when(chatParticipantsService.joinChatRoom(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatRoomJoinRequestDto.class)))
@@ -133,7 +133,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-002: 채팅방 정원 초과로 참여 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToJoinChatRoomWhenFull() throws Exception {
         // Given
         when(chatParticipantsService.joinChatRoom(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatRoomJoinRequestDto.class)))
@@ -150,7 +150,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-003: 존재하지 않는 채팅방 참여 시도 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToJoinNonExistentChatRoom() throws Exception {
         // Given
         Long nonExistentChatRoomId = 999L;
@@ -168,7 +168,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-004: 채팅방 나가기 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldLeaveChatRoomSuccessfully() throws Exception {
         // Given
         doNothing().when(chatParticipantsService).leaveChatRoom(eq(CHAT_ROOM_ID), eq(MEMBER_ID));
@@ -184,7 +184,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-005: 참여하지 않은 채팅방 나가기 시도 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToLeaveNonParticipatedChatRoom() throws Exception {
         // Given
         doThrow(new BusinessException(ErrorCode.CHAT_PARTICIPANT_NOT_FOUND))
@@ -199,7 +199,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-006: 메시지 읽음 처리 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldMarkAsReadSuccessfully() throws Exception {
         // Given
         doNothing().when(chatParticipantsService).markAsRead(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ReadMessageRequestDto.class));
@@ -217,7 +217,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-007: 읽지않은 메시지 개수 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetUnreadCountSuccessfully() throws Exception {
         // Given
         when(chatParticipantsService.getUnreadCount(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
@@ -235,7 +235,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-008: 채팅방 참여자 목록 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetParticipantsSuccessfully() throws Exception {
         // Given
         List<ChatParticipantsResponseDto> participantsList = List.of(participantsResponseDto);
@@ -256,7 +256,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-009: 내 채팅방 목록 조회 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldGetMyChatRoomsSuccessfully() throws Exception {
         // Given
         List<ChatParticipantsResponseDto> myRoomsList = List.of(participantsResponseDto);
@@ -277,7 +277,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-010: 빈 메시지로 채팅방 참여 성공")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldJoinChatRoomWithEmptyMessageSuccessfully() throws Exception {
         // Given - 빈 메시지로 참여 (message는 선택사항)
         ChatRoomJoinRequestDto emptyMessageRequest = new ChatRoomJoinRequestDto("");
@@ -296,7 +296,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-011: 유효하지 않은 요청으로 메시지 읽음 처리 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToMarkAsReadWithInvalidRequest() throws Exception {
         // Given - 필수 필드 누락
         ReadMessageRequestDto invalidRequest = new ReadMessageRequestDto(null);
@@ -312,7 +312,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-012: 존재하지 않는 채팅방의 참여자 목록 조회 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToGetParticipantsForNonExistentChatRoom() throws Exception {
         // Given
         Long nonExistentChatRoomId = 999L;
@@ -328,7 +328,7 @@ class ChatParticipantsControllerTest {
 
     @Test
     @DisplayName("TC-PARTICIPANTS-013: 참여하지 않은 채팅방의 읽지않은 메시지 개수 조회 실패")
-    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"HOST"})
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
     void shouldFailToGetUnreadCountForNonParticipatedChatRoom() throws Exception {
         // Given
         when(chatParticipantsService.getUnreadCount(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
