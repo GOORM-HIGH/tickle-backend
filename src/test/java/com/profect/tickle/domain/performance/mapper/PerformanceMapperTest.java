@@ -288,7 +288,9 @@ class PerformanceMapperTest {
         markDeleted(3L);
 
         // when
-        List<PerformanceHostDto> list = mapper.findPerformancesByMemberId(2L);
+        int page = 0, size = 50; // 넉넉히
+        int offset = page * size;
+        List<PerformanceHostDto> list = mapper.findPerformancesByMemberIdPaged(2L, offset, size);
 
         // then
         assertThat(list).isNotEmpty();
@@ -297,5 +299,14 @@ class PerformanceMapperTest {
         Instant firstCreated = list.getFirst().getCreatedDate();
         Instant lastCreated = list.get(list.size() - 1).getCreatedDate();
         assertThat(firstCreated).isAfterOrEqualTo(lastCreated);
+        assertThat(list.get(0).getTitle()).isNotNull();
+        assertThat(list.get(0).getImg()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("멤버별 생성한 고연 전체 개수를 카운트한다.")
+    void TC_PERFORMANCE_COUNT() {
+        long total = mapper.countPerformancesByMemberId(2L);
+        assertThat(total).isGreaterThan(0L);
     }
 }

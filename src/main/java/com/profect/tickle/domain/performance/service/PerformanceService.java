@@ -205,20 +205,29 @@ public class PerformanceService {
         performance.markAsDeleted();
     }
 
-    public List<PerformanceHostDto> getMyPerformances(Long memberId) {
+    public PagingResponse<PerformanceHostDto> getMyPerformances(Long memberId, int page, int size) {
+        // 권한/본인 확인 (기존 로직 유지)
         Long signInMemberId = SecurityUtil.getSignInMemberId();
         Member me = memberRepository.findById(signInMemberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
-        if (me.getMemberRole() != MemberRole.HOST) {
+        if (me.getMemberRole() != MemberRole.HOST || !signInMemberId.equals(memberId)) {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
 
-        if (!signInMemberId.equals(memberId)) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        // page/size 기본 검증
+        if (page < 0) page = 0;
+        if (size <= 0 || size > 100) size = 20;
+
+        long total = performanceMapper.countPerformancesByMemberId(memberId);
+        if (total == 0) {
+            return PagingResponse.from(List.of(), page, size, 0L);
         }
 
-        return performanceMapper.findPerformancesByMemberId(memberId);
+        int offset = page * size;
+        List<PerformanceHostDto> content =
+                performanceMapper.findPerformancesByMemberIdPaged(memberId, offset, size);
+
+        return PagingResponse.from(content, page, size, total);
     }
 
     // 알림 수정 이벤트 발생 메서드

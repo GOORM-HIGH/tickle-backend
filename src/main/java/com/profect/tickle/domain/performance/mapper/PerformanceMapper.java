@@ -46,7 +46,13 @@ public interface PerformanceMapper {
 
     Long findGenreIdByPerformanceId(@Param("performanceId") Long performanceId);
 
-    List<PerformanceHostDto> findPerformancesByMemberId(Long memberId);
+    long countPerformancesByMemberId(@Param("memberId") Long memberId);
+
+    List<PerformanceHostDto> findPerformancesByMemberIdPaged(
+            @Param("memberId") Long memberId,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
 
     List<PerformanceScrapDto> findScrappedPerformancesByMemberId(Long memberId);
 

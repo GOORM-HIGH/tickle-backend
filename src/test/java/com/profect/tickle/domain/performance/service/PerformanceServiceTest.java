@@ -398,42 +398,76 @@ class PerformanceServiceTest {
     }
 
     @Test
-    @DisplayName("HOST 본인이 자신의 공연 목록을 조회하면 최신 생성일 순으로 반환된다.")
-    void TC_PERFORMANCE_011_HOST_OK() {
+    @DisplayName("HOST 본인이 자신의 공연 목록을 조회하면 페이징 응답으로 최신 생성일 순 반환")
+    void TC_PERFORMANCE_011_HOST_OK_PAGING() {
         // Given
         Long memberId = 100L;
         Member me = stubMember(MemberRole.HOST);
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(me));
 
+        int page = 0, size = 3;
         var now = Instant.parse("2025-08-24T12:00:00Z");
-        List<PerformanceHostDto> expected = List.of(
+        List<PerformanceHostDto> expectedContent = List.of(
                 PerformanceHostDto.builder().performanceId(3L).title("최신").createdDate(now.plusSeconds(120)).build(),
-                PerformanceHostDto.builder().performanceId(2L).title("이전").createdDate(now.plusSeconds(60)).build(),
-                PerformanceHostDto.builder().performanceId(1L).title("더이전").createdDate(now).build()
+                PerformanceHostDto.builder().performanceId(2L).title("이전"). createdDate(now.plusSeconds(60)).build(),
+                PerformanceHostDto.builder().performanceId(1L).title("더이전"). createdDate(now).build()
         );
-        when(performanceMapper.findPerformancesByMemberId(memberId)).thenReturn(expected);
+
+        when(performanceMapper.countPerformancesByMemberId(memberId)).thenReturn(3L);
+        when(performanceMapper.findPerformancesByMemberIdPaged(memberId, page * size, size))
+                .thenReturn(expectedContent);
 
         try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
             mocked.when(SecurityUtil::getSignInMemberId).thenReturn(memberId);
 
             // When
-            List<PerformanceHostDto> result = performanceService.getMyPerformances(memberId);
+            PagingResponse<PerformanceHostDto> result = performanceService.getMyPerformances(memberId, page, size);
 
             // Then
-            assertThat(result).containsExactlyElementsOf(expected);
-            assertThat(result.get(0).getCreatedDate()).isAfter(result.get(1).getCreatedDate());
-            assertThat(result.get(1).getCreatedDate()).isAfter(result.get(2).getCreatedDate());
+            assertThat(result.page()).isEqualTo(page);
+            assertThat(result.size()).isEqualTo(size);
+            assertThat(result.totalElements()).isEqualTo(3L);
+            assertThat(result.totalPages()).isEqualTo(1);
+            assertThat(result.isLast()).isTrue();
+            assertThat(result.content()).containsExactlyElementsOf(expectedContent);
+
+            assertThat(result.content().get(0).getCreatedDate()).isAfter(result.content().get(1).getCreatedDate());
+            assertThat(result.content().get(1).getCreatedDate()).isAfter(result.content().get(2).getCreatedDate());
 
             verify(memberRepository).findById(memberId);
-            verify(performanceMapper).findPerformancesByMemberId(memberId);
+            verify(performanceMapper).countPerformancesByMemberId(memberId);
+            verify(performanceMapper).findPerformancesByMemberIdPaged(memberId, 0, 3);
             verifyNoMoreInteractions(performanceMapper);
+        }
+    }
+
+    @Test
+    @DisplayName("결과가 비어있으면 빈 페이징 응답을 반환한다")
+    void TC_PERFORMANCE_011_EMPTY() {
+        Long memberId = 100L;
+        Member me = stubMember(MemberRole.HOST);
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(me));
+        when(performanceMapper.countPerformancesByMemberId(memberId)).thenReturn(0L);
+
+        try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
+            mocked.when(SecurityUtil::getSignInMemberId).thenReturn(memberId);
+
+            PagingResponse<PerformanceHostDto> result = performanceService.getMyPerformances(memberId, 0, 20);
+
+            assertThat(result.totalElements()).isEqualTo(0L);
+            assertThat(result.totalPages()).isEqualTo(0);
+            assertThat(result.isLast()).isTrue();
+            assertThat(result.content()).isEmpty();
+
+            verify(memberRepository).findById(memberId);
+            verify(performanceMapper).countPerformancesByMemberId(memberId);
+            verify(performanceMapper, never()).findPerformancesByMemberIdPaged(anyLong(), anyInt(), anyInt());
         }
     }
 
     @Test
     @DisplayName("HOST가 아니면 내 공연 목록 조회가 NO_PERMISSION으로 거절된다.")
     void TC_PERFORMANCE_011_FORBIDDEN_NON_HOST() {
-        // Given
         Long signInId = 100L;
         Long targetId = 100L;
 
@@ -443,19 +477,18 @@ class PerformanceServiceTest {
         try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
             mocked.when(SecurityUtil::getSignInMemberId).thenReturn(signInId);
 
-            // When & Then
-            assertThatThrownBy(() -> performanceService.getMyPerformances(targetId))
+            assertThatThrownBy(() -> performanceService.getMyPerformances(targetId, 0, 20))
                     .isInstanceOf(BusinessException.class);
 
             verify(memberRepository).findById(signInId);
-            verify(performanceMapper, never()).findPerformancesByMemberId(anyLong());
+            verify(performanceMapper, never()).countPerformancesByMemberId(anyLong());
+            verify(performanceMapper, never()).findPerformancesByMemberIdPaged(anyLong(), anyInt(), anyInt());
         }
     }
 
     @Test
     @DisplayName("HOST라도 본인이 아닌 memberId로 요청하면 NO_PERMISSION으로 거절된다.")
     void TC_PERFORMANCE_011_FORBIDDEN_NOT_SELF() {
-        // Given
         Long signInId = 100L;
         Long otherId = 200L;
 
@@ -465,31 +498,30 @@ class PerformanceServiceTest {
         try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
             mocked.when(SecurityUtil::getSignInMemberId).thenReturn(signInId);
 
-            // When & Then
-            assertThatThrownBy(() -> performanceService.getMyPerformances(otherId))
+            assertThatThrownBy(() -> performanceService.getMyPerformances(otherId, 0, 20))
                     .isInstanceOf(BusinessException.class);
 
             verify(memberRepository).findById(signInId);
-            verify(performanceMapper, never()).findPerformancesByMemberId(anyLong());
+            verify(performanceMapper, never()).countPerformancesByMemberId(anyLong());
+            verify(performanceMapper, never()).findPerformancesByMemberIdPaged(anyLong(), anyInt(), anyInt());
         }
     }
 
     @Test
     @DisplayName("로그인 사용자를 찾지 못하면 MEMBER_NOT_FOUND 오류가 발생한다.")
     void TC_PERFORMANCE_011_MEMBER_NOT_FOUND() {
-        // Given
         Long signInId = 100L;
         when(memberRepository.findById(signInId)).thenReturn(Optional.empty());
 
         try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
             mocked.when(SecurityUtil::getSignInMemberId).thenReturn(signInId);
 
-            // When & Then
-            assertThatThrownBy(() -> performanceService.getMyPerformances(signInId))
+            assertThatThrownBy(() -> performanceService.getMyPerformances(signInId, 0, 20))
                     .isInstanceOf(BusinessException.class);
 
             verify(memberRepository).findById(signInId);
-            verify(performanceMapper, never()).findPerformancesByMemberId(anyLong());
+            verify(performanceMapper, never()).countPerformancesByMemberId(anyLong());
+            verify(performanceMapper, never()).findPerformancesByMemberIdPaged(anyLong(), anyInt(), anyInt());
         }
     }
 
@@ -659,6 +691,7 @@ class PerformanceServiceTest {
 
         verify(spyPerformance, never()).markAsDeleted();
     }
+
     private Member stubMember(MemberRole role) {
         Member m = mock(Member.class);
         when(m.getMemberRole()).thenReturn(role);

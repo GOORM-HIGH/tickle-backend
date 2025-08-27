@@ -156,7 +156,7 @@
         WHERE performance_id = #{performanceId}
     </select>
 
-    <select id="findPerformancesByMemberId" resultType="PerformanceHostDto">
+    <select id="findPerformancesByMemberIdPaged" resultType="PerformanceHostDto">
         SELECT
             p.performance_id         AS performanceId,
             p.performance_title      AS title,
@@ -171,6 +171,14 @@
         WHERE p.member_id = #{memberId}
           AND p.performance_deleted_at IS NULL
         ORDER BY p.performance_created_at DESC
+            LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countPerformancesByMemberId" resultType="long">
+        SELECT COUNT(*)
+        FROM performance p
+        WHERE p.member_id = #{memberId}
+          AND p.performance_deleted_at IS NULL
     </select>
 
     <select id="findScrappedPerformancesByMemberId" resultType="PerformanceScrapDto">
