@@ -13,6 +13,7 @@ public enum ResultCode {
     EVENT_INFO_SUCCESS(HttpStatus.OK, "이벤트 조회 성공"),
     EVENT_CREATE_SUCCESS(HttpStatus.CREATED, "이벤트 생성 성공"),
     COUPON_ISSUE_SUCCESS(HttpStatus.OK, "이벤트 쿠폰 지급 성공"),
+    EVENT_APPLY_SUCCESS(HttpStatus.OK, "이벤트 참여 완료"),
     COUPON_INFO_SUCCESS(HttpStatus.OK, "쿠폰 조회 성공"),
 
     //POINT

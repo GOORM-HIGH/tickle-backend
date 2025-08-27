@@ -25,7 +25,7 @@ public class Coupon {
     @OneToOne(mappedBy = "coupon")
     private Event event;
 
-    @Column(name = "coupon_name", length = 10, nullable = false)
+    @Column(name = "coupon_name", length = 20, nullable = false)
     private String name;
 
     @Column(name = "coupon_content", length = 20, nullable = false)

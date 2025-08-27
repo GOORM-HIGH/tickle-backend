@@ -24,10 +24,6 @@ public class Event {
     @Column(name = "event_id")
     private Long id;
 
-    @Version
-    @Column(name = "event_version")   // 컬럼명은 임의, 스키마에 추가 필요
-    private Long version;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;

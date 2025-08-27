@@ -1,12 +1,10 @@
-package com.profect.tickle.domain.event.service;
+package com.profect.tickle.domain.event.service.lock;
 
-import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.dto.response.TicketApplyResponseDto;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
 import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
