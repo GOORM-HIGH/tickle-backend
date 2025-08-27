@@ -11,18 +11,17 @@ import com.profect.tickle.domain.event.mapper.CouponReceivedMapper;
 import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
-import com.profect.tickle.domain.event.service.EventApplyExecutor;
 import com.profect.tickle.domain.event.service.EventService;
+import com.profect.tickle.domain.event.service.lock.EventApplyExecutor;
+import com.profect.tickle.domain.event.service.lock.PessimisticEventApplyExecutor;
 import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
-import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
-import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
@@ -38,7 +37,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -61,6 +59,7 @@ public class EventServiceImpl implements EventService {
 
     // mapper & repositories
     private final EventApplyExecutor executor;
+    private final PessimisticEventApplyExecutor pessimisticExecutor;
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
@@ -116,22 +115,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public TicketApplyResponseDto applyTicketEvent(Long eventId) {
-        int maxTry = 20;
-        for (int i = 0; i < maxTry; i++) {
-            try {
-                return executor.applyTicketEventOnce(eventId);
-            } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
-                if (i == maxTry - 1) throw e;
-                // 재시도 대기: 지수 백오프 + 지터
-                try {
-                    long base = 5L;  // 기본 단위
-                    long backoff = (long) (base * Math.pow(2, i)); // 지수적으로 증가
-                    long jitter = ThreadLocalRandom.current().nextLong(0, 5); // 약간 랜덤 섞기
-                    Thread.sleep(Math.min(200L, backoff + jitter)); // 너무 길지 않게 상한 200ms
-                } catch (InterruptedException ignored) {}
-            }
-        }
-        throw new IllegalStateException("unreachable");
+        return pessimisticExecutor.applyTicketEventOnce(eventId);
     }
 
     @Override

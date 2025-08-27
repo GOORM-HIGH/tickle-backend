@@ -73,9 +73,9 @@
     <select id="countTicketEvents" resultType="int">
         SELECT COUNT(*)
         FROM event e
-        JOIN status s ON e.status_id = s.status_id
-        JOIN seat se ON e.seat_id = se.seat_id
-        JOIN performance p ON se.performance_id = p.performance_id
+        JOIN status st ON e.status_id = s.status_id
+        JOIN seat s ON s.event_id = e.event_id
+        JOIN performance p ON s.performance_id = p.performance_id
         WHERE e.event_type = 1
           AND p.performance_start_date &lt;= NOW()
           AND p.performance_end_date &gt;= NOW()
@@ -95,7 +95,7 @@
             p.performance_img AS performanceImg,
             st.status_description AS eventStatusName
         FROM event e
-                 JOIN seat s ON e.seat_id = s.seat_id
+                 JOIN seat s ON s.event_id = e.event_id
                  JOIN performance p ON s.performance_id = p.performance_id
                  JOIN status st ON e.status_id = st.status_id
                  JOIN hall h ON p.hall_id = h.hall_id
@@ -112,7 +112,7 @@
         p.performance_start_date AS startDate,
         p.performance_end_date AS endDate
         FROM event e
-        JOIN seat s ON e.seat_id = s.seat_id
+        JOIN seat s ON s.event_id = e.event_id
         JOIN performance p ON s.performance_id = p.performance_id
         JOIN status st ON e.status_id = st.status_id
         WHERE e.event_type = 1
@@ -143,7 +143,7 @@
             p.performance_end_date AS endDate
         FROM event e
                  JOIN status st ON e.status_id = st.status_id
-                 JOIN seat s ON e.seat_id = s.seat_id
+                 JOIN seat s ON s.event_id = e.event_id
                  JOIN performance p ON s.performance_id = p.performance_id
         WHERE st.status_id IN (4, 5)
           AND p.performance_start_date &lt;= NOW()
@@ -159,7 +159,7 @@
             event_updated_at = NOW()
         FROM seat s
         JOIN performance p ON s.performance_id = p.performance_id
-        WHERE e.seat_id = s.seat_id
+        WHERE s.event_id = e.event_id
           AND e.status_id = 4
           AND p.performance_start_date &lt;= NOW()
           AND p.performance_end_date &gt; NOW()
@@ -172,7 +172,7 @@
             event_updated_at = NOW()
         FROM seat s
         JOIN performance p ON s.performance_id = p.performance_id
-        WHERE e.seat_id = s.seat_id
+        WHERE s.event_id = e.event_id
           AND e.status_id IN (4, 5)
           AND p.performance_end_date &lt;= NOW()
     </update>
