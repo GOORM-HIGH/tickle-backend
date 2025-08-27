@@ -5,7 +5,7 @@ import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.entity.NotificationKind;
-import com.profect.tickle.domain.notification.event.reservation.event.PerformanceModifiedEvent;
+import com.profect.tickle.domain.notification.event.performance.event.PerformanceModifiedEvent;
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.response.*;

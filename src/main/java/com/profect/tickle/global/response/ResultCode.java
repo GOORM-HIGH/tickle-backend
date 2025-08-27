@@ -58,6 +58,7 @@ public enum ResultCode {
     EMAIL_VERIFICATION_SUCCESS(HttpStatus.OK, "이메일 인증 성공"),
     MEMBER_DELETE_SUCCESS(HttpStatus.OK, "회원탈퇴 성공"),
     MEMBER_UPDATE_SUCCESS(HttpStatus.OK, "회원정보수정 성공"),
+    MEMBER_SIGN_OUT_SUCCES(HttpStatus.OK, "로그아웃 성공"),
 
     // SETTLEMENT
     SETTLEMENT_LIST_SUCCESS(HttpStatus.OK, "정산 내역 조회 성공"),

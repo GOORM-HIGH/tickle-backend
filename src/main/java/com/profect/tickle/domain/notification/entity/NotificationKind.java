@@ -7,7 +7,8 @@ public enum NotificationKind {
     RESERVATION_SUCCESS(1L),
     PERFORMANCE_MODIFIED(2L),
     COUPON_ALMOST_EXPIRED(3L),
-    AUTH_CODE_SENT(4L); // 인증번호 전송
+    AUTH_CODE_SENT(4L),
+    PARTNER_PERFORMANCE_PUBLISHED(5L); // 인증번호 전송
 
     private final Long id;
 

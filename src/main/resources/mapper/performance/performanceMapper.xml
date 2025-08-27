@@ -211,7 +211,7 @@
             p.performance_title           AS title,
             p.performance_price           AS price,
             p.performance_date            AS performanceDateAndTime,
-            p.runtime                     AS runtime,
+            p.performance_runtime         AS runtime,
             p.performance_img             AS thumbnailUrl,
             p.performance_start_date      AS startDate,
             p.performance_end_date        AS endDate,
@@ -226,7 +226,7 @@
                  JOIN genre  g            ON p.genre_id  = g.genre_id
                  JOIN status s            ON p.status_id = s.status_id
                  JOIN member m            ON p.member_id = m.member_id
-        WHERE p.performance_id = #{reservationId}
+        WHERE r.reservation_id = #{reservationId}
     </select>
 
     <!-- 공연ID로 공연정보 조회 쿼리-->
@@ -242,7 +242,7 @@
             p.performance_title           AS title,
             p.performance_price           AS price,
             p.performance_date            AS performanceDateAndTime,
-            p.runtime                     AS runtime,
+            p.performance_runtime         AS runtime,
             p.performance_img             AS thumbnailUrl,
             p.performance_start_date      AS startDate,
             p.performance_end_date        AS endDate,

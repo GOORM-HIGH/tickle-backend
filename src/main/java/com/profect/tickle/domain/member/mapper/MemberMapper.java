@@ -5,6 +5,7 @@ import com.profect.tickle.domain.member.entity.Member;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 @Mapper
@@ -15,4 +16,6 @@ public interface MemberMapper {
     Optional<MemberResponseDto> getHostMemberDtoByEmail(@Param(value = "email") String email);
 
     Optional<MemberResponseDto> getMemberDtoByEmail(@Param(value = "email") String email);
+
+    List<MemberResponseDto> findMemberListByDeletedAtIsNull(@Param(value = "deletedAtIsNull") boolean isNull);
 }
