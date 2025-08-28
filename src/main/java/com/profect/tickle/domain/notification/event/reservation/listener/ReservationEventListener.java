@@ -47,7 +47,7 @@ public class ReservationEventListener {
         String content = String.format(template.getContent(),
                 event.performance().title(),
                 event.performance().performanceDateAndTime(),
-                event.reservation().getPrice()
+                event.reservation().getCode()
         );
         Instant now = clock.instant();
 

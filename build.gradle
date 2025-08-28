@@ -4,7 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.4'
     id 'org.hibernate.orm' version '6.6.22.Final'
     id 'org.graalvm.buildtools.native' version '0.10.6'
-    id 'jacoco'  // ✅ JaCoCo 플러그인 추가
+    id 'jacoco'
 }
 
 group = 'com.profect'
@@ -42,7 +42,7 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
 
     // ===== Database =====
-    implementation 'org.postgresql:postgresql:42.5.4'
+    runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'com.h2database:h2'
 
     // ===== MyBatis=====
@@ -110,7 +110,6 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
-// ✅ JaCoCo 설정 추가
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -126,9 +125,23 @@ jacocoTestReport {
 jacocoTestCoverageVerification {
     violationRules {
         rule {
+            element = 'CLASS'   // 클래스 단위로 검사
+            enabled = true      // 규칙 활성화
+
+            // 각 클래스의 라인 커버리지가 최소 60% 이상이어야 한다
             limit {
-                minimum = 0.8  // 80% 이상 커버리지 요구
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.60
+            }
+
+            // 각 클래스의 메서드 커버리지가 최소 60% 이상이어야 한다
+            limit {
+                counter = 'METHOD'
+                value = 'COVEREDRATIO'
+                minimum = 0.60
             }
         }
     }
 }
+
