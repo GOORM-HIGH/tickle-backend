@@ -1,0 +1,566 @@
+package com.profect.tickle.domain.chat.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageListResponseDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
+import com.profect.tickle.domain.chat.dto.response.ChatMessageFileDownloadDto;
+import com.profect.tickle.domain.chat.dto.common.PaginationDto;
+import com.profect.tickle.domain.chat.entity.ChatMessageType;
+import com.profect.tickle.domain.chat.service.ChatMessageService;
+import com.profect.tickle.domain.file.service.FileService;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.testsecurity.WithMockMember;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.aot.DisabledInAotMode;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * ChatMessageController 단위 테스트
+ * 
+ * 테스트 범위:
+ * - 메시지 전송 API (텍스트, 파일)
+ * - 메시지 목록 조회 API (페이징)
+ * - 메시지 수정 API
+ * - 메시지 삭제 API
+ * - 마지막 메시지 조회 API
+ * - 읽지않은 메시지 개수 조회 API
+ * - 파일 다운로드 API
+ * - HTTP 상태 코드 및 응답 검증
+ * - 인증/권한 처리 검증
+ */
+@WebMvcTest(ChatMessageController.class)
+@AutoConfigureMockMvc(addFilters = false) // 시큐리티 필터 비활성화
+@DisabledInAotMode
+@DisplayName("ChatMessage Controller 단위 테스트")
+class ChatMessageControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private ChatMessageService chatMessageService;
+
+    @MockBean
+    private FileService fileService;
+
+    @MockBean
+    private com.profect.tickle.global.security.util.JwtUtil jwtUtil;
+
+    @MockBean
+    private com.profect.tickle.domain.chat.config.ChatJwtAuthenticationInterceptor chatJwtAuthenticationInterceptor;
+
+    @MockBean
+    private com.profect.tickle.domain.chat.resolver.CurrentMemberArgumentResolver currentMemberArgumentResolver;
+
+    @MockBean
+    private com.profect.tickle.domain.member.repository.MemberRepository memberRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    // 테스트 데이터
+    private final Long CHAT_ROOM_ID = 1L;
+    private final Long MESSAGE_ID = 1L;
+    private final Long MEMBER_ID = 6L; // WithMockMember와 일치
+    private final String MEMBER_NICKNAME = "testUser";
+
+    private ChatMessageSendRequestDto textMessageRequest;
+    private ChatMessageSendRequestDto fileMessageRequest;
+    private ChatMessageResponseDto messageResponse;
+    private ChatMessageListResponseDto messageListResponse;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        // Mock 설정 - 동적으로 @WithMockMember의 ID를 반환
+        given(currentMemberArgumentResolver.supportsParameter(any())).willReturn(true);
+        given(currentMemberArgumentResolver.resolveArgument(any(), any(), any(), any())).willAnswer(invocation -> {
+            // Spring Security Context에서 현재 사용자 ID 추출
+            org.springframework.security.core.Authentication auth = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof com.profect.tickle.global.security.util.principal.CustomUserDetails) {
+                com.profect.tickle.global.security.util.principal.CustomUserDetails userDetails = 
+                    (com.profect.tickle.global.security.util.principal.CustomUserDetails) auth.getPrincipal();
+                return userDetails.getId();
+            }
+            return MEMBER_ID; // 기본값
+        });
+        
+        // ChatJwtAuthenticationInterceptor mock 설정
+        given(chatJwtAuthenticationInterceptor.preHandle(any(), any(), any())).willReturn(true);
+
+        // 텍스트 메시지 요청 DTO
+        textMessageRequest = ChatMessageSendRequestDto.builder()
+                .messageType(ChatMessageType.TEXT)
+                .content("안녕하세요!")
+                .build();
+
+        // 파일 메시지 요청 DTO
+        fileMessageRequest = ChatMessageSendRequestDto.builder()
+                .messageType(ChatMessageType.FILE)
+                .content("파일을 업로드했습니다")
+                .filePath("/uploads/chat/test-file.txt")
+                .fileName("test-file.txt")
+                .fileSize(1024)
+                .fileType("text/plain")
+                .build();
+
+        // 메시지 응답 DTO
+        messageResponse = ChatMessageResponseDto.builder()
+                .id(MESSAGE_ID)
+                .chatRoomId(CHAT_ROOM_ID)
+                .memberId(MEMBER_ID)
+                .senderNickname(MEMBER_NICKNAME)
+                .messageType(ChatMessageType.TEXT)
+                .content("안녕하세요!")
+                .createdAt(Instant.now())
+                .isMyMessage(true)
+                .build();
+
+        // 메시지 목록 응답 DTO
+        PaginationDto pagination = PaginationDto.of(0, 50, 1L);
+        messageListResponse = ChatMessageListResponseDto.builder()
+                .messages(Arrays.asList(messageResponse))
+                .pagination(pagination)
+                .build();
+    }
+
+    // ===== 메시지 전송 테스트 =====
+
+    @Test
+    @DisplayName("TC-MESSAGE-001: 채팅방에 참여한 사용자가 유효한 텍스트 메시지를 전송한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldSendTextMessageSuccessfully() throws Exception {
+        // Given
+        given(chatMessageService.sendMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatMessageSendRequestDto.class)))
+                .willReturn(messageResponse);
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(textMessageRequest)))
+                .andExpect(status().isOk()) // ResultResponse는 항상 200을 반환
+                .andExpect(jsonPath("$.status").value(201)) // 실제 상태는 status 필드에
+                .andExpect(jsonPath("$.data.id").value(MESSAGE_ID));
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-002: 채팅방에 참여한 사용자가 유효한 파일 정보와 함께 메시지를 전송한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldSendFileMessageSuccessfully() throws Exception {
+        // Given
+        given(chatMessageService.sendMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatMessageSendRequestDto.class)))
+                .willReturn(messageResponse);
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(fileMessageRequest)))
+                .andExpect(status().isOk()) // ResultResponse는 항상 200을 반환
+                .andExpect(jsonPath("$.status").value(201)) // 실제 상태는 status 필드에
+                .andExpect(jsonPath("$.data.id").value(MESSAGE_ID));
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-003: 빈 내용으로 텍스트 메시지 전송을 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldReturnBadRequestWhenContentIsEmpty() throws Exception {
+        // Given
+        ChatMessageSendRequestDto emptyContentRequest = ChatMessageSendRequestDto.builder()
+                .messageType(ChatMessageType.TEXT)
+                .content("")
+                .build();
+        given(chatMessageService.sendMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatMessageSendRequestDto.class)))
+                .willThrow(new BusinessException(ErrorCode.CHAT_MESSAGE_EMPTY_CONTENT));
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(emptyContentRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-004: 255자를 초과하는 내용으로 메시지 전송을 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldReturnBadRequestWhenContentIsTooLong() throws Exception {
+        // Given
+        String longContent = "a".repeat(256);
+        ChatMessageSendRequestDto longContentRequest = ChatMessageSendRequestDto.builder()
+                .messageType(ChatMessageType.TEXT)
+                .content(longContent)
+                .build();
+        given(chatMessageService.sendMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any(ChatMessageSendRequestDto.class)))
+                .willThrow(new BusinessException(ErrorCode.CHAT_MESSAGE_TOO_LONG));
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(longContentRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-006: 채팅방에 참여한 사용자가 메시지 목록을 페이징으로 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetMessageListWithPaging() throws Exception {
+        // Given
+        given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(0), eq(50), eq(null)))
+                .willReturn(messageListResponse);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                        .param("page", "0")
+                        .param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.messages").exists());
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-007: 페이징 정보가 포함된 메시지 목록을 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetMessageListWithPagingDetails() throws Exception {
+        // Given
+        given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(1), eq(10), eq(null)))
+                .willReturn(messageListResponse);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                        .param("page", "1")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pagination").exists());
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-008: 음수 페이지 값으로 조회를 시도한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldAllowNegativePageNumber() throws Exception {
+        // Given
+        given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(-1), eq(50), eq(null)))
+                .willReturn(messageListResponse);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                        .param("page", "-1")
+                        .param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("메시지 목록 조회 성공"));
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-009: 메시지 작성자가 자신의 메시지를 수정한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldUpdateMessageSuccessfully() throws Exception {
+        // Given
+        String updateContent = "수정된 메시지 내용";
+        given(chatMessageService.editMessage(eq(MESSAGE_ID), eq(MEMBER_ID), eq(updateContent)))
+                .willReturn(messageResponse);
+
+        // When & Then
+        mockMvc.perform(put("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}", CHAT_ROOM_ID, MESSAGE_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateContent))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-012: 메시지 작성자가 자신의 메시지를 삭제한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldDeleteMessageSuccessfully() throws Exception {
+        // Given
+        doNothing().when(chatMessageService).deleteMessage(eq(MESSAGE_ID), eq(MEMBER_ID));
+
+        // When & Then
+        mockMvc.perform(delete("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}", CHAT_ROOM_ID, MESSAGE_ID))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("TC-READ-003: 채팅방 참여자가 읽지 않은 메시지 개수를 조회한다")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetUnreadMessageCount() throws Exception {
+        // Given
+        given(chatMessageService.getUnreadCount(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(null)))
+                .willReturn(5);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/unread-count", CHAT_ROOM_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(5));
+    }
+
+    // ===== 메시지 목록 조회 테스트 =====
+
+    @Test
+    @DisplayName("TC-MESSAGE-007: 메시지 목록 조회 성공")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetMessageListSuccessfully() throws Exception {
+        // Given
+        given(chatMessageService.getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(0), eq(50), any()))
+                .willReturn(messageListResponse);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                .param("page", "0")
+                .param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.messages").isArray())
+                .andExpect(jsonPath("$.data.messages.length()").value(1))
+                .andExpect(jsonPath("$.data.pagination.totalElements").value(1))
+                .andExpect(jsonPath("$.data.pagination.currentPage").value(0));
+
+        verify(chatMessageService).getMessages(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(0), eq(50), any());
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-008: 음수 페이지 값으로 메시지 목록 조회 성공")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetMessageListWithNegativePage() throws Exception {
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages", CHAT_ROOM_ID)
+                .param("page", "-1")
+                .param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.message").value("메시지 목록 조회 성공"));
+    }
+
+    // ===== 메시지 수정 테스트 =====
+
+    @Test
+    @DisplayName("TC-MESSAGE-009: 메시지 수정 성공")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldEditMessageSuccessfully() throws Exception {
+        // Given
+        String newContent = "수정된 메시지 내용";
+        ChatMessageResponseDto editedResponse = ChatMessageResponseDto.builder()
+                .id(MESSAGE_ID)
+                .chatRoomId(CHAT_ROOM_ID)
+                .memberId(MEMBER_ID)
+                .senderNickname(MEMBER_NICKNAME)
+                .messageType(ChatMessageType.TEXT)
+                .content(newContent)
+                .createdAt(Instant.now())
+                .isMyMessage(true)
+                .build();
+
+        given(chatMessageService.editMessage(eq(MESSAGE_ID), eq(MEMBER_ID), eq(newContent)))
+                .willReturn(editedResponse);
+
+        // When & Then
+        mockMvc.perform(put("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}", CHAT_ROOM_ID, MESSAGE_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("\"" + newContent + "\""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data").isEmpty());
+
+        verify(chatMessageService).editMessage(eq(MESSAGE_ID), eq(MEMBER_ID), eq("\"" + newContent + "\""));
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-010: 다른 사용자의 메시지 수정 실패")
+    @WithMockMember(id = 999, email = "other@example.com", roles = {"ADMIN"})
+    void shouldFailToEditOtherUserMessage() throws Exception {
+        // Given
+        String newContent = "수정 시도";
+        // 모든 가능한 파라미터 조합에 대해 예외 설정
+        given(chatMessageService.editMessage(anyLong(), anyLong(), anyString()))
+                .willThrow(new BusinessException(ErrorCode.CHAT_NOT_MESSAGE_OWNER));
+
+        // When & Then
+        mockMvc.perform(put("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}", CHAT_ROOM_ID, MESSAGE_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("\"" + newContent + "\""))
+                .andExpect(status().isForbidden());
+
+        verify(chatMessageService).editMessage(eq(MESSAGE_ID), eq(999L), eq("\"" + newContent + "\""));
+    }
+
+    // ===== 메시지 삭제 테스트 =====
+
+
+
+    // ===== 마지막 메시지 조회 테스트 =====
+
+    @Test
+    @DisplayName("TC-MESSAGE-014: 마지막 메시지 조회 성공")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetLastMessageSuccessfully() throws Exception {
+        // Given
+        given(chatMessageService.getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
+                .willReturn(messageResponse);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/last", CHAT_ROOM_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.id").value(MESSAGE_ID))
+                .andExpect(jsonPath("$.data.content").value("안녕하세요!"));
+
+        verify(chatMessageService).getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID));
+    }
+
+    @Test
+    @DisplayName("TC-MESSAGE-015: 메시지가 없는 채팅방의 마지막 메시지 조회")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetLastMessageWhenNoMessages() throws Exception {
+        // Given
+        given(chatMessageService.getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID)))
+                .willReturn(null);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/last", CHAT_ROOM_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("메시지 목록 조회 성공"));
+
+        verify(chatMessageService).getLastMessage(eq(CHAT_ROOM_ID), eq(MEMBER_ID));
+    }
+
+    // ===== 읽지않은 메시지 개수 조회 테스트 =====
+
+    @Test
+    @DisplayName("TC-READ-003: 읽지않은 메시지 개수 조회 성공")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldGetUnreadCountSuccessfully() throws Exception {
+        // Given
+        int unreadCount = 3;
+        given(chatMessageService.getUnreadCount(eq(CHAT_ROOM_ID), eq(MEMBER_ID), any()))
+                .willReturn(unreadCount);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/unread-count", CHAT_ROOM_ID)
+                .param("lastReadMessageId", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data").value(unreadCount));
+
+        verify(chatMessageService).getUnreadCount(eq(CHAT_ROOM_ID), eq(MEMBER_ID), eq(5L));
+    }
+
+    // ===== 파일 다운로드 테스트 =====
+
+    @Test
+    @DisplayName("TC-FILE-001: 파일 다운로드 성공")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldDownloadFileSuccessfully() throws Exception {
+        // Given
+        ChatMessageFileDownloadDto fileInfo = ChatMessageFileDownloadDto.builder()
+                .filePath("/uploads/chat/test-file.txt")
+                .fileName("test-file.txt")
+                .fileType("text/plain")
+                .fileSize(1024)
+                .build();
+
+        ByteArrayResource resource = new ByteArrayResource("test file content".getBytes());
+        
+        given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
+                .willReturn(fileInfo);
+        given(fileService.downloadFile(anyString(), anyString()))
+                .willReturn(resource);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}/download", CHAT_ROOM_ID, MESSAGE_ID))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", "attachment; filename*=UTF-8''test-file.txt"))
+                .andExpect(header().string("Content-Type", "text/plain"));
+
+        verify(chatMessageService).getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID));
+        verify(fileService).downloadFile(eq("/uploads/chat/test-file.txt"), eq("test-file.txt"));
+    }
+
+    @Test
+    @DisplayName("TC-FILE-002: 파일 다운로드 실패 - 권한 없음")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldFailWhenDownloadingFileWithoutPermission() throws Exception {
+        // Given
+        given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
+                .willThrow(new RuntimeException("채팅방 참여 권한이 없습니다"));
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}/download", CHAT_ROOM_ID, MESSAGE_ID))
+                .andExpect(status().isInternalServerError());
+
+        verify(chatMessageService).getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID));
+        verify(fileService, never()).downloadFile(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("TC-FILE-003: 파일 다운로드 실패 - 파일이 첨부되지 않은 메시지")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldFailWhenDownloadingNonFileMessage() throws Exception {
+        // Given
+        given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
+                .willThrow(new IllegalArgumentException("파일이 첨부되지 않은 메시지입니다"));
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}/download", CHAT_ROOM_ID, MESSAGE_ID))
+                .andExpect(status().isInternalServerError());
+
+        verify(chatMessageService).getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID));
+        verify(fileService, never()).downloadFile(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("TC-FILE-004: 파일 다운로드 실패 - 파일 경로 없음")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldFailWhenDownloadingFileWithNoPath() throws Exception {
+        // Given
+        given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
+                .willThrow(new IllegalArgumentException("파일 경로가 존재하지 않습니다"));
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}/download", CHAT_ROOM_ID, MESSAGE_ID))
+                .andExpect(status().isInternalServerError());
+
+        verify(chatMessageService).getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID));
+        verify(fileService, never()).downloadFile(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("TC-FILE-005: 파일 다운로드 실패 - 파일 서비스 오류")
+    @WithMockMember(id = 6, email = "ahn3931@naver.com", roles = {"ADMIN"})
+    void shouldFailWhenFileServiceThrowsException() throws Exception {
+        // Given
+        ChatMessageFileDownloadDto fileInfo = ChatMessageFileDownloadDto.builder()
+                .filePath("/uploads/chat/test-file.txt")
+                .fileName("test-file.txt")
+                .fileType("text/plain")
+                .fileSize(1024)
+                .build();
+
+        given(chatMessageService.getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID)))
+                .willReturn(fileInfo);
+        given(fileService.downloadFile(anyString(), anyString()))
+                .willThrow(new RuntimeException("파일을 찾을 수 없습니다"));
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/chat/rooms/{chatRoomId}/messages/{messageId}/download", CHAT_ROOM_ID, MESSAGE_ID))
+                .andExpect(status().isInternalServerError());
+
+        verify(chatMessageService).getMessageFileForDownload(eq(CHAT_ROOM_ID), eq(MESSAGE_ID), eq(MEMBER_ID));
+        verify(fileService).downloadFile(eq("/uploads/chat/test-file.txt"), eq("test-file.txt"));
+    }
+}

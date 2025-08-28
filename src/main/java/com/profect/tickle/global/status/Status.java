@@ -1,21 +1,17 @@
 package com.profect.tickle.global.status;
 
-import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
-import com.profect.tickle.domain.event.entity.Event;
-import com.profect.tickle.domain.reservation.entity.Seat;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 
 @Getter
+@Setter
 @Entity
 @Table(name = "status")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 public class Status {
 
     @Id
@@ -23,7 +19,7 @@ public class Status {
     @Column(name = "status_id")
     private Long id;
 
-    @Column(name = "status_type", length = 5, nullable = false)
+    @Column(name = "status_type", length = 20, nullable = false)
     private String type; // 도메인별 상태 구분
 
     @Column(name = "status_code", nullable = false)
@@ -34,5 +30,18 @@ public class Status {
 
     @Column(name = "status_created_at", nullable = false)
     private Instant createdAt;
+
+    private Status(Long id, String type, Short code, String description, Instant createdAt) {
+        this.id = id;
+        this.type = type;
+        this.code = code;
+        this.description = description;
+        this.createdAt = createdAt;
+    }
+
+    public static Status create(Long id,  String type, Short code, String description, Instant createdAt) {
+        return new Status(id, type, code, description, createdAt);
+    }
+
 }
 

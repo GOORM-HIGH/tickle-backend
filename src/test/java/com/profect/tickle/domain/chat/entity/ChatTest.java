@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.*;
 class ChatTest {
 
     @Test
-    @DisplayName("TC-ENTITY-001: Chat.editContent() - 메시지 내용 수정")
+    @DisplayName("TC-MESSAGE-014: Chat.editContent() - 유효한 Chat 엔티티에서 메시지 내용을 수정한다")
     void shouldEditContentSuccessfully() {
         // Given
         Chat chat = createTestChat("원본 메시지");
@@ -30,7 +30,7 @@ class ChatTest {
     }
 
     @Test
-    @DisplayName("TC-ENTITY-002: Chat.markAsDeleted() - 메시지 삭제 처리")
+    @DisplayName("TC-MESSAGE-015: Chat.markAsDeleted() - 유효한 Chat 엔티티에서 메시지를 삭제 처리한다")
     void shouldMarkAsDeletedSuccessfully() {
         // Given
         Chat chat = createTestChat("삭제할 메시지");
@@ -44,7 +44,7 @@ class ChatTest {
     }
 
     @Test
-    @DisplayName("TC-ENTITY-003: Chat.canEdit() - 수정 가능 여부 확인 (정상)")
+    @DisplayName("TC-MESSAGE-016: Chat.canEdit() - 정상 - 수정 가능한 메시지의 수정 가능 여부를 확인한다")
     void shouldReturnTrueWhenCanEdit() {
         // Given
         Chat chat = Chat.builder()
@@ -66,7 +66,7 @@ class ChatTest {
     }
 
     @Test
-    @DisplayName("TC-ENTITY-003-1: Chat.canEdit() - 삭제된 메시지는 수정 불가")
+    @DisplayName("TC-MESSAGE-017: Chat.canEdit() - 삭제된 메시지 - 삭제된 메시지의 수정 가능 여부를 확인한다")
     void shouldReturnFalseWhenMessageIsDeleted() {
         // Given
         Chat chat = Chat.builder()
@@ -88,7 +88,7 @@ class ChatTest {
     }
 
     @Test
-    @DisplayName("TC-ENTITY-003-2: Chat.canEdit() - 발신자 상태가 false면 수정 불가")
+    @DisplayName("TC-MESSAGE-018: Chat.canEdit() - 발신자 상태 false - 발신자 상태가 false인 메시지의 수정 가능 여부를 확인한다")
     void shouldReturnFalseWhenSenderStatusIsFalse() {
         // Given
         Chat chat = Chat.builder()
