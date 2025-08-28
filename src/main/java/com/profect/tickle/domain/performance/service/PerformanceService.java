@@ -4,7 +4,7 @@ import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.entity.NotificationKind;
-import com.profect.tickle.domain.notification.event.reservation.event.PerformanceModifiedEvent;
+import com.profect.tickle.domain.notification.event.performance.event.PerformanceModifiedEvent;
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.response.*;
@@ -85,6 +85,7 @@ public class PerformanceService {
         return performanceMapper.findTop10ByClickCount();
     }
 
+    @Transactional
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {
         PerformanceDetailDto result = performanceMapper.findDetailById(performanceId);
         if (result == null) {

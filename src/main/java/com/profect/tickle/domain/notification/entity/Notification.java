@@ -3,7 +3,11 @@ package com.profect.tickle.domain.notification.entity;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
-import lombok.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
@@ -41,7 +45,11 @@ public class Notification {
     @Column(name = "notification_created_at", nullable = false)
     private Instant createdAt;
 
-    public void markAsRead(@NonNull Status isReadStatus) {
+    public void markAsRead(@NotNull Status isReadStatus) {
         this.status = isReadStatus;
+    }
+
+    public boolean isForMember(@NotNull Long memberId) {
+        return this.receivedMember.getId().equals(memberId);
     }
 }

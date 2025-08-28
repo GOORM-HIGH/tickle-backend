@@ -180,20 +180,15 @@ public class EventServiceImpl implements EventService {
         Coupon coupon = event.getCoupon();
         Member member = getMemberOrThrow();
 
-        if (coupon == null) throw new BusinessException(ErrorCode.COUPON_NOT_FOUND);
+        checkDuplicateCoupon(member, coupon);
+        checkEventInProgress(event);
 
-        if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
-            throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
-        }
-
-        if (coupon.getCount() <= 0) {
-            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
-            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
-        }
-
-        coupon.decreaseCount();
         Status issuedStatus = statusProvider.provide(StatusIds.Coupon.AVAILABLE);
         couponReceivedRepository.save(CouponReceived.create(member, coupon, issuedStatus));
+
+        coupon.decreaseCount();
+
+        endEventIfCouponOutOfStock(coupon, event);
     }
 
     @Override
@@ -246,6 +241,18 @@ public class EventServiceImpl implements EventService {
         return PagingResponse.from(list, page, size, total);
     }
 
+    @Override
+    public List<ExpiringSoonCouponResponseDto> getCouponListExpiringUntil(@NotNull LocalDate untilDate) {
+        Instant now = Instant.now(clock);
+        Instant endExclusive = untilDate.plusDays(1).atStartOfDay(zone).toInstant();
+
+        if (endExclusive.isBefore(now)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        return couponMapper.findCouponListExpiringBefore(endExclusive);
+    }
+
     private Event getEventOrThrow(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
@@ -267,15 +274,24 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
     }
 
-    @Override
-    public List<ExpiringSoonCouponResponseDto> getCouponListExpiringUntil(@NotNull LocalDate untilDate) {
-        Instant now = Instant.now(clock);
-        Instant endExclusive = untilDate.plusDays(1).atStartOfDay(zone).toInstant();
-
-        if (endExclusive.isBefore(now)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+    private void checkEventInProgress(Event event) {
+        if (StatusIds.Event.SCHEDULED.equals(event.getStatus().getId())) {
+            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
         }
+        if (StatusIds.Event.COMPLETED.equals(event.getStatus().getId())) {
+            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
+        }
+    }
 
-        return couponMapper.findCouponListExpiringBefore(endExclusive);
+    private void checkDuplicateCoupon(Member member, Coupon coupon) {
+        if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
+            throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
+        }
+    }
+
+    private void endEventIfCouponOutOfStock(Coupon coupon, Event event) {
+        if (coupon.getCount() == 0) {
+            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
+        }
     }
 }

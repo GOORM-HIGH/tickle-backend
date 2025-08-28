@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.notification.event.reservation.event;
+package com.profect.tickle.domain.notification.event.performance.event;
 
 import com.profect.tickle.domain.performance.dto.response.PerformanceServiceDto;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationServiceDto;

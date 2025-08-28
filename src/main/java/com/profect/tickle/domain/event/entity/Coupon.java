@@ -22,7 +22,7 @@ public class Coupon {
     @Column(name = "coupon_id")
     private Long id;
 
-    @OneToOne(mappedBy = "coupon", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "coupon")
     private Event event;
 
     @Column(name = "coupon_name", length = 10, nullable = false)

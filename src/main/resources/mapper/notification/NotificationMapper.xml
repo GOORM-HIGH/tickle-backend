@@ -6,7 +6,7 @@
 <mapper namespace="com.profect.tickle.domain.notification.mapper.NotificationMapper">
 
     <!-- 특정 사용자(memberId)의 최신 알림 조회 -->
-    <select id="getRecentNotificationListByMemberId"
+    <select id="getNotificationListByMemberId"
             resultType="NotificationResponseDto">
         SELECT
             n.notification_id              AS id,

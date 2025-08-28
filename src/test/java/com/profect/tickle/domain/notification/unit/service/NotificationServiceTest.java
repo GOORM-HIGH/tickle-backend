@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.notification.service;
+package com.profect.tickle.domain.notification.unit.service;
 
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.service.MemberService;
@@ -7,6 +7,8 @@ import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.mapper.NotificationTemplateMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import com.profect.tickle.domain.notification.repository.SseRepository;
+import com.profect.tickle.domain.notification.service.NotificationService;
+import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.domain.performance.service.PerformanceService;
 import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.global.exception.BusinessException;
@@ -29,7 +31,7 @@ import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationServiceMarkAsReadTest {
+class NotificationServiceTest {
 
     // SUT
     @InjectMocks

@@ -1,6 +1,7 @@
-package com.profect.tickle.domain.notification.controller;
+package com.profect.tickle.domain.notification.unit.controller;
 
 import com.profect.tickle.domain.chat.config.ChatJwtAuthenticationInterceptor;
+import com.profect.tickle.domain.notification.controller.NotificationController;
 import com.profect.tickle.domain.notification.service.NotificationService;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.testsecurity.WithMockMember;
