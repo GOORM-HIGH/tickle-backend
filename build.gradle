@@ -42,7 +42,7 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
 
     // ===== Database =====
-    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.postgresql:postgresql:42.5.4'
     testImplementation 'com.h2database:h2'
 
     // ===== MyBatis=====
