@@ -24,4 +24,5 @@ public class SettlementDetailFindTargetDto {
     private Long reservationPrice; // 예매 금액
     private BigDecimal contractCharge; // 정산 적용 수수료율
     private String paymentMethod; // 결제 수단(추후 고도화용)
+    private Instant settlementDetailCreatedAt;
 }
