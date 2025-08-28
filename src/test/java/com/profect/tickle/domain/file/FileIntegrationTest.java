@@ -1,8 +1,6 @@
 package com.profect.tickle.domain.file;
 
-import com.profect.tickle.TestWebMvcConfig;
-import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
-import com.profect.tickle.domain.chat.entity.ChatMessageType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.chat.service.ChatMessageService;
 import com.profect.tickle.domain.file.service.FileService;
 import com.profect.tickle.domain.member.entity.Member;
@@ -11,7 +9,6 @@ import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.global.nas.service.WebDavService;
 import com.profect.tickle.global.security.util.JwtUtil;
 import com.profect.tickle.testsecurity.WithMockMember;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,8 +27,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 파일 업로드/다운로드 기능 통합 테스트
@@ -47,7 +43,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @AutoConfigureMockMvc
-@Import(TestWebMvcConfig.class)
 @DisplayName("파일 업로드/다운로드 기능 통합 테스트")
 class FileIntegrationTest {
 
