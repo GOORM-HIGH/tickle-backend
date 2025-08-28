@@ -4,6 +4,7 @@ import com.profect.tickle.domain.chat.dto.request.ChatRoomJoinRequestDto;
 import com.profect.tickle.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
 import com.profect.tickle.domain.chat.dto.request.ReadMessageRequestDto;
+import com.profect.tickle.domain.chat.entity.ChatMessageType;
 import com.profect.tickle.domain.chat.dto.response.ChatRoomResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatParticipantsResponseDto;
 import com.profect.tickle.domain.chat.dto.response.ChatMessageResponseDto;
@@ -112,8 +113,14 @@ class ChatIntegrationTest {
                 .build();
         testHall = hallRepository.save(testHall);
 
-        // 기존 상태 조회 (첫 번째 상태 사용)
-        Status testStatus = statusRepository.findAll().get(0);
+        // Status 직접 생성 (data.sql 의존성 제거)
+        Status testStatus = Status.builder()
+                .type("PERFORMANCE")
+                .code((short) 1)
+                .description("활성")
+                .createdAt(Instant.now())
+                .build();
+        testStatus = statusRepository.save(testStatus);
 
         // 테스트용 공연 생성
         testPerformance = Performance.builder()
@@ -161,6 +168,7 @@ class ChatIntegrationTest {
 
         // 3단계: 메시지 전송
         ChatMessageSendRequestDto messageRequest = new ChatMessageSendRequestDto();
+        messageRequest.setMessageType(ChatMessageType.TEXT);
         messageRequest.setContent("안녕하세요! 통합테스트 메시지입니다.");
 
         ChatMessageResponseDto sentMessage = chatMessageService.sendMessage(testChatRoomId, testMember1.getId(), messageRequest);
@@ -194,6 +202,7 @@ class ChatIntegrationTest {
 
         // testMember1이 메시지 전송
         ChatMessageSendRequestDto message1 = new ChatMessageSendRequestDto();
+        message1.setMessageType(ChatMessageType.TEXT);
         message1.setContent("안녕하세요! testMember1입니다.");
 
         ChatMessageResponseDto sentMessage1 = chatMessageService.sendMessage(testChatRoomId, testMember1.getId(), message1);
@@ -202,6 +211,7 @@ class ChatIntegrationTest {
 
         // testMember2가 메시지 전송
         ChatMessageSendRequestDto message2 = new ChatMessageSendRequestDto();
+        message2.setMessageType(ChatMessageType.TEXT);
         message2.setContent("안녕하세요! testMember2입니다.");
 
         ChatMessageResponseDto sentMessage2 = chatMessageService.sendMessage(testChatRoomId, testMember2.getId(), message2);
