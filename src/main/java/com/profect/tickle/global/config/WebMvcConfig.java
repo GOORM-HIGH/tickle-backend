@@ -19,7 +19,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // ✅ 채팅 API만 타겟팅 - 다른 기능에 영향 없음
+        // 채팅 API만 타겟팅 - 다른 기능에 영향 없음
         registry.addInterceptor(chatJwtAuthenticationInterceptor)
                 .addPathPatterns("/api/v1/chat/**", "/api/v1/files/**")
                 .excludePathPatterns("/api/v1/websocket/**"); // WebSocket 정보 API는 제외

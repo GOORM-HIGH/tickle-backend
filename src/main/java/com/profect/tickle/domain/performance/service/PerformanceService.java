@@ -85,6 +85,7 @@ public class PerformanceService {
         return performanceMapper.findTop10ByClickCount();
     }
 
+    @Transactional
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {
         PerformanceDetailDto result = performanceMapper.findDetailById(performanceId);
         if (result == null) {

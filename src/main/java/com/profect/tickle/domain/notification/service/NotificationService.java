@@ -59,6 +59,7 @@ public class NotificationService {
                 .template(template)
                 .title(title)
                 .content(content)
+                .status(statusProvider.provide(StatusIds.Notification.UNREAD))
                 .createdAt(createdAt)
                 .build();
 

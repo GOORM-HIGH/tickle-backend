@@ -10,8 +10,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "chat_participants")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor  // ✅ 추가!
-@Builder             // ✅ 추가!
+@AllArgsConstructor
+@Builder
 public class ChatParticipants {
 
     @Id
@@ -28,15 +28,15 @@ public class ChatParticipants {
     private Member member;
 
     @Column(name = "chat_participants_joined_at", nullable = false)
-    private Instant joinedAt;  // ✅ UTC 시간 적용
+    private Instant joinedAt;  // UTC 시간 적용
 
     @Column(name = "chat_participants_status", nullable = false)
     private Boolean status;  // true: 참여중, false: 나감
 
     @Column(name = "chat_participants_last_read_at")
-    private Instant lastReadAt;  // ✅ UTC 시간 적용
+    private Instant lastReadAt;  // UTC 시간 적용
 
-    @Column(name = "chat_participants_last_read_message_id")  // ✅ 컬럼명 수정
+    @Column(name = "chat_participants_last_read_message_id")  // 컬럼명 수정
     private Long lastReadMessageId;
 
     @PrePersist

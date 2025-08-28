@@ -15,18 +15,18 @@ import java.util.Optional;
 @Repository
 public interface ChatParticipantsRepository extends JpaRepository<ChatParticipants, Long> {
 
-    // ✅ 기존 메서드들 (모두 올바름)
+    // 기존 메서드들
     Optional<ChatParticipants> findByChatRoomAndMember(ChatRoom chatRoom, Member member);
     List<ChatParticipants> findByChatRoomAndStatusTrue(ChatRoom chatRoom);
     List<ChatParticipants> findByMemberAndStatusTrue(Member member);
     int countByChatRoomAndStatusTrue(ChatRoom chatRoom);
     boolean existsByChatRoomAndMemberAndStatusTrue(ChatRoom chatRoom, Member member);
 
-    // ✅ 기존 쿼리 메서드 (올바름)
+    // 기존 쿼리 메서드
     @Query("SELECT cp FROM ChatParticipants cp WHERE cp.member.id = :memberId AND cp.status = true")
     List<ChatParticipants> findActiveParticipationsByMemberId(@Param("memberId") Long memberId);
 
-    // ✅ 추가 필요한 메서드들 (ChatParticipantsService에서 사용될 수 있음)
+    // 추가 필요한 메서드들 (ChatParticipantsService에서 사용될 수 있음)
 
     /**
      * 채팅방 ID로 활성 참여자 목록 조회 (Repository 방식으로도 사용 가능하도록)
