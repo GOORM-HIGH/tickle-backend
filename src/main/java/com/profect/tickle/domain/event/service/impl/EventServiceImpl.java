@@ -12,16 +12,14 @@ import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.event.service.EventService;
-import com.profect.tickle.domain.member.entity.CouponReceived;
-import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.event.service.lock.EventApplyExecutor;
+import com.profect.tickle.domain.event.service.lock.PessimisticEventApplyExecutor;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
-import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
-import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
@@ -51,22 +49,24 @@ public class EventServiceImpl implements EventService {
 
     // utils
     private final PointTarget eventTarget = PointTarget.EVENT;
-    private final StatusProvider statusProvider;
     private final Clock clock;
     private final ZoneId zone = ZoneId.systemDefault();
 
     // mapper & repositories
+    private final EventApplyExecutor executor;
+    private final PessimisticEventApplyExecutor pessimisticExecutor;
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
     private final ReservationRepository reservationRepository;
     private final CouponReceivedRepository couponReceivedRepository;
-    private final PerformanceRepository performanceRepository;
     private final PointRepository pointRepository;
     private final EventMapper eventMapper;
     private final CouponMapper couponMapper;
     private final CouponReceivedMapper couponReceivedMapper;
+    private final PerformanceRepository performanceRepository;
+    private final StatusProvider statusProvider;
 
     @Override
     @Transactional
@@ -109,38 +109,8 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    @Transactional
     public TicketApplyResponseDto applyTicketEvent(Long eventId) {
-        Event event = getEventOrThrow(eventId);
-        Member member = getMemberOrThrow();
-
-        Point point = member.deductPoint(event.getPerPrice(), eventTarget);
-        pointRepository.save(point);
-
-        event.accumulate(event.getPerPrice());
-
-        boolean isWinner = (event.getAccrued() >= event.getGoalPrice());
-        if (isWinner) {
-            Seat seat = getSeatOrThrow(event.getSeat().getId());
-            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
-
-            Status paidStatus = statusProvider.provide(StatusIds.Reservation.PAID);
-            Reservation reservation = Reservation.create(
-                    member,
-                    seat.getPerformance(),
-                    paidStatus,
-                    event.getAccrued()
-            );
-
-            reservation.assignSeat(seat);
-
-            Status reservedStatus = statusProvider.provide(StatusIds.Seat.RESERVED);
-            seat.completeReservation(member, reservedStatus, null);
-
-            reservationRepository.save(reservation);
-        }
-
-        return TicketApplyResponseDto.from(eventId, member.getId(), isWinner);
+        return pessimisticExecutor.applyTicketEventOnce(eventId);
     }
 
     @Override
@@ -176,19 +146,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public void issueCoupon(Long eventId) {
-        Event event = getEventOrThrow(eventId);
-        Coupon coupon = event.getCoupon();
-        Member member = getMemberOrThrow();
-
-        checkDuplicateCoupon(member, coupon);
-        checkEventInProgress(event);
-
-        Status issuedStatus = statusProvider.provide(StatusIds.Coupon.AVAILABLE);
-        couponReceivedRepository.save(CouponReceived.create(member, coupon, issuedStatus));
-
-        coupon.decreaseCount();
-
-        endEventIfCouponOutOfStock(coupon, event);
+        pessimisticExecutor.issueCouponOnce(eventId);
     }
 
     @Override
@@ -253,40 +211,14 @@ public class EventServiceImpl implements EventService {
         return couponMapper.findCouponListExpiringBefore(endExclusive);
     }
 
-    private Event getEventOrThrow(Long eventId) {
-        return eventRepository.findById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
-    }
-
     private Seat getSeatOrThrow(Long eventSeatId) {
         return seatRepository.findById(eventSeatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
     }
 
-    private Member getMemberOrThrow() {
-        Long memberId = SecurityUtil.getSignInMemberId();
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-    }
-
     private Performance getPerformanceOrThrow(TicketEventCreateRequestDto request) {
         return performanceRepository.findById(request.performanceId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
-    }
-
-    private void checkEventInProgress(Event event) {
-        if (StatusIds.Event.SCHEDULED.equals(event.getStatus().getId())) {
-            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
-        }
-        if (StatusIds.Event.COMPLETED.equals(event.getStatus().getId())) {
-            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
-        }
-    }
-
-    private void checkDuplicateCoupon(Member member, Coupon coupon) {
-        if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
-            throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
-        }
     }
 
     private void endEventIfCouponOutOfStock(Coupon coupon, Event event) {
