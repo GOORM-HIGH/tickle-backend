@@ -229,7 +229,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                     sendRequest
             );
 
-            // 🎯 채팅방의 각 사용자에게 개별적으로 isMyMessage 설정하여 전송
+            // 채팅방의 각 사용자에게 개별적으로 isMyMessage 설정하여 전송
             broadcastChatMessage(requestDto, savedMessage);
 
             log.info("채팅 메시지 브로드캐스트 완료: messageId={}, senderNickname={}", 
@@ -305,13 +305,13 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                     return;
                 }
 
-                // 🎯 각 세션별로 isMyMessage 개별 계산
+                // 각 세션별로 isMyMessage 개별 계산
                 Long targetUserId = sessionToUserId.get(sessionId);
-                // 🎯 실제 발신자 ID 사용 (savedMessage에서 가져오기)
+                // 실제 발신자 ID 사용 (savedMessage에서 가져오기)
                 Long actualSenderId = savedMessage.getMemberId();
                 boolean isMyMessage = actualSenderId.equals(targetUserId);
 
-                // 🎯 올바른 닉네임 사용
+                // 올바른 닉네임 사용
                 String senderNickname = savedMessage.getSenderNickname();
                 
                 // senderNickname이 null이거나 이메일인 경우 Member 엔티티에서 조회
@@ -344,8 +344,8 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .type("MESSAGE")
                         .messageId(savedMessage.getId())
                         .chatRoomId(requestDto.getChatRoomId())
-                        .senderId(actualSenderId) // 🎯 실제 발신자 ID 사용
-                        .senderNickname(senderNickname) // 🎯 올바른 닉네임 사용
+                        .senderId(actualSenderId) // 실제 발신자 ID 사용
+                        .senderNickname(senderNickname) // 올바른 닉네임 사용
                         .messageType(requestDto.getMessageType())
                         .content(requestDto.getContent())
                         .filePath(requestDto.getFilePath())
@@ -353,7 +353,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .fileSize(requestDto.getFileSize())
                         .fileType(requestDto.getFileType())
                         .createdAt(savedMessage.getCreatedAt())
-                        // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
+                        // isMyMessage 제거 - 프론트엔드에서 계산
                         .onlineCount(onlineUserService.getOnlineCount(requestDto.getChatRoomId()))
                         .build();
 
@@ -396,7 +396,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .content(messageContent)
                         .message(messageContent)
                         .createdAt(java.time.Instant.now())
-                        // 🎯 isMyMessage 제거 - 프론트엔드에서 계산
+                        // isMyMessage 제거 - 프론트엔드에서 계산
                         .onlineCount(onlineUserService.getOnlineCount(chatRoomId))
                         .build();
 

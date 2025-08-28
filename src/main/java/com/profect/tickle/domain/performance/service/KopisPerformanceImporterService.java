@@ -85,8 +85,11 @@ public class KopisPerformanceImporterService {
 
     public void importPerformances() {
         String baseUrl = "http://www.kopis.or.kr/openApi/restful/pblprfr?service=" + serviceKey;
-        String startDate = "20000101";
-        String endDate = "20250805";
+
+        // 🔥 날짜 범위 수정: 최근 1년치 데이터만 받아오기
+        String startDate = "20240101";  // 2024년 1월부터
+        String endDate = "20251231";    // 2025년 12월까지
+
         int page = 1;
         int rows = 100;
 
@@ -100,19 +103,27 @@ public class KopisPerformanceImporterService {
 
                 ResponseEntity<String> response = kopisRestTemplate.getForEntity(url, String.class);
                 List<KopisPerformanceDto> dtoList = kopisXmlParser.parse(response.getBody());
-                System.out.println("KOPIS 파싱 결과 개수: " + dtoList.size());
+
+                System.out.println("📋 KOPIS Page " + page + " 파싱 결과: " + dtoList.size() + "건");
+
                 if (dtoList.isEmpty()) break;
 
                 savePerformances(dtoList);
                 page++;
+
+                // API 호출 제한 고려
                 Thread.sleep(200);
 
             } catch (Exception e) {
-                System.out.println("❌ Page " + page + " 처리 실패");
-                e.printStackTrace();
+                System.out.println("❌ Page " + page + " 처리 실패: " + e.getMessage());
                 page++;
+
+                // 연속 실패 시 중단
+                if (page > 1000) break;
             }
         }
+
+        System.out.println("✅ KOPIS 데이터 import 완료!");
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
