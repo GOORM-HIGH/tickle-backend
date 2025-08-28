@@ -137,6 +137,10 @@ public class ChatParticipantsService {
 
         // 상태를 비활성화 (논리 삭제)
         participant.leave(); // Entity에 추가할 메서드
+        
+        // 변경사항을 데이터베이스에 저장하고 즉시 반영
+        chatParticipantsRepository.save(participant);
+        chatParticipantsRepository.flush();
 
         log.info("채팅방 나가기 완료: participantId={}", participant.getId());
     }
