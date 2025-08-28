@@ -1,16 +1,13 @@
 package com.profect.tickle.global.status;
 
-import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
-import com.profect.tickle.domain.event.entity.Event;
-import com.profect.tickle.domain.reservation.entity.Seat;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 
 @Getter
+@Setter
 @Entity
 @Table(name = "status")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,7 +20,7 @@ public class Status {
     @Column(name = "status_id")
     private Long id;
 
-    @Column(name = "status_type", length = 5, nullable = false)
+    @Column(name = "status_type", length = 20, nullable = false)
     private String type; // 도메인별 상태 구분
 
     @Column(name = "status_code", nullable = false)

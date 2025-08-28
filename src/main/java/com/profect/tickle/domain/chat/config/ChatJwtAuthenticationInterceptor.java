@@ -16,7 +16,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class ChatJwtAuthenticationInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
-    private final MemberRepository memberRepository; // ✅ 추가
+    private final MemberRepository memberRepository; // 추가
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -44,7 +44,7 @@ public class ChatJwtAuthenticationInterceptor implements HandlerInterceptor {
 
             String email = jwtUtil.getEmail(token); // 이메일 반환
 
-            // ✅ 수정: 이메일로 사용자 ID 조회
+            // 수정: 이메일로 사용자 ID 조회
             Long memberId = getMemberIdByEmail(email);
 
             if (memberId == null) {
@@ -65,7 +65,7 @@ public class ChatJwtAuthenticationInterceptor implements HandlerInterceptor {
         }
     }
 
-    // ✅ 추가: 이메일로 사용자 ID 조회 메서드
+    // 추가: 이메일로 사용자 ID 조회 메서드
     private Long getMemberIdByEmail(String email) {
         try {
             // MemberRepository를 주입받아서 사용

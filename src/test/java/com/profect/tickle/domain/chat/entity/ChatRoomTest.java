@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.*;
 class ChatRoomTest {
 
     @Test
-    @DisplayName("TC-ENTITY-005: ChatRoom.canJoin() - 참여 가능 여부 확인 (정상)")
+    @DisplayName("TC-CHATROOM-013: 채팅방 참여자 수 관리 - 채팅방 참여자 수를 증가/감소시킨다")
     void shouldReturnTrueWhenCanJoin() {
         // Given
         ChatRoom chatRoom = createTestChatRoom(true, (short) 50);
@@ -25,7 +25,7 @@ class ChatRoomTest {
     }
 
     @Test
-    @DisplayName("TC-ENTITY-005-1: ChatRoom.canJoin() - 비활성 채팅방은 참여 불가")
+    @DisplayName("TC-CHATROOM-012: 채팅방 상태 변경 - 유효한 ChatRoom 엔티티의 상태를 변경한다")
     void shouldReturnFalseWhenRoomIsInactive() {
         // Given
         ChatRoom chatRoom = createTestChatRoom(false, (short) 50);
@@ -39,7 +39,7 @@ class ChatRoomTest {
     }
 
     @Test
-    @DisplayName("TC-ENTITY-005-2: ChatRoom.canJoin() - 정원 초과 시 참여 불가")
+    @DisplayName("TC-CHATROOM-014: 채팅방 정원 초과 체크 - 정원이 가득 찬 채팅방에 참여를 시도한다")
     void shouldReturnFalseWhenRoomIsFull() {
         // Given
         ChatRoom chatRoom = createTestChatRoom(true, (short) 30);
@@ -53,7 +53,7 @@ class ChatRoomTest {
     }
 
     @Test
-    @DisplayName("TC-ENTITY-005-3: ChatRoom.canJoin() - 정원 초과 시 참여 불가 (초과)")
+    @DisplayName("TC-CHATROOM-014-1: 채팅방 정원 초과 체크 - 정원을 초과한 채팅방에 참여를 시도한다")
     void shouldReturnFalseWhenParticipantsExceedLimit() {
         // Given
         ChatRoom chatRoom = createTestChatRoom(true, (short) 30);
