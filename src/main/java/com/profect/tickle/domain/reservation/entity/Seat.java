@@ -101,11 +101,12 @@ public class Seat {
         this.status = preemptedStatus;
     }
 
-    public void releasePreemption() {
+    public void releasePreemption(Status availableStatus) {
+        this.member = null;
+        this.status = availableStatus;
         this.preemptionToken = null;
         this.preemptedAt = null;
         this.preemptedUntil = null;
-        this.member = null;
     }
 
     public void completeReservation(Member member, Status reservedStatus, String seatCode) {
