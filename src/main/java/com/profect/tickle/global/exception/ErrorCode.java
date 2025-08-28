@@ -28,7 +28,7 @@ public enum ErrorCode {
     INVALID_COUPON_AMOUNT(HttpStatus.BAD_REQUEST, "쿠폰을 적용할 수 없는 금액입니다."),
 
     //POINT
-    INSUFFICIENT_POINT(HttpStatus.NOT_FOUND, "보유 포인트가 부족합니다."),
+    INSUFFICIENT_POINT(HttpStatus.CONFLICT, "보유 포인트가 부족합니다."),
 
     //PERFORMANCE
     PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 공연을 찾을 수 없습니다."),

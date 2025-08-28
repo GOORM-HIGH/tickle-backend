@@ -14,8 +14,6 @@ import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.event.service.EventService;
 import com.profect.tickle.domain.event.service.lock.EventApplyExecutor;
 import com.profect.tickle.domain.event.service.lock.PessimisticEventApplyExecutor;
-import com.profect.tickle.domain.member.entity.CouponReceived;
-import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
@@ -32,10 +30,8 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
-import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +41,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 
 @Service
@@ -151,19 +146,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public void issueCoupon(Long eventId) {
-        Event event = getEventOrThrow(eventId);
-        Coupon coupon = event.getCoupon();
-        Member member = getMemberOrThrow();
-
-        checkDuplicateCoupon(member, coupon);
-        checkEventInProgress(event);
-
-        Status issuedStatus = statusProvider.provide(StatusIds.Coupon.AVAILABLE);
-        couponReceivedRepository.save(CouponReceived.create(member, coupon, issuedStatus));
-
-        coupon.decreaseCount();
-
-        endEventIfCouponOutOfStock(coupon, event);
+        pessimisticExecutor.issueCouponOnce(eventId);
     }
 
     @Override
@@ -228,40 +211,14 @@ public class EventServiceImpl implements EventService {
         return couponMapper.findCouponListExpiringBefore(endExclusive);
     }
 
-    private Event getEventOrThrow(Long eventId) {
-        return eventRepository.findById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
-    }
-
     private Seat getSeatOrThrow(Long eventSeatId) {
         return seatRepository.findById(eventSeatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
     }
 
-    private Member getMemberOrThrow() {
-        Long memberId = SecurityUtil.getSignInMemberId();
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-    }
-
     private Performance getPerformanceOrThrow(TicketEventCreateRequestDto request) {
         return performanceRepository.findById(request.performanceId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
-    }
-
-    private void checkEventInProgress(Event event) {
-        if (StatusIds.Event.SCHEDULED.equals(event.getStatus().getId())) {
-            throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
-        }
-        if (StatusIds.Event.COMPLETED.equals(event.getStatus().getId())) {
-            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
-        }
-    }
-
-    private void checkDuplicateCoupon(Member member, Coupon coupon) {
-        if (couponReceivedRepository.existsByMemberIdAndCouponId(member.getId(), coupon.getId())) {
-            throw new BusinessException(ErrorCode.ALREADY_ISSUED_COUPON);
-        }
     }
 
     private void endEventIfCouponOutOfStock(Coupon coupon, Event event) {

@@ -345,6 +345,118 @@ class EventServiceImplTest{
                     .getCount();
             assertThat(afterSecond).isEqualTo(afterFirst);
         }
+
+        @Test
+        @DisplayName("쿠폰의 수량 M개면 동시에 K명이 발급해도 성공 횟수는 M개로 정확히 제한된다.")
+        void issueCoupon_concurrent_exactlyStockSuccess() throws InterruptedException {
+            // given
+            long eventId = 1L;
+            Event event = eventRepository.findById(eventId).orElseThrow();
+            Long couponId = event.getCoupon().getId();
+            short stock = couponRepository.findById(couponId).orElseThrow().getCount();
+
+            int threadCount = stock;
+            threadCount = Math.min(threadCount, 100);
+            AtomicInteger success = new AtomicInteger();
+            AtomicInteger fail = new AtomicInteger();
+
+            ExecutorService pool = Executors.newFixedThreadPool(Math.min(threadCount, 64));
+            CountDownLatch startGate = new CountDownLatch(1);
+            CountDownLatch doneGate = new CountDownLatch(threadCount);
+
+            for (long id = 1; id <= threadCount; id++) {
+                final long memberId = id;
+                pool.submit(() -> {
+                    try {
+                        startGate.await();
+                        asMember(memberId); // ★ 보안컨텍스트 세팅
+                        eventService.issueCoupon(eventId); // ★ 쿠폰 발급
+                        success.incrementAndGet();
+                    } catch (Exception e) {
+                        fail.incrementAndGet();
+                    } finally {
+                        TestSecurityContextHolder.clearContext();
+                        doneGate.countDown();
+                    }
+                });
+            }
+
+            // when
+            startGate.countDown();
+            doneGate.await();
+            pool.shutdown();
+
+            // then
+            short left = couponRepository.findById(couponId).orElseThrow().getCount();
+            Event updated = eventRepository.findById(eventId).orElseThrow();
+
+            assertThat(success.get()).isEqualTo(stock);
+            assertThat(fail.get()).isEqualTo(threadCount - stock);
+            assertThat(left).isEqualTo((short) 0);
+            assertThat(updated.getStatus().getId()).isEqualTo(StatusIds.Event.COMPLETED);
+        }
+
+        @Test
+        @DisplayName("쿠폰의 수량 M보다 더 많은 N개의 발급 요청이 동시에 온다면, 정확히 M개 성공하고 N개 실패한다.")
+        void issueCoupon_concurrent_limitToStock() throws InterruptedException {
+            // given
+            long eventId = 1L;
+            Event event = eventRepository.findById(eventId).orElseThrow();
+            Long couponId = event.getCoupon().getId();
+            short stock = couponRepository.findById(couponId).orElseThrow().getCount();
+
+            int threadCount = Math.min(stock + 1, 100);
+            ExecutorService pool = Executors.newFixedThreadPool(Math.min(threadCount, 64));
+            CountDownLatch startGate = new CountDownLatch(1);
+            CountDownLatch doneGate = new CountDownLatch(threadCount);
+
+            AtomicInteger success = new AtomicInteger();
+            AtomicInteger fail = new AtomicInteger();
+
+            // 누가 성공했는지 기록 (중복 방지용 Set)
+            Set<Long> winners = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+            for (long id = 1; id <= threadCount; id++) {
+                final long memberId = id;
+                pool.submit(() -> {
+                    try {
+                        startGate.await();
+                        asMember(memberId); // 보안컨텍스트 세팅
+                        eventService.issueCoupon(eventId);
+                        winners.add(memberId);
+                        success.incrementAndGet();
+                    } catch (Exception e) {
+                        fail.incrementAndGet();
+                    } finally {
+                        TestSecurityContextHolder.clearContext();
+                        doneGate.countDown();
+                    }
+                });
+            }
+
+            // when
+            startGate.countDown();
+            doneGate.await();
+            pool.shutdown();
+
+            // then
+            short left = couponRepository.findById(couponId).orElseThrow().getCount();
+            long issuedRows = couponReceivedRepository.countByCouponId(couponId);
+            Event updated = eventRepository.findById(eventId).orElseThrow();
+
+            assertThat(success.get()).isEqualTo(stock);
+            assertThat(fail.get()).isEqualTo(threadCount - stock);
+
+            // DB에 실제 발급된 행 수도 정확히 M
+            assertThat(issuedRows).isEqualTo(stock);
+
+            // 성공 멤버 ID 집합 크기도 정확히 M (중복 체크)
+            assertThat(winners).hasSize(stock);
+
+            // 재고 0 & 이벤트 완료
+            assertThat(left).isZero();
+            assertThat(updated.getStatus().getId()).isEqualTo(StatusIds.Event.COMPLETED);
+        }
     }
 
    @Nested
