@@ -15,7 +15,6 @@ import java.time.Instant;
 @Entity
 @Table(name = "status")
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class Status {
 
