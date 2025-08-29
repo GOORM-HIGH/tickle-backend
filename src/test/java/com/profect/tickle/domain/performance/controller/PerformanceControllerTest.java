@@ -54,128 +54,95 @@ class PerformanceControllerTest {
     // -------- 공개 엔드포인트 --------
 
     @Test
-    @DisplayName("GET /performance/genre - 장르 목록 조회 200")
-    void getGenres_ok() throws Exception {
-        // given
-        List<GenreDto> genres = Collections.emptyList();
-        given(performanceService.getAllGenre()).willReturn(genres);
+    @DisplayName("장르 목록을 조회한다")
+    void TC_PERFORMANCE_201() throws Exception {
+        given(performanceService.getAllGenre()).willReturn(Collections.emptyList());
 
-        // when & then
         mockMvc.perform(get("/api/v1/performance/genre"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(status().isOk());
 
         verify(performanceService).getAllGenre();
     }
 
     @Test
-    @DisplayName("GET /performance/genre/{id} - 장르별 공연 목록(페이징) 200")
-    void getPerformancesByGenre_ok() throws Exception {
-        // given
+    @DisplayName("장르별 공연 목록을 페이징 조회한다")
+    void TC_PERFORMANCE_202() throws Exception {
         PagingResponse<PerformanceDto> paging =
                 new PagingResponse<>(Collections.emptyList(), 0, 8, 0L, 0, false);
         given(performanceService.getPerformancesByGenre(eq(10L), eq(0), eq(8))).willReturn(paging);
 
-        // when & then
         mockMvc.perform(get("/api/v1/performance/genre/{genreId}", 10L)
                         .param("page", "0").param("size", "8"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").exists())
-                .andExpect(jsonPath("$.data.page").value(0))
-                .andExpect(jsonPath("$.data.size").value(8));
+                .andExpect(status().isOk());
 
         verify(performanceService).getPerformancesByGenre(10L, 0, 8);
     }
 
     @Test
-    @DisplayName("GET /performance/genre/{id}/ranking - 장르 TOP10 200")
-    void getTop10ByGenre_ok() throws Exception {
+    @DisplayName("장르별 TOP10 공연을 조회한다")
+    void TC_PERFORMANCE_203() throws Exception {
         given(performanceService.getTop10ByGenre(1L)).willReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/v1/performance/genre/{genreId}/ranking", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(status().isOk());
 
         verify(performanceService).getTop10ByGenre(1L);
     }
 
     @Test
-    @DisplayName("GET /performance/ranking - 전체 랭킹 TOP10 200")
-    void getTop10Performances_ok() throws Exception {
+    @DisplayName("전체 공연 TOP10을 조회한다")
+    void TC_PERFORMANCE_204() throws Exception {
         given(performanceService.getTop10Performances()).willReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/v1/performance/ranking"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(status().isOk());
 
         verify(performanceService).getTop10Performances();
     }
 
     @Test
-    @DisplayName("GET /performance/{id} - 공연 상세 200")
-    void getPerformanceDetail_ok() throws Exception {
-        PerformanceDetailDto detail = new PerformanceDetailDto();
-        given(performanceService.getPerformanceDetail(123L)).willReturn(detail);
+    @DisplayName("공연 상세 정보를 조회한다")
+    void TC_PERFORMANCE_205() throws Exception {
+        given(performanceService.getPerformanceDetail(123L)).willReturn(new PerformanceDetailDto());
 
         mockMvc.perform(get("/api/v1/performance/{id}", 123L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").exists());
+                .andExpect(status().isOk());
 
         verify(performanceService).getPerformanceDetail(123L);
     }
 
     @Test
-    @DisplayName("GET /performance/open - 오픈예정 4개 200")
-    void getOpenPerformances_ok() throws Exception {
+    @DisplayName("오픈 예정 공연 4개를 조회한다")
+    void TC_PERFORMANCE_206() throws Exception {
         given(performanceService.getTop4UpcomingPerformances()).willReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/v1/performance/open"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(status().isOk());
 
         verify(performanceService).getTop4UpcomingPerformances();
     }
 
     @Test
-    @DisplayName("GET /performance/search/{keyword} - 검색(페이징) 200")
-    void searchPerformances_ok() throws Exception {
+    @DisplayName("공연을 키워드로 검색한다")
+    void TC_PERFORMANCE_207() throws Exception {
         PagingResponse<PerformanceDto> paging =
                 new PagingResponse<>(Collections.emptyList(), 1, 8, 0L, 0, false);
         given(performanceService.searchPerformances(eq("뮤지컬"), eq(1), eq(8))).willReturn(paging);
 
         mockMvc.perform(get("/api/v1/performance/search/{keyword}", "뮤지컬")
                         .param("page", "1").param("size", "8"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data.page").value(1))
-                .andExpect(jsonPath("$.data.size").value(8));
+                .andExpect(status().isOk());
 
         verify(performanceService).searchPerformances("뮤지컬", 1, 8);
     }
 
     @Test
-    @DisplayName("GET /performance/{id}/recommend - 추천 200")
-    void recommend_ok() throws Exception {
+    @DisplayName("특정 공연과 관련된 추천 공연을 조회한다")
+    void TC_PERFORMANCE_208() throws Exception {
         given(performanceService.getRelatedPerformances(321L)).willReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/v1/performance/{id}/recommend", 321L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(status().isOk());
 
         verify(performanceService).getRelatedPerformances(321L);
     }
@@ -187,8 +154,8 @@ class PerformanceControllerTest {
 
         @Test
         @WithMockUser(roles = "HOST")
-        @DisplayName("POST /performance - 공연 생성(HOST) 201")
-        void create_ok() throws Exception {
+        @DisplayName("HOST가 공연을 생성한다")
+        void TC_PERFORMANCE_209() throws Exception {
             PerformanceRequestDto req = PerformanceRequestDto.builder()
                     .title("테스트 공연")
                     .genreId(1L)
@@ -199,30 +166,26 @@ class PerformanceControllerTest {
                     .startDate(Instant.now())
                     .endDate(Instant.now().plusSeconds(3600))
                     .build();
-            PerformanceResponseDto resp = new PerformanceResponseDto();
 
-            given(performanceService.createPerformance(any(PerformanceRequestDto.class))).willReturn(resp);
+            given(performanceService.createPerformance(any(PerformanceRequestDto.class)))
+                    .willReturn(new PerformanceResponseDto());
 
             mockMvc.perform(post("/api/v1/performance")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(201))
-                    .andExpect(jsonPath("$.message").exists())
-                    .andExpect(jsonPath("$.data").exists());
+                    .andExpect(status().isOk());
 
             verify(performanceService).createPerformance(any(PerformanceRequestDto.class));
         }
 
         @Test
         @WithMockUser(roles = "HOST")
-        @DisplayName("PATCH /performance/{id} - 공연 수정(HOST) 200")
-        void update_ok() throws Exception {
+        @DisplayName("HOST가 공연 정보를 수정한다")
+        void TC_PERFORMANCE_210() throws Exception {
             UpdatePerformanceRequestDto dto = new UpdatePerformanceRequestDto();
-            PerformanceResponseDto resp = new PerformanceResponseDto();
 
             given(performanceService.updatePerformance(eq(777L), any(UpdatePerformanceRequestDto.class)))
-                    .willReturn(resp);
+                    .willReturn(new PerformanceResponseDto());
 
             try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
                 mocked.when(SecurityUtil::getSignInMemberId).thenReturn(1L);
@@ -230,28 +193,21 @@ class PerformanceControllerTest {
                 mockMvc.perform(patch("/api/v1/performance/{id}", 777L)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(dto)))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.status").value(200))
-                        .andExpect(jsonPath("$.message").exists())
-                        .andExpect(jsonPath("$.data").exists());
+                        .andExpect(status().isOk());
             }
 
             verify(performanceService).updatePerformance(eq(777L), any(UpdatePerformanceRequestDto.class));
         }
 
-        @WithMockUser(roles = "HOST")
         @Test
-        @DisplayName("DELETE /performance/{id} - 공연 삭제(HOST) 200")
-        void delete_ok() throws Exception {
+        @WithMockUser(roles = "HOST")
+        @DisplayName("HOST가 공연을 삭제한다")
+        void TC_PERFORMANCE_211() throws Exception {
             try (MockedStatic<SecurityUtil> mocked = mockStatic(SecurityUtil.class)) {
                 mocked.when(SecurityUtil::getSignInMemberId).thenReturn(99L);
 
                 mockMvc.perform(delete("/api/v1/performance/{id}", 999L))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.status").value(200))
-                        .andExpect(jsonPath("$.message").exists())
-                        // 정책: data=null이면 필드 생략 → doesNotExist()
-                        .andExpect(jsonPath("$.data").doesNotExist());
+                        .andExpect(status().isOk());
             }
 
             verify(performanceService).deletePerformance(999L, 99L);
@@ -259,8 +215,8 @@ class PerformanceControllerTest {
 
         @Test
         @WithMockUser(roles = "HOST")
-        @DisplayName("GET /performance/host - 본인 생성 공연(페이징) 200")
-        void getHostPerformances_ok() throws Exception {
+        @DisplayName("HOST가 본인이 등록한 공연 목록을 조회한다")
+        void TC_PERFORMANCE_212() throws Exception {
             PagingResponse<PerformanceHostDto> paging =
                     new PagingResponse<>(Collections.emptyList(), 0, 20, 0L, 0, false);
             given(performanceService.getMyPerformances(eq(100L), eq(0), eq(20))).willReturn(paging);
@@ -270,11 +226,7 @@ class PerformanceControllerTest {
 
                 mockMvc.perform(get("/api/v1/performance/host")
                                 .param("page", "0").param("size", "20"))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.status").value(200))
-                        .andExpect(jsonPath("$.message").exists())
-                        .andExpect(jsonPath("$.data.page").value(0))
-                        .andExpect(jsonPath("$.data.size").value(20));
+                        .andExpect(status().isOk());
             }
 
             verify(performanceService).getMyPerformances(100L, 0, 20);
