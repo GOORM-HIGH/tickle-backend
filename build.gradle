@@ -63,6 +63,7 @@ dependencies {
 
     // ===== Test Dependencies =====
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.batch:spring-batch-test:5.1.3'
     testImplementation "org.mockito:mockito-inline:5.2.0"
 
     // ===== Jwt Dependencies =====
