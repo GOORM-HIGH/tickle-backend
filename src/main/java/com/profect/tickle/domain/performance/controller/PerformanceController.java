@@ -124,6 +124,7 @@ public class PerformanceController {
 
     @Operation(summary = "생성한 공연 조회(페이징)", description = "HOST 권한으로 본인이 작성한 공연 목록을 페이징 조회합니다.")
     @GetMapping("/host")
+    @PreAuthorize("hasRole('HOST')")
     public ResultResponse<PagingResponse<PerformanceHostDto>> getPerformanceHost(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
