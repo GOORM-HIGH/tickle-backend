@@ -18,7 +18,7 @@ public interface SettlementDetailMapper {
     /**
      * 건별정산에 필요한 데이터 추출
      */
-    List<SettlementDetailFindTargetDto> findTargetReservations(@Param("now") Instant now);
+    List<SettlementDetailFindTargetDto> findTargetFromReservations(@Param("now") Instant now);
 
     /**
      * 건별정산에 결과 insert

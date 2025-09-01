@@ -12,6 +12,7 @@ import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import com.profect.tickle.global.status.service.StatusProvider;
+import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.batch.MyBatisPagingItemReader;
 import org.mybatis.spring.batch.builder.MyBatisPagingItemReaderBuilder;
@@ -26,7 +27,6 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,41 +44,19 @@ import java.time.Instant;
 import java.util.Map;
 
 @Configuration
-// 스프링배치 작동 시 디폴트로 'transactionManager' 찾아서 주입하려고 함
-// 배치 전용으로 만든 txManager 사용하려면 아래처럼 명시해서 사용
 @EnableBatchProcessing
+@RequiredArgsConstructor
 public class DetailBatchConfig {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager txManager;
     private final SqlSessionFactory sqlSessionFactory;
+    private final DataSource dataSource;
     private final MemberRepository memberRepository;
     private final StatusRepository statusRepository;
     private final StatusProvider statusProvider;
-    private final DataSource dataSource;
     private final ChunkTimingListener chunkTimingListener;
     private final SettlementCsvSerializer settlementCsvSerializer;
-
-    public DetailBatchConfig(
-            JobRepository jobRepository,
-            @Qualifier("transactionManager") PlatformTransactionManager txManager,
-            SqlSessionFactory sqlSessionFactory,
-            MemberRepository memberRepository,
-            StatusRepository statusRepository,
-            StatusProvider statusProvider,
-            DataSource dataSource,
-            ChunkTimingListener chunkTimingListener,
-            SettlementCsvSerializer settlementCsvSerializer) {
-        this.jobRepository = jobRepository;
-        this.txManager = txManager;
-        this.sqlSessionFactory = sqlSessionFactory;
-        this.memberRepository = memberRepository;
-        this.statusRepository = statusRepository;
-        this.statusProvider = statusProvider;
-        this.dataSource = dataSource;
-        this.chunkTimingListener = chunkTimingListener;
-        this.settlementCsvSerializer = settlementCsvSerializer;
-    }
 
     /**
      * 건별 정산 Job
@@ -112,24 +90,24 @@ public class DetailBatchConfig {
     /**
      * 건별 정산 MyBatisPagingItemReader
      * Paging Size: 50_000
-     * @param creatredAtString: 건별 정산, 배치 메타테이블에 insert, update할 배치 시간(from. JobLauncher)
+     * @param settlementBatchStartedAt: 건별 정산, 배치 메타테이블에 insert, update할 배치 시간(from. JobLauncher)
      * @param lastTimeSeconds: beforStep 단계에서 배치 메타테이블로부터 가져온 마지막 배치 시간(where절 비교용)
      * @return SettlementDetailFindTargetDto
      */
     @Bean
     @StepScope
     public MyBatisPagingItemReader<SettlementDetailFindTargetDto> settlementDetailReader(
-            @Value("#{jobParameters['settlementDetailCreatedAt']}") String creatredAtString,
+            @Value("#{jobParameters['settlementBatchStartedAt']}") String settlementBatchStartedAt,
             @Value("#{stepExecutionContext['lastTimeSeconds']}") Instant lastTimeSeconds
     ) {
         Map<String, Object> params = Map.of(
-                "now", Instant.parse(creatredAtString),
+                "now", Instant.parse(settlementBatchStartedAt),
                 "lastTimeSeconds", lastTimeSeconds
         );
 
         return new MyBatisPagingItemReaderBuilder<SettlementDetailFindTargetDto>()
                 .sqlSessionFactory(sqlSessionFactory)
-                .queryId("com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper.findTargetReservations")
+                .queryId("com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper.findTargetFromReservations")
                 .parameterValues(params)
                 .pageSize(50_000)
                 .maxItemCount(Integer.MAX_VALUE)

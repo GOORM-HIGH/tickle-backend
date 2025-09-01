@@ -40,7 +40,7 @@ public class SettlementDetailReaderTest {
     void settlementDetailReaderTest() throws Exception {
         // Given
         JobParameters params = new JobParametersBuilder()
-                .addString("settlementDetailCreatedAt", Instant.now().toString())
+                .addString("settlementDetailCreatedAt", Instant.parse("2025-08-31T00:00:00Z").toString())
                 .toJobParameters();
 
         ExecutionContext stepContext = new ExecutionContext();

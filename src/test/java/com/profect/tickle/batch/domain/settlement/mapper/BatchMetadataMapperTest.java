@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("mybatis-test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_metadata")
 public class BatchMetadataMapperTest {
 
     @Autowired
@@ -57,6 +59,7 @@ public class BatchMetadataMapperTest {
         assertThat(lastProcessedAt).isEqualTo(lastProcessedAtForParam);
     }
 
+    @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_metadata")
     @DisplayName("배치 메타테이블에서 실행되는 Job Name에 해당되는 마지막 배치 시간을 가져온다. Null이면 EPOCH를 반환한다.")
     @Test
     void findLastProcessedAtInNullTest() {

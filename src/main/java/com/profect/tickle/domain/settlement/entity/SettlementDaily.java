@@ -86,7 +86,7 @@ public class SettlementDaily {
     public static SettlementDaily create(SettlementDailyFindTargetDto dto,
                                          Member member,
                                          Status status,
-                                         Instant now) {
+                                         Instant createdAt) {
         return SettlementDaily.builder()
                 .member(member)
                 .status(status)
@@ -101,7 +101,7 @@ public class SettlementDaily {
                 .contractCharge(dto.getContractCharge())
                 .dailyCommission(dto.getDailyCommission())
                 .dailyNetAmount(dto.getDailyNetAmount())
-                .dailyCreatedAt(now)
+                .dailyCreatedAt(createdAt)
                 .build();
     }
 }

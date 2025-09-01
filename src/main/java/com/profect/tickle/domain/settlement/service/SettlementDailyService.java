@@ -41,7 +41,7 @@ public class SettlementDailyService {
 
         // 건별정산 데이터 집계 조회
         List<SettlementDailyFindTargetDto> aggregates =
-                Optional.ofNullable(settlementDailyMapper.aggregateByDetail())
+                Optional.ofNullable(settlementDailyMapper.aggregateFromDetailToDaily())
                         .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR));
 
         if(aggregates.isEmpty()){
