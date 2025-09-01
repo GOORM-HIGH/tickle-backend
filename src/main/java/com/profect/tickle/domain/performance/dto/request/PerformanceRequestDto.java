@@ -2,12 +2,16 @@ package com.profect.tickle.domain.performance.dto.request;
 
 import com.profect.tickle.domain.performance.entity.HallType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.Instant;
 
 @Getter
 @Schema(description = "공연생성 요청 DTO")
+@AllArgsConstructor
+@Builder
 public class PerformanceRequestDto {
 
     @Schema(description = "공연명", example = "흠뻑쇼")

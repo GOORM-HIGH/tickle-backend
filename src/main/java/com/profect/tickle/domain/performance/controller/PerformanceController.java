@@ -122,13 +122,15 @@ public class PerformanceController {
         return ResultResponse.ok(ResultCode.PERFORMANCE_DELETE_SUCCESS);
     }
 
-    @Operation(summary = "생성한 공연 조회", description = "HOST 권한으로 본인이 작성한 공연 목록을 조회합니다.")
+    @Operation(summary = "생성한 공연 조회(페이징)", description = "HOST 권한으로 본인이 작성한 공연 목록을 페이징 조회합니다.")
     @GetMapping("/host")
-    public ResultResponse<List<PerformanceHostDto>> getPerformanceHost() {
+    public ResultResponse<PagingResponse<PerformanceHostDto>> getPerformanceHost(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
         Long memberId = SecurityUtil.getSignInMemberId();
-        List<PerformanceHostDto> hostP = performanceService.getMyPerformances(memberId);
-        return ResultResponse.of(ResultCode.PERFORMANCE_HOST_SUCCESS,hostP);
+        PagingResponse<PerformanceHostDto> paging = performanceService.getMyPerformances(memberId, page, size);
+        return ResultResponse.of(ResultCode.PERFORMANCE_HOST_SUCCESS, paging);
     }
-
 
 }

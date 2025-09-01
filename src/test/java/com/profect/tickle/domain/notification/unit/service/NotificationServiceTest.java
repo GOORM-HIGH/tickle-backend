@@ -61,34 +61,35 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("알림 읽음 처리: 자신의 알림이면 읽음 상태로 변경한다.")
-    void markAsRead_success() {
+    void markAsReadSuccess() {
         // given
         Long notificationId = 1L;
         Long memberId = 10L;
 
         Notification notification = mock(Notification.class);
-        Member receivedMember = mock(Member.class);
 
-        given(notificationRepository.findById(notificationId)).willReturn(Optional.of(notification));
-        given(notification.getReceivedMember()).willReturn(receivedMember);
-        given(receivedMember.getId()).willReturn(memberId);
+        given(notificationRepository.findById(notificationId))
+                .willReturn(Optional.of(notification));
+
+        given(notification.isForMember(memberId)).willReturn(true);
 
         Status readStatus = mock(Status.class);
-        given(statusProvider.provide(StatusIds.Notification.READ)).willReturn(readStatus);
+        given(statusProvider.provide(StatusIds.Notification.READ))
+                .willReturn(readStatus);
 
         // when
         notificationService.markAsRead(notificationId, memberId);
 
         // then
-        then(notificationRepository).should(times(1)).findById(notificationId);
-        then(statusProvider).should(times(1)).provide(StatusIds.Notification.READ);
-        then(notification).should(times(1)).markAsRead(readStatus);
+        then(notificationRepository).should().findById(notificationId);
+        then(statusProvider).should().provide(StatusIds.Notification.READ);
+        then(notification).should().markAsRead(readStatus);
         then(statusProvider).shouldHaveNoMoreInteractions();
     }
 
     @Test
     @DisplayName("알림 읽음 처리: 알림이 없으면 NOTIFICATION_NOT_FOUND 예외가 발생합니다.")
-    void markAsRead_notFound() {
+    void markAsReadNotFound() {
         // given
         Long notificationId = 999L;
         Long memberId = 10L;
@@ -107,21 +108,20 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("알림 읽음 처리: 다른 사용자의 알림이면 NOTIFICATION_ACCESS_DENIED 예외가 발생합니다.")
-    void markAsRead_accessDenied() {
+    void markAsReadAccessDenied() {
         // given
         Long notificationId = 1L;
         Long myId = 10L;
-        Long otherId = 77L;
 
         Notification notification = mock(Notification.class);
-        Member receiver = mock(Member.class);
 
         given(notificationRepository.findById(notificationId)).willReturn(Optional.of(notification));
-        given(notification.getReceivedMember()).willReturn(receiver);
-        given(receiver.getId()).willReturn(otherId); // 내가 아님
+        given(notification.isForMember(myId)).willReturn(false);
 
         // when
-        Throwable thrown = catchThrowable(() -> notificationService.markAsRead(notificationId, myId));
+        Throwable thrown = catchThrowable(() ->
+                notificationService.markAsRead(notificationId, myId)
+        );
 
         // then
         assertThat(thrown)
@@ -129,7 +129,9 @@ class NotificationServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.NOTIFICATION_ACCESS_DENIED);
 
-        then(statusProvider).shouldHaveNoInteractions();
-        then(notification).should(never()).markAsRead(any());
+        then(notificationRepository).should().findById(notificationId);
+        then(statusProvider).shouldHaveNoInteractions();   // 상태 조회 안 함
+        then(notification).should(never()).markAsRead(any()); // 읽음 처리 안 함
     }
+
 }

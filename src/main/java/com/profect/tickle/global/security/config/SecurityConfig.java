@@ -78,7 +78,6 @@ public class SecurityConfig {
         return src;
     }
 
-
     @Bean
     protected SecurityFilterChain configure(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http

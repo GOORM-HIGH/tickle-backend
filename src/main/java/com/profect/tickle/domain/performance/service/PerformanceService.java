@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.performance.service;
 
 import com.profect.tickle.domain.member.entity.Member;
+import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.mapper.MemberMapper;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.notification.entity.NotificationKind;
@@ -22,6 +23,7 @@ import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
 import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.paging.PageRequest;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
@@ -33,11 +35,14 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class PerformanceService {
 
@@ -59,25 +64,26 @@ public class PerformanceService {
     }
 
     public PagingResponse<PerformanceDto> getPerformancesByGenre(Long genreId, int page, int size) {
-        int offset = page * size;
+        validateGenreId(genreId);
+        var pr = PageRequest.of(page, size);
 
-        List<PerformanceDto> contents = performanceMapper.findPerformancesByGenre(genreId, offset, size);
-        int totalCount = performanceMapper.countPerformancesByGenre(genreId);
+        long total = performanceMapper.countPerformancesByGenre(genreId);
+        if (total == 0) {
+            return emptyResponse(pr, total);
+        }
 
-        int totalPages = (int) Math.ceil((double) totalCount / size);
-        boolean isLast = page + 1 >= totalPages;
+        int totalPages = PageRequest.calcTotalPages(total, pr.size());
+        if (pr.page() >= totalPages) {
+            return emptyResponse(pr, total);
+        }
 
-        return new PagingResponse<>(
-                contents,
-                page,
-                size,
-                totalCount,
-                totalPages,
-                isLast
-        );
+        List<PerformanceDto> content =
+                performanceMapper.findPerformancesByGenre(genreId, pr.offset(), pr.size());
+        return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
     public List<PerformanceDto> getTop10ByGenre(Long genreId) {
+        validateGenreId(genreId);
         return performanceMapper.findTop10ByGenre(genreId);
     }
 
@@ -87,6 +93,8 @@ public class PerformanceService {
 
     @Transactional
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {
+        validatePerfId(performanceId);
+
         PerformanceDetailDto result = performanceMapper.findDetailById(performanceId);
         if (result == null) {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
@@ -98,29 +106,31 @@ public class PerformanceService {
     }
 
     public List<PerformanceDto> getTop4UpcomingPerformances() {
-        return performanceMapper.findTop4UpcomingPerformances();
+        LocalDateTime now =  LocalDateTime.now();
+        return performanceMapper.findTop4UpcomingPerformances(now);
     }
 
     public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
-        int offset = page * size;
+        var pr = PageRequest.of(page, size);
 
-        List<PerformanceDto> searchResult = performanceMapper.searchPerformancesByKeyword(keyword, size, offset);
-        long totalCount = performanceMapper.countPerformancesByKeyword(keyword);
+        long total = performanceMapper.countPerformancesByKeyword(keyword);
+        if (total == 0) {
+            return emptyResponse(pr, total);
+        }
 
-        int totalPages = (int) Math.ceil((double) totalCount / size);
-        boolean isLast = page + 1 >= totalPages;
+        int totalPages = PageRequest.calcTotalPages(total, pr.size());
+        if (pr.page() >= totalPages) {
+            return emptyResponse(pr, total);
+        }
 
-        return new PagingResponse<>(
-                searchResult,
-                page,
-                size,
-                totalCount,
-                totalPages,
-                isLast
-        );
+        List<PerformanceDto> content =
+                performanceMapper.searchPerformancesByKeyword(keyword, pr.offset(), pr.size());
+        return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
     public List<PerformanceDto> getRelatedPerformances(Long performanceId) {
+        validatePerfId(performanceId);
+
         Long genreId = performanceMapper.findGenreIdByPerformanceId(performanceId);
         if (genreId == null) {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
@@ -195,8 +205,29 @@ public class PerformanceService {
         performance.markAsDeleted();
     }
 
-    public List<PerformanceHostDto> getMyPerformances(Long memberId) {
-        return performanceMapper.findPerformancesByMemberId(memberId);
+    public PagingResponse<PerformanceHostDto> getMyPerformances(Long memberId, int page, int size) {
+        // 권한/본인 확인 (기존 로직 유지)
+        Long signInMemberId = SecurityUtil.getSignInMemberId();
+        Member me = memberRepository.findById(signInMemberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        if (me.getMemberRole() != MemberRole.HOST || !signInMemberId.equals(memberId)) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        // page/size 기본 검증
+        if (page < 0) page = 0;
+        if (size <= 0 || size > 100) size = 20;
+
+        long total = performanceMapper.countPerformancesByMemberId(memberId);
+        if (total == 0) {
+            return PagingResponse.from(List.of(), page, size, 0L);
+        }
+
+        int offset = page * size;
+        List<PerformanceHostDto> content =
+                performanceMapper.findPerformancesByMemberIdPaged(memberId, offset, size);
+
+        return PagingResponse.from(content, page, size, total);
     }
 
     // 알림 수정 이벤트 발생 메서드
@@ -225,4 +256,21 @@ public class PerformanceService {
         );
         log.info("[{} 이벤트 발행]", NotificationKind.PERFORMANCE_MODIFIED);
     }
+
+    private void validatePerfId(Long performanceId) {
+        if (performanceId == null || performanceId <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private void validateGenreId(Long genreId) {
+        if (genreId == null || genreId <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private <T> PagingResponse<T> emptyResponse(PageRequest pr, long total) {
+        return PagingResponse.from(List.of(), pr.page(), pr.size(), total);
+    }
+
 }

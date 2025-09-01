@@ -4,6 +4,7 @@ import com.profect.tickle.domain.performance.dto.response.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +29,7 @@ public interface PerformanceMapper {
 
     List<PerformanceDto> findTop10ByClickCount();
 
-    List<PerformanceDto> findTop4UpcomingPerformances();
+    List<PerformanceDto> findTop4UpcomingPerformances(@Param("now") LocalDateTime now);
 
     List<PerformanceDto> searchPerformancesByKeyword(
             @Param("keyword") String keyword,
@@ -45,7 +46,13 @@ public interface PerformanceMapper {
 
     Long findGenreIdByPerformanceId(@Param("performanceId") Long performanceId);
 
-    List<PerformanceHostDto> findPerformancesByMemberId(Long memberId);
+    long countPerformancesByMemberId(@Param("memberId") Long memberId);
+
+    List<PerformanceHostDto> findPerformancesByMemberIdPaged(
+            @Param("memberId") Long memberId,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
 
     List<PerformanceScrapDto> findScrappedPerformancesByMemberId(Long memberId);
 

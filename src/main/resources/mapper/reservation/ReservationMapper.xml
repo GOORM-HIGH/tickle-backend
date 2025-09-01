@@ -62,6 +62,6 @@
         JOIN status      s ON r.status_id      = s.status_id
         WHERE r.performance_id = #{performanceId}
         AND r.reservation_is_notify = TRUE
-        AND r.reservation_deleted_at IS NULL
+        AND r.reservation_updated_at IS NULL
     </select>
 </mapper>

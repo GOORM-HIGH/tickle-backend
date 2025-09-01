@@ -66,15 +66,7 @@ public class PerformanceEventListener {
         memberList.forEach(member -> notificationService.saveNotification(member.getEmail(), template, subject, content, now));
 
         // 4) SSE 브로드캐스트
-        NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
-                NotificationKind.PARTNER_PERFORMANCE_PUBLISHED,
-                subject,
-                content,
-                now,
-                link,
-                null
-        );
-
+        NotificationEnvelope<Void> payload = new NotificationEnvelope<>(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED, subject, content, now, link, null);
         realtimeSender.sendAll(payload);
     }
 

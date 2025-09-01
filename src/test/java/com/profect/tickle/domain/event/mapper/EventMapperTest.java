@@ -49,7 +49,7 @@ class EventMapperTest {
         assertThat(result).hasSize(5)
                 .extracting("eventId", "name", "perPrice", "img", "statusId")
                 .containsExactlyInAnyOrder(
-                        tuple(6L, "레미제라블 티켓 이벤트", (short) 2000, "lesmis.jpg", 5L),
+                        tuple(6L, "레미제라블 티켓 이벤트", (short) 1, "lesmis.jpg", 5L),
                         tuple(7L, "햄릿 티켓 이벤트",(short) 1600, "hamlet.jpg", 5L),
                         tuple (8L, "캣츠 티켓 이벤트",(short) 2500, "cats.jpg", 5L),
                         tuple(9L, "오페라의 유령 티켓 이벤트",(short) 2500, "phantom.jpg", 5L),

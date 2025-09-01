@@ -1,6 +1,5 @@
 package com.profect.tickle.domain.notification.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import org.mockito.Mockito;
@@ -9,16 +8,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicLong;
 
 @TestConfiguration
 public class SseNotificationTestConfig {
