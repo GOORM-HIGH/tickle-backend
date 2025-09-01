@@ -71,7 +71,7 @@ public class SseSender implements RealtimeSender {
             emitter.send(SseEmitter.event()
                     .name("sse-connect")
                     .id(Long.toString(eventId))
-                    .data("connected"));
+                    .data("connection was completed", MediaType.APPLICATION_JSON));
         } catch (IOException e) {
             log.error("initial send failed - {}, {}", emitterId, e.getMessage());
             disconnectEmitterWithError(memberId, emitterId, e);
