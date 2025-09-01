@@ -75,24 +75,20 @@ public class SettlementWeekly {
 
     public static SettlementWeekly create(SettlementWeeklyFindTargetDto dto,
                                           Member member,
-                                          Status status,
-                                          String year,
-                                          String month,
-                                          String week,
-                                          Instant now) {
+                                          Status status) {
         return SettlementWeekly.builder()
                 .member(member)
                 .status(status)
                 .performanceTitle(dto.getPerformanceTitle())
-                .year(year)
-                .month(month)
-                .week(week)
+                .year(dto.getYear())
+                .month(dto.getMonth())
+                .week(dto.getWeek())
                 .weeklySalesAmount(dto.getWeeklySalesAmount())
                 .weeklyRefundAmount(dto.getWeeklyRefundAmount())
                 .weeklyGrossAmount(dto.getWeeklyGrossAmount())
                 .weeklyCommission(dto.getWeeklyCommission())
                 .weeklyNetAmount(dto.getWeeklyNetAmount())
-                .weeklyCreatedAt(now)
+                .weeklyCreatedAt(dto.getSettlementWeeklyCreatedAt())
                 .build();
     }
 }

@@ -15,7 +15,7 @@ public interface SettlementWeeklyMapper {
     /**
      * 입력받은 날의 일간정산 데이터 추출
      */
-    List<SettlementWeeklyFindTargetDto> findByDate(HashMap<String, Object> map);
+    List<SettlementWeeklyFindTargetDto> aggregateFromDailyToWeekly(HashMap<String, Object> map);
 
     /**
      * 추출한 일간정산 데이터 연, 월, 주차, 상호명, 공연 유니크로 upsert

@@ -15,7 +15,7 @@ public interface SettlementDailyMapper {
     /**
      * 건별정산 테이블 내역 주최자, 공연별로 일간 합산 리스트
      */
-    List<SettlementDailyFindTargetDto> aggregateByDetail();
+    List<SettlementDailyFindTargetDto> aggregateFromDetailToDaily();
 
     /**
      * 일간정산 테이블 insert + update

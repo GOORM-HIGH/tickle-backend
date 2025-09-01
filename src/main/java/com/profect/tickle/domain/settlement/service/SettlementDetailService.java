@@ -50,7 +50,7 @@ public class SettlementDetailService {
         Instant t0 = Instant.now();
         // 건별정산 집계에 필요한 데이터
         List<SettlementDetailFindTargetDto> settlementTargets =
-                Optional.ofNullable(settlementDetailMapper.findTargetReservations(settlementCreatedAt))
+                Optional.ofNullable(settlementDetailMapper.findTargetFromReservations(settlementCreatedAt))
                         .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR));
 
         if(settlementTargets.isEmpty()){

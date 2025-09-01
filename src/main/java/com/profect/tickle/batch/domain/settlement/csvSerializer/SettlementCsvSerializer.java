@@ -1,6 +1,9 @@
 package com.profect.tickle.batch.domain.settlement.csvSerializer;
 
+import com.profect.tickle.domain.settlement.entity.SettlementDaily;
 import com.profect.tickle.domain.settlement.entity.SettlementDetail;
+import com.profect.tickle.domain.settlement.entity.SettlementMonthly;
+import com.profect.tickle.domain.settlement.entity.SettlementWeekly;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
@@ -22,18 +25,18 @@ public class SettlementCsvSerializer {
      * @return String
      */
     public String detailCsvSerializer(Iterable<? extends SettlementDetail> items) {
-        // 2) StringBuilder 에 CSV 포맷으로 직렬화
+        // 1) StringBuilder 에 CSV 포맷으로 직렬화
         int capacity = DEFAULT_BUFFER_SIZE;
         if(items instanceof Collection<?> coll){
             capacity = coll.size() * 200;
         }
         StringBuilder sb = new StringBuilder(capacity);
 
-        for (SettlementDetail item : items) {
+        for(SettlementDetail item : items) {
             // 숫자/문자/타임스탬프를 CSV 규격으로 찍어준다 (쉼표, 개행)
             sb.append(item.getMember().getId()).append(',')
                     .append(item.getStatus().getId()).append(',');
-            // 3) performanceTitle (CSV quote 처리)
+            // 2) performanceTitle (CSV quote 처리)
             appendCsvField(sb, item.getPerformanceTitle());
             sb.append(FMT.format(item.getPerformanceEndDate())).append(',')
                     .append(item.getReservationCode()).append(',')
@@ -44,6 +47,91 @@ public class SettlementCsvSerializer {
                     .append(item.getCommission()).append(',')
                     .append(item.getNetAmount()).append(',')
                     .append(FMT.format(item.getCreatedAt()))
+                    .append('\n');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 일별 정산 CSV 직렬화
+     */
+    public String dailyCsvSerializer(Iterable<? extends SettlementDaily> items) {
+        int capacity = DEFAULT_BUFFER_SIZE;
+        if(items instanceof Collection<?> coll){
+            capacity = coll.size() * 200;
+        }
+        StringBuilder sb = new StringBuilder(capacity);
+
+        for(SettlementDaily item : items) {
+            sb.append(item.getMember().getId()).append(',')
+                    .append(item.getStatus().getId()).append(',');
+            appendCsvField(sb, item.getPerformanceTitle());
+            sb.append(FMT.format(item.getPerformanceEndDate())).append(',')
+                    .append(item.getYear()).append(',')
+                    .append(item.getMonth()).append(',')
+                    .append(item.getDay()).append(',')
+                    .append(item.getDailySalesAmount()).append(',')
+                    .append(item.getDailyRefundAmount()).append(',')
+                    .append(item.getDailyGrossAmount()).append(',')
+                    .append(item.getContractCharge()).append(',')
+                    .append(item.getDailyCommission()).append(',')
+                    .append(item.getDailyNetAmount()).append(',')
+                    .append(FMT.format(item.getDailyCreatedAt()))
+                    .append('\n');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 주간 정산 CSV 직렬화
+     */
+    public String weeklyCsvSerializer(Iterable<? extends SettlementWeekly> items) {
+        int capacity = DEFAULT_BUFFER_SIZE;
+        if(items instanceof Collection<?> coll){
+            capacity = coll.size() * 200;
+        }
+        StringBuilder sb = new StringBuilder(capacity);
+
+        for(SettlementWeekly item : items) {
+            sb.append(item.getMember().getId()).append(',')
+                    .append(item.getStatus().getId()).append(',');
+            appendCsvField(sb, item.getPerformanceTitle());
+            sb.append(item.getYear()).append(',')
+                    .append(item.getMonth()).append(',')
+                    .append(item.getWeek()).append(',')
+                    .append(item.getWeeklySalesAmount()).append(',')
+                    .append(item.getWeeklyRefundAmount()).append(',')
+                    .append(item.getWeeklyGrossAmount()).append(',')
+                    .append(item.getWeeklyCommission()).append(',')
+                    .append(item.getWeeklyNetAmount()).append(',')
+                    .append(item.getWeeklyCreatedAt())
+                    .append('\n');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 주간 정산 CSV 직렬화
+     */
+    public String monthlyCsvSerializer(Iterable<? extends SettlementMonthly> items) {
+        int capacity = DEFAULT_BUFFER_SIZE;
+        if(items instanceof Collection<?> coll){
+            capacity = coll.size() * 200;
+        }
+        StringBuilder sb = new StringBuilder(capacity);
+
+        for(SettlementMonthly item : items) {
+            sb.append(item.getMember().getId()).append(',')
+                    .append(item.getStatus().getId()).append(',');
+            appendCsvField(sb, item.getPerformanceTitle());
+            sb.append(item.getYear()).append(',')
+                    .append(item.getMonth()).append(',')
+                    .append(item.getMonthlySalesAmount()).append(',')
+                    .append(item.getMonthlyRefundAmount()).append(',')
+                    .append(item.getMonthlyGrossAmount()).append(',')
+                    .append(item.getMonthlyCommission()).append(',')
+                    .append(item.getMonthlyNetAmount()).append(',')
+                    .append(item.getMonthlyCreatedAt())
                     .append('\n');
         }
         return sb.toString();

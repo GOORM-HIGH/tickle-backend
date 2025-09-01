@@ -20,8 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBatchTest
 @ActiveProfiles("mybatis-test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "DELETE FROM settlement_detail")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "DELETE FROM batch_metadata")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM settlement_detail")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_metadata")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_step_execution_context")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_step_execution")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_job_execution_context")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_job_execution_params")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_job_execution")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM batch_job_instance")
 public class SettlementDetailJobTest {
 
     @Autowired
@@ -31,14 +37,14 @@ public class SettlementDetailJobTest {
     private JdbcTemplate jdbcTemplate;
 
     /**
-     * 로컬DB로 테스트를 진행해서 이후에 진행 시에는 더미 데이터와 날짜가 맞지 않아 테스트가 통과하지 않을 수 있습니다..
+     * 로컬DB로 테스트 진행
      */
     @DisplayName("건별 정산 배치 Job이 정상적으로 실행되는지 테스트한다.")
     @Test
     void settlementDetailJobWriterTest() throws Exception {
         // Given
         JobParameters params = new JobParametersBuilder()
-                .addString("settlementDetailCreatedAt", Instant.now().toString())
+                .addString("settlementDetailCreatedAt", Instant.parse("2025-08-31T00:00:00Z").toString())
                 .toJobParameters();
         JobExecution jobExecution = jobLauncherTestUtils.launchJob(params);
 

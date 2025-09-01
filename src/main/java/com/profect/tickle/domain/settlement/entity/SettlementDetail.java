@@ -75,7 +75,7 @@ public class SettlementDetail {
                                           Long grossAmount,
                                           Long commission,
                                           Long netAmount,
-                                          Instant now) {
+                                          Instant createdAt) {
         return SettlementDetail.builder()
                 .member(member)
                 .status(status)
@@ -88,7 +88,7 @@ public class SettlementDetail {
                 .contractCharge(dto.getContractCharge())
                 .commission(commission)
                 .netAmount(netAmount)
-                .createdAt(now)
+                .createdAt(createdAt)
                 .build();
     }
 }
