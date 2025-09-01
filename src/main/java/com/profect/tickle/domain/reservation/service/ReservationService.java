@@ -59,22 +59,21 @@ public class ReservationService {
 
     @Transactional
     public ReservationCompletionResponseDto completeReservation(
-            ReservationCompletionRequestDto request) {
-
-        Long userId = SecurityUtil.getSignInMemberId();
+            ReservationCompletionRequestDto request, Long memberId) {
 
         try {
-            Member member = memberRepository.findById(userId)
+            Member member = memberRepository.findById(memberId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             // 1. 선점 토큰으로 좌석들 조회
-            List<Seat> preemptedSeats = seatRepository.findByPreemptionTokenWithLock(request.getPreemptionToken());
+            List<Seat> preemptedSeats = seatRepository.findByPreemptionTokenWithLock(
+                    request.getPreemptionToken());
 
             // 선점 좌석들 검증
-            reservationValidator.validatePreemptedSeats(preemptedSeats, userId);
+            reservationValidator.validatePreemptedSeats(preemptedSeats, memberId);
 
             // 2. 쿠폰 할인 계산
-            int finalAmount = calculateFinalAmount(request, userId);
+            int finalAmount = calculateFinalAmount(request, memberId);
 
             // 3. 최종 결제 금액 검증 - 요청의 최종 결제 금액과 현재 로직에서 계산한 값이 일치하는지 검증한다.
             reservationValidator.validatePaymentAmount(finalAmount, request.getTotalAmount());
@@ -84,7 +83,7 @@ public class ReservationService {
 
             // 5. 쿠폰 사용 처리 (있는 경우)
             if (request.getCouponId() != null) {
-                couponService.useCoupon(request.getCouponId(), userId);
+                couponService.useCoupon(request.getCouponId(), memberId);
             }
 
             // 6. 포인트 차감
@@ -148,11 +147,14 @@ public class ReservationService {
 
     // 예매 성공 이벤트 발행 메서드
     private void publishReservationSuccessEvent(Long reservationId) {
-        PerformanceServiceDto performanceServiceDto = performanceMapper.findByReservationId(reservationId); // 예매 공연 정보
-        ReservationServiceDto reservationServiceDto = reservationMapper.findById(reservationId) // 예매 정보
+        PerformanceServiceDto performanceServiceDto = performanceMapper.findByReservationId(
+                reservationId); // 예매 공연 정보
+        ReservationServiceDto reservationServiceDto = reservationMapper.findById(
+                        reservationId) // 예매 정보
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
 
-        eventPublisher.publishEvent(new ReservationSuccessEvent(performanceServiceDto, reservationServiceDto));
+        eventPublisher.publishEvent(
+                new ReservationSuccessEvent(performanceServiceDto, reservationServiceDto));
         log.info("[{} 이벤트 발행]", NotificationKind.RESERVATION_SUCCESS);
     }
 
@@ -198,7 +200,8 @@ public class ReservationService {
     }
 
     private String generateSeatCode() {
-        String uuidPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        String uuidPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6)
+                .toUpperCase();
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         return uuidPart + dateTime;
     }
