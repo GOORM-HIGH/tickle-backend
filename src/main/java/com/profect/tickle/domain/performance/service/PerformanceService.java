@@ -124,7 +124,7 @@ public class PerformanceService {
         }
 
         List<PerformanceDto> content =
-                performanceMapper.searchPerformancesByKeyword(keyword, pr.offset(), pr.size());
+                performanceMapper.searchPerformancesByKeyword(keyword, pr.size(), pr.offset());
         return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
