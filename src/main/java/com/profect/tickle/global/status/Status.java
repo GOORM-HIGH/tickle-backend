@@ -1,11 +1,7 @@
 package com.profect.tickle.global.status;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -14,8 +10,7 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "status")
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 public class Status {
 
@@ -35,5 +30,18 @@ public class Status {
 
     @Column(name = "status_created_at", nullable = false)
     private Instant createdAt;
+
+    private Status(Long id, String type, Short code, String description, Instant createdAt) {
+        this.id = id;
+        this.type = type;
+        this.code = code;
+        this.description = description;
+        this.createdAt = createdAt;
+    }
+
+    public static Status create(Long id,  String type, Short code, String description, Instant createdAt) {
+        return new Status(id, type, code, description, createdAt);
+    }
+
 }
 

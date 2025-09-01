@@ -1,8 +1,7 @@
 package com.profect.tickle.domain.settlement.dto.batch;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -12,8 +11,6 @@ import java.time.Instant;
  */
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public class SettlementDetailFindTargetDto {
 
     private Long memberId;
@@ -23,5 +20,37 @@ public class SettlementDetailFindTargetDto {
     private String reservationCode; // 예매 코드
     private Long reservationPrice; // 예매 금액
     private BigDecimal contractCharge; // 정산 적용 수수료율
-    private String paymentMethod; // 결제 수단(추후 고도화용)
-}
+    private Instant settlementDetailCreatedAt;
+
+    @Builder
+    private SettlementDetailFindTargetDto(Long memberId, Long reservationStatusId, String performanceTitle,
+                                         Instant performanceEndDate, String reservationCode, Long reservationPrice,
+                                         BigDecimal contractCharge, Instant settlementDetailCreatedAt) {
+        this.memberId = memberId;
+        this.reservationStatusId = reservationStatusId;
+        this.performanceTitle = performanceTitle;
+        this.performanceEndDate = performanceEndDate;
+        this.reservationCode = reservationCode;
+        this.reservationPrice = reservationPrice;
+        this.contractCharge = contractCharge;
+        this.settlementDetailCreatedAt = settlementDetailCreatedAt;
+    }
+
+    public static SettlementDetailFindTargetDto of(Long memberId, Long reservationStatusId,
+                                                   String performanceTitle, Instant performanceEndDate,
+                                                   String reservationCode, Long reservationPrice,
+                                                   BigDecimal contractCharge, Instant settlementDetailCreatedAt) {
+        return SettlementDetailFindTargetDto.builder()
+                .memberId(memberId)
+                .reservationStatusId(reservationStatusId)
+                .performanceTitle(performanceTitle)
+                .performanceEndDate(performanceEndDate)
+                .reservationCode(reservationCode)
+                .reservationPrice(reservationPrice)
+                .contractCharge(contractCharge)
+                .settlementDetailCreatedAt(settlementDetailCreatedAt)
+                .build();
+    }
+
+
+ }

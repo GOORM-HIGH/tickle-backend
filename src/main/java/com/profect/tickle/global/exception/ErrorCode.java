@@ -16,7 +16,7 @@ public enum ErrorCode {
 
     //EVENT
     EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "이벤트 정보를 찾을 수 없습니다."),
-    EVENT_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "이벤트가 진행 중이 아닙니다."),
+    EVENT_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "진행중인 이벤트가 아닙니다."),
 
     //COUPON
     COUPON_SOLD_OUT(HttpStatus.CONFLICT, "쿠폰이 모두 소진되었습니다."),
@@ -28,16 +28,16 @@ public enum ErrorCode {
     INVALID_COUPON_AMOUNT(HttpStatus.BAD_REQUEST, "쿠폰을 적용할 수 없는 금액입니다."),
 
     //POINT
-    INSUFFICIENT_POINT(HttpStatus.NOT_FOUND, "보유 포인트가 부족합니다."),
+    INSUFFICIENT_POINT(HttpStatus.CONFLICT, "보유 포인트가 부족합니다."),
 
     //PERFORMANCE
     PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 공연을 찾을 수 없습니다."),
-    GENRE_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 장르를 찾을 수 없습니다."),
-    DEFAULT_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND,"상태에 기본값이 존재하지 않습니다."),
-    PERFORMANCE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND,"공연 가격이 존재하지 않습니다."),
-    NO_PERMISSION(HttpStatus.FORBIDDEN,"공연을 삭제할 권한이 없습니다."),
-    ALREADY_SCRAPPED(HttpStatus.CONFLICT,"이미 스크랩된 공연입니다."),
-    FAVORITE_NOT_FOUND(HttpStatus.NOT_FOUND,"스크랩된 공연이 존재하지 않습니다."),
+    GENRE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 장르를 찾을 수 없습니다."),
+    DEFAULT_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND, "상태에 기본값이 존재하지 않습니다."),
+    PERFORMANCE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공연 가격이 존재하지 않습니다."),
+    NO_PERMISSION(HttpStatus.FORBIDDEN, "공연을 삭제할 권한이 없습니다."),
+    ALREADY_SCRAPPED(HttpStatus.CONFLICT, "이미 스크랩된 공연입니다."),
+    FAVORITE_NOT_FOUND(HttpStatus.NOT_FOUND, "스크랩된 공연이 존재하지 않습니다."),
     RESERVATION_PERIOD_CLOSED(HttpStatus.BAD_REQUEST, "예매 기간이 아닙니다."),
 
     //SEAT
@@ -71,6 +71,7 @@ public enum ErrorCode {
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다."),
     NOTIFICATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 알림에 접근할 권한이 없습니다."),
     NOTIFICATION_TEMPLATE_NOT_FOUND(HttpStatus.BAD_REQUEST, "알림 템플릿을 찾을 수 없습니다."),
+    REALTIME_NOTIFICATION_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "실시간 메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요."),
 
     // 상태 관련
     STATUS_CACHE_INIT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "상태 캐시 초기화에 실패했습니다."),

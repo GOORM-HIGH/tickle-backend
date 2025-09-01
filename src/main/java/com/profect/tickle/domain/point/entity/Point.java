@@ -2,11 +2,10 @@ package com.profect.tickle.domain.point.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Entity
@@ -27,10 +26,10 @@ public class Point {
     private int credit;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "point_target", nullable = false)
+    @Column(name = "point_target", nullable = false, length = 30)
     private PointTarget target;
 
-    @Column(name = "point_order_id", nullable = false, unique = true, length = 100)
+    @Column(name = "point_order_id", length = 100)
     private String orderId;
 
     @Column(name = "point_created_at", nullable = false, updatable = false)
@@ -51,23 +50,22 @@ public class Point {
         }
     }
 
-    public static Point charge(Member member, int amount, String orderId) {
-        return new Point(member, amount, PointTarget.CHARGE, orderId);
+    public static Point charge(Member m, int amount, String externalOrderId) {
+        String oid = (externalOrderId != null && !externalOrderId.isBlank())
+                ? externalOrderId
+                : generateInternalOrderId("charge");
+        return new Point(m, amount, PointTarget.CHARGE, oid);
     }
 
     public static Point deduct(Member member, int amount, PointTarget target) {
-        return new Point(member, -amount, target, generateInternalOrderIdDeduct());
+        return new Point(member, -amount, target, generateInternalOrderId("deduct"));
     }
 
     public static Point refund(Member member, int amount, PointTarget target) {
-        return new Point(member, amount, target, generateInternalOrderIdRefund());
+        return new Point(member, amount, target, generateInternalOrderId("refund"));
     }
 
-    private static String generateInternalOrderIdDeduct() {
-        return "deduct_" + System.currentTimeMillis();
-    }
-
-    private static String generateInternalOrderIdRefund() {
-        return "refund_" + System.currentTimeMillis();
+    private static String generateInternalOrderId(String prefix) {
+        return prefix + "_" + System.currentTimeMillis() + "_" + UUID.randomUUID();
     }
 }

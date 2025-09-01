@@ -15,7 +15,7 @@ public class JsonUtils {
         try {
             return mapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            log.error("❌ JSON 직렬화 실패", e);
+            log.error("JSON 직렬화 실패", e);
             return "{}";
         }
     }
@@ -25,7 +25,7 @@ public class JsonUtils {
         try {
             return mapper.readValue(json, type);
         } catch (Exception e) {
-            log.error("❌ JSON 역직렬화 실패", e);
+            log.error("JSON 역직렬화 실패", e);
             return null;
         }
     }

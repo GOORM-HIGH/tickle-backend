@@ -1,4 +1,4 @@
-package com.profect.tickle.batch;
+package com.profect.tickle.batch.config;
 
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.context.annotation.Bean;

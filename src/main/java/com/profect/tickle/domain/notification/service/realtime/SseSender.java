@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.util.JsonUtils;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
@@ -87,7 +89,14 @@ public class SseSender implements RealtimeSender {
     public void send(long memberId, NotificationEnvelope<?> payload) {
         // 1) 이벤트 생성 + 직렬화 (항상 수행)
         long eventId = nextEventId();
-        String json = JsonUtils.toJson(objectMapper, payload);
+        String json;
+
+        try {
+            json = JsonUtils.toJson(objectMapper, payload);
+        } catch (Exception e) {
+            log.warn("[SSE 전송] payload 직렬화에 실패했습니다. {}번 회원에게 전송하는 실시간알림 전송을 종료합니다.", memberId, e);
+            throw new BusinessException(ErrorCode.REALTIME_NOTIFICATION_SEND_FAILED); // 저장/트리밍/전송 모두 생략
+        }
 
         // 2) 유실 캐시 저장 + TTL 정리 (항상 수행)
         sseRepository.saveEvent(memberId, eventId, json);

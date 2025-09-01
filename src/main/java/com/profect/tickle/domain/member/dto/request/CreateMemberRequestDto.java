@@ -14,7 +14,7 @@ public record CreateMemberRequestDto(
         @Past
         @JsonFormat(
                 shape = JsonFormat.Shape.STRING,
-                pattern = "yyyy-MM-dd['T'HH:mm[:ss][.SSS]]",
+                pattern = "uuuu-MM-dd['T'HH:mm[:ss][.SSS]]X",
                 timezone = "UTC"
         )
         Instant birthday,

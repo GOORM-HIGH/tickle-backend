@@ -15,4 +15,7 @@ public interface CouponReceivedRepository extends JpaRepository<CouponReceived, 
             "AND cr.member.id = :memberId AND cr.status.id = 17")
     Optional<CouponReceived> findByCouponIdAndMemberIdAndNotUsed(@Param("couponId") Long couponId,
             @Param("memberId") Long memberId);
+
+    @Query("select count(cr) from CouponReceived cr where cr.coupon.id = :couponId")
+    long countByCouponId(@Param("couponId") Long couponId);
 }

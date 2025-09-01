@@ -12,10 +12,13 @@ import java.util.List;
 @Mapper
 public interface SettlementDetailMapper {
 
+
+    int findTargetReservationsCount(@Param("now") Instant now);
+
     /**
      * 건별정산에 필요한 데이터 추출
      */
-    List<SettlementDetailFindTargetDto> findTargetReservations();
+    List<SettlementDetailFindTargetDto> findTargetReservations(@Param("now") Instant now);
 
     /**
      * 건별정산에 결과 insert

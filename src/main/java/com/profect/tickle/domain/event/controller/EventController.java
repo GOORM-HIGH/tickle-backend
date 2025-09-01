@@ -72,7 +72,7 @@ public class EventController {
     @PostMapping("/ticket/{eventId}")
     public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
         TicketApplyResponseDto response = eventService.applyTicketEvent(eventId);
-        return ResultResponse.of(ResultCode.EVENT_CREATE_SUCCESS, response);
+        return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, response);
     }
 
     @Operation(summary = "쿠폰 이벤트 응모", description = "유저가 쿠폰 이벤트에 응모하여 쿠폰을 발급받습니다.",
