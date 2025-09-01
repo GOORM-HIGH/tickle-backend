@@ -3,7 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.2.5'
     id 'io.spring.dependency-management' version '1.1.4'
     id 'org.hibernate.orm' version '6.6.22.Final'
-    id 'org.graalvm.buildtools.native' version '0.10.6'
+    // id 'org.graalvm.buildtools.native' version '0.10.6'  // 개발 환경에서는 비활성화
     id 'jacoco'  // ✅ JaCoCo 플러그인 추가
 }
 
@@ -64,6 +64,11 @@ dependencies {
     // ===== Test Dependencies =====
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation "org.mockito:mockito-inline:5.2.0"
+    
+    // ===== Locust Performance Testing =====
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.github.bonigarcia:webdrivermanager:5.3.2'
+    testImplementation 'org.python:jython-standalone:2.7.3'
 
     // ===== Jwt Dependencies =====
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
