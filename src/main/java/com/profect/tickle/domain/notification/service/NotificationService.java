@@ -21,6 +21,7 @@ import org.postgresql.copy.CopyManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import javax.sql.DataSource;
 import java.io.Reader;
@@ -114,30 +115,50 @@ public class NotificationService {
 
     @Transactional
     public long saveAllWithCopy(
-            List<MemberResponseDto> memberList,
+            List<Long> memberIdList,
             Long templateId,
             String subject,
             String content,
             Instant createdAt
     ) throws Exception {
-        if (memberList == null || memberList.isEmpty()) return 0L;
+        if (memberIdList == null || memberIdList.isEmpty()) return 0L;
+
+        StopWatch sw = new StopWatch("saveAllWithCopy");
+        sw.start("csv-build");
 
         long statusId = StatusIds.Notification.UNREAD;
+
+        // 1) 상수 필드는 한 번만 이스케이프해서 캐시(반복 이스케이프 제거)
+        String escTemplateId = CsvEscaper.escape(templateId);
+        String escSubject    = CsvEscaper.escape(subject);
+        String escContent    = CsvEscaper.escape(content);
+        String escCreatedAt  = CsvEscaper.escape(createdAt);
+        String escStatusId   = CsvEscaper.escape(statusId);
+
+        final int avgRow = 64 + (subject != null ? subject.length() : 0)
+                + (content != null ? content.length() : 0);
+        StringBuilder sb = new StringBuilder(Math.max(8 * 1024, memberIdList.size() * avgRow));
+
+        for (Long id : memberIdList) {
+            // memberId(숫자)는 그 자체로 안전 → 바로 append
+            sb.append(id).append(',')
+                    .append(escTemplateId).append(',')
+                    .append(escSubject).append(',')
+                    .append(escContent).append(',')
+                    .append(escCreatedAt).append(',')
+                    .append(escStatusId).append('\n');
+        }
+        sw.stop();
+
+        sw.start("toString");
+        String csv = sb.toString();   // 대용량 복제
+        sw.stop();
+
         Connection conn = DataSourceUtils.getConnection(dataSource);
         try {
             PGConnection pgConn = conn.unwrap(PGConnection.class);
             CopyManager copyManager = pgConn.getCopyAPI();
-            final int avgRow = 64 + (subject != null ? subject.length() : 0)
-                    + (content != null ? content.length() : 0);
-            StringBuilder sb = new StringBuilder(Math.max(8 * 1024, memberList.size() * avgRow));
 
-            // 1) CSV 문자열 생성 (행 단위로 StringBuilder에 누적)
-            for (MemberResponseDto m : memberList) {
-                CsvUtils.appendCsvRow(sb, m.getId(), templateId, subject, content, createdAt, statusId);
-            }
-            final String csv = sb.toString();
-
-            // 2) COPY … FROM STDIN (CSV 옵션 명시: NULL '', 구분자/따옴표/이스케이프)
             final String copySql =
                     "COPY notification (" +
                             "  notification_received_member_id, " +
@@ -146,13 +167,36 @@ public class NotificationService {
                             "  notification_content, " +
                             "  notification_created_at, " +
                             "  status_id" +
-                            ") FROM STDIN WITH (FORMAT csv)";
+                            ") FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '\"', ESCAPE '\"', NULL '')";
 
+            sw.start("copyIn");
+            long rows;
             try (Reader reader = new StringReader(csv)) {
-                return copyManager.copyIn(copySql, reader);
+                rows = copyManager.copyIn(copySql, reader);
             }
+            sw.stop();
+
+            log.info("\n{}", sw.prettyPrint());  // 각 구간 소요시간 로그로 확인
+            return rows;
         } finally {
             DataSourceUtils.releaseConnection(conn, dataSource);
+        }
+    }
+
+    /** 상수 필드용 간단 이스케이퍼 */
+    static final class CsvEscaper {
+        static String escape(Object v) {
+            if (v == null) return ""; // COPY NULL ''에 맞춤
+            String s = (v instanceof Instant i) ? i.toString() : String.valueOf(v);
+            boolean q = s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0;
+            if (!q) return s;
+            StringBuilder b = new StringBuilder(s.length() + 8).append('"');
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (c == '"') b.append("\"\"");
+                else b.append(c);
+            }
+            return b.append('"').toString();
         }
     }
 }
