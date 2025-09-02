@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.notification.service;
 
+import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
@@ -9,6 +10,7 @@ import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
 import jakarta.validation.constraints.NotNull;
@@ -82,5 +84,14 @@ public class NotificationService {
         // 읽음 처리한다.
         notification.markAsRead(statusProvider.provide(StatusIds.Notification.READ));
         log.info("{}님의 {}번 알림 읽음 처리 완료", memberId, notificationId);
+    }
+
+    @Transactional
+    public void saveAll(List<MemberResponseDto> memberList, Long templateId, String subject, String content, Instant createdAt) {
+        if (memberList == null || memberList.isEmpty()) {
+            return;
+        }
+
+        notificationMapper.saveAll(memberList, templateId, subject, content, createdAt, StatusIds.Notification.UNREAD);
     }
 }

@@ -23,4 +23,18 @@
             LIMIT #{limit}
     </select>
 
+    <insert id="saveAll">
+        INSERT INTO notification
+        (notification_received_member_id, notification_template_id, notification_title, notification_content, notification_created_at, status_id)
+        VALUES
+        <foreach collection="memberList" item="member" separator=",">
+            (#{member.id}, #{notificationTemplateId}, #{subject}, #{content}, #{createdAt}, #{statusId})
+        </foreach>
+    </insert>
+
+    <select id="count"
+            resultType="long">
+        SELECT COUNT(*)
+        FROM notification
+    </select>
 </mapper>
