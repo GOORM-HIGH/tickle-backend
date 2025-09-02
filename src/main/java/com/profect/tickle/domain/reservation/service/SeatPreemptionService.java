@@ -34,6 +34,7 @@ public class SeatPreemptionService {
     private final SeatRepository seatRepository;
     private final MemberRepository memberRepository;
     private final StatusProvider statusProvider;
+    private final SeatPreemptionConfig config;
 
     private static final int PREEMPTION_DURATION_MINUTES = 5; // 5분간 선점
 
