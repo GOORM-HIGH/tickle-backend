@@ -63,7 +63,7 @@ public class PerformanceEventListener {
 
         // 3) 회원 알림 저장
         List<MemberResponseDto> memberList = memberService.findMemberListByDeletedAtIsNull(true);
-        memberList.forEach(member -> notificationService.saveNotification(member.getEmail(), template, subject, content, now));
+        notificationService.saveAll(memberList, template.getId(), subject, content, now);
 
         // 4) SSE 브로드캐스트
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED, subject, content, now, link, null);
