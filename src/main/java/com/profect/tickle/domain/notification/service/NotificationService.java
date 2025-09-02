@@ -146,11 +146,10 @@ public class NotificationService {
                             "  notification_content, " +
                             "  notification_created_at, " +
                             "  status_id" +
-                            ") FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '\"', ESCAPE '\"', NULL '')";
+                            ") FROM STDIN WITH (FORMAT csv)";
 
             try (Reader reader = new StringReader(csv)) {
-//                return copyManager.copyIn(copySql, reader);
-                return 1L;
+                return copyManager.copyIn(copySql, reader);
             }
         } finally {
             DataSourceUtils.releaseConnection(conn, dataSource);
