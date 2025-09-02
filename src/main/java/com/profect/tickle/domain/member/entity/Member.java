@@ -91,9 +91,6 @@ public class Member {
     private String hostBizBankNumber;  // 계좌번호
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Point> points = new ArrayList<>();
-
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CouponReceived> receivedCoupons = new ArrayList<>();
 
     @PrePersist
