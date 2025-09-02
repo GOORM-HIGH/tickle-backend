@@ -10,15 +10,22 @@ import com.profect.tickle.domain.notification.mapper.NotificationMapper;
 import com.profect.tickle.domain.notification.repository.NotificationRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
-import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
+import com.profect.tickle.global.util.CsvUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
+import java.io.Reader;
+import java.io.StringReader;
+import java.sql.Connection;
 import java.time.Instant;
 import java.util.List;
 
@@ -30,6 +37,7 @@ public class NotificationService {
 
     // utils
     private final StatusProvider statusProvider;
+    private final DataSource dataSource;
 
     // services
     private final MemberService memberService;
@@ -87,11 +95,65 @@ public class NotificationService {
     }
 
     @Transactional
-    public void saveAll(List<MemberResponseDto> memberList, Long templateId, String subject, String content, Instant createdAt) {
-        if (memberList == null || memberList.isEmpty()) {
-            return;
-        }
+    public void saveAll(
+            List<MemberResponseDto> memberList,
+            Long templateId,
+            String subject,
+            String content,
+            Instant createdAt
+    ) {
+        if (memberList == null || memberList.isEmpty()) return;
 
-        notificationMapper.saveAll(memberList, templateId, subject, content, createdAt, StatusIds.Notification.UNREAD);
+        final int CHUNK = 5_000;
+        for (int i = 0; i < memberList.size(); i += CHUNK) {
+            int end = Math.min(i + CHUNK, memberList.size());
+            List<MemberResponseDto> sub = memberList.subList(i, end);
+            notificationMapper.saveAll(sub, templateId, subject, content, createdAt, StatusIds.Notification.UNREAD);
+        }
+    }
+
+    @Transactional
+    public long saveAllWithCopy(
+            List<MemberResponseDto> memberList,
+            Long templateId,
+            String subject,
+            String content,
+            Instant createdAt
+    ) throws Exception {
+        if (memberList == null || memberList.isEmpty()) return 0L;
+
+        long statusId = StatusIds.Notification.UNREAD;
+        Connection conn = DataSourceUtils.getConnection(dataSource);
+        try {
+            PGConnection pgConn = conn.unwrap(PGConnection.class);
+            CopyManager copyManager = pgConn.getCopyAPI();
+            final int avgRow = 64 + (subject != null ? subject.length() : 0)
+                    + (content != null ? content.length() : 0);
+            StringBuilder sb = new StringBuilder(Math.max(8 * 1024, memberList.size() * avgRow));
+
+            // 1) CSV 문자열 생성 (행 단위로 StringBuilder에 누적)
+            for (MemberResponseDto m : memberList) {
+                CsvUtils.appendCsvRow(sb, m.getId(), templateId, subject, content, createdAt, statusId);
+            }
+            final String csv = sb.toString();
+
+            // 2) COPY … FROM STDIN (CSV 옵션 명시: NULL '', 구분자/따옴표/이스케이프)
+            final String copySql =
+                    "COPY notification (" +
+                            "  notification_received_member_id, " +
+                            "  notification_template_id, " +
+                            "  notification_title, " +
+                            "  notification_content, " +
+                            "  notification_created_at, " +
+                            "  status_id" +
+                            ") FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '\"', ESCAPE '\"', NULL '')";
+
+            try (Reader reader = new StringReader(csv)) {
+//                return copyManager.copyIn(copySql, reader);
+                return 1L;
+            }
+        } finally {
+            DataSourceUtils.releaseConnection(conn, dataSource);
+        }
     }
 }
