@@ -71,22 +71,19 @@ public class SettlementMonthly {
 
     public static SettlementMonthly create(SettlementMonthlyFindTargetDto dto,
                                            Member member,
-                                           Status status,
-                                           String year,
-                                           String month,
-                                           Instant now) {
+                                           Status status) {
         return SettlementMonthly.builder()
                 .member(member)
                 .status(status)
                 .performanceTitle(dto.getPerformanceTitle())
-                .year(year)
-                .month(month)
+                .year(dto.getYear())
+                .month(dto.getMonth())
                 .monthlySalesAmount(dto.getMonthlySalesAmount())
                 .monthlyRefundAmount(dto.getMonthlyRefundAmount())
                 .monthlyGrossAmount(dto.getMonthlyGrossAmount())
                 .monthlyCommission(dto.getMonthlyCommission())
                 .monthlyNetAmount(dto.getMonthlyNetAmount())
-                .monthlyCreatedAt(now)
+                .monthlyCreatedAt(dto.getSettlementMonthlyCreatedAt())
                 .build();
     }
 

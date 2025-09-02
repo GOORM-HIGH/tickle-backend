@@ -57,7 +57,7 @@ public class SettlementWeeklyService {
 
         // 오늘 날짜 기준 해당 주차의 일간정산 합계 추출
         List<SettlementWeeklyFindTargetDto> aggregates =
-                Optional.ofNullable(settlementWeeklyMapper.findByDate(map))
+                Optional.ofNullable(settlementWeeklyMapper.aggregateFromDailyToWeekly(map))
                         .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR));
 
         if(aggregates.isEmpty()){
@@ -72,8 +72,7 @@ public class SettlementWeeklyService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
             Status settlementStatus = statusProvider.provide(Settlement.SCHEDULED);
 
-            SettlementWeekly stlWeekly = SettlementWeekly.create(dto, member, settlementStatus,
-                    period.yearStr(), period.monthStr(), period.weekOfMonthStr(), settlementDate);
+            SettlementWeekly stlWeekly = SettlementWeekly.create(dto, member, settlementStatus);
 
             weeklyList.add(stlWeekly);
         }
