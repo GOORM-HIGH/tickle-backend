@@ -66,8 +66,8 @@ out/
 /src/test/resources/**
 .DS_Store
 
-### 확인용 파일 ###
-api-test.http
+### HTTP 요청 파일 ###
+*.http*
 
 ### K6 테스트 바이너리 파일 ###
 *k6*
