@@ -66,22 +66,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Primary
-    @Profile("local")
-    public CorsConfigurationSource localCorsConfigurationSource() {
-        CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000", "http://localhost:8081"));
-        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(Arrays.asList("*"));
-        cfg.setAllowCredentials(true);
-        cfg.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
-        src.registerCorsConfiguration("/**", cfg);
-        return src;
-    }
-
-    @Bean
     protected SecurityFilterChain configure(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
                 .cors(c -> c.configurationSource(corsConfigurationSource))
@@ -114,6 +98,22 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    @Primary
+    @Profile("local")
+    public CorsConfigurationSource localCorsConfigurationSource() {
+        CorsConfiguration cfg = new CorsConfiguration();
+        cfg.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000", "http://localhost:8081"));
+        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(Arrays.asList("*"));
+        cfg.setAllowCredentials(true);
+        cfg.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", cfg);
+        return src;
     }
 
     private Filter getAuthenticationFilter() {
