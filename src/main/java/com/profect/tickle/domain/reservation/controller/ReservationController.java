@@ -54,8 +54,8 @@ public class ReservationController {
     public ResultResponse<SeatPreemptionResponseDto> preemptSeats(
             @RequestBody @Valid SeatPreemptionRequestDto request) {
 
-        Long userId = SecurityUtil.getSignInMemberId();
-        SeatPreemptionResponseDto response = seatPreemptionService.preemptSeats(request, userId);
+        Long memberId = SecurityUtil.getSignInMemberId();
+        SeatPreemptionResponseDto response = seatPreemptionService.preemptSeats(request, memberId);
 
         ResultCode resultCode = response.isSuccess()
                 ? ResultCode.RESERVATION_SEAT_PREEMPTION_SUCCESS
