@@ -40,6 +40,16 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
 
     List<Seat> findByReservationId(Long reservationId);
 
+    @Query("""
+        SELECT COUNT(s)
+        FROM Seat s
+        WHERE s.member.id = :memberId
+          AND s.performance.id = :performanceId
+          AND s.reservation IS NOT NULL
+    """)
+    long countReservedSeatsByUserAndPerformance(@Param("memberId") Long memberId,
+            @Param("performanceId") Long performanceId);
+
     @Modifying(clearAutomatically = true)
     @Query("""
         UPDATE Seat s
