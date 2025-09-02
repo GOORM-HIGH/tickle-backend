@@ -1,6 +1,5 @@
 package com.profect.tickle.domain.notification.service;
 
-import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.domain.notification.dto.response.NotificationResponseDto;
@@ -94,25 +93,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public void saveAll(
-            List<MemberResponseDto> memberList,
-            Long templateId,
-            String subject,
-            String content,
-            Instant createdAt
-    ) {
-        if (memberList == null || memberList.isEmpty()) return;
-
-        final int CHUNK = 5_000;
-        for (int i = 0; i < memberList.size(); i += CHUNK) {
-            int end = Math.min(i + CHUNK, memberList.size());
-            List<MemberResponseDto> sub = memberList.subList(i, end);
-            notificationMapper.saveAll(sub, templateId, subject, content, createdAt, StatusIds.Notification.UNREAD);
-        }
-    }
-
-    @Transactional
-    public long saveAllWithCopy(
+    public long saveAll(
             List<Long> memberIdList,
             Long templateId,
             String subject,
