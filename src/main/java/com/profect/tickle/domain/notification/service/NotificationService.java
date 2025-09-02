@@ -12,20 +12,18 @@ import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
-import com.profect.tickle.global.util.CsvUtils;
+import com.profect.tickle.global.util.PgCopyBinaryUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyManager;
+import org.postgresql.copy.PGCopyOutputStream;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StopWatch;
 
 import javax.sql.DataSource;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.DataOutputStream;
 import java.sql.Connection;
 import java.time.Instant;
 import java.util.List;
@@ -123,80 +121,45 @@ public class NotificationService {
     ) throws Exception {
         if (memberIdList == null || memberIdList.isEmpty()) return 0L;
 
-        StopWatch sw = new StopWatch("saveAllWithCopy");
-        sw.start("csv-build");
-
-        long statusId = StatusIds.Notification.UNREAD;
-
-        // 1) 상수 필드는 한 번만 이스케이프해서 캐시(반복 이스케이프 제거)
-        String escTemplateId = CsvEscaper.escape(templateId);
-        String escSubject    = CsvEscaper.escape(subject);
-        String escContent    = CsvEscaper.escape(content);
-        String escCreatedAt  = CsvEscaper.escape(createdAt);
-        String escStatusId   = CsvEscaper.escape(statusId);
-
-        final int avgRow = 64 + (subject != null ? subject.length() : 0)
-                + (content != null ? content.length() : 0);
-        StringBuilder sb = new StringBuilder(Math.max(8 * 1024, memberIdList.size() * avgRow));
-
-        for (Long id : memberIdList) {
-            // memberId(숫자)는 그 자체로 안전 → 바로 append
-            sb.append(id).append(',')
-                    .append(escTemplateId).append(',')
-                    .append(escSubject).append(',')
-                    .append(escContent).append(',')
-                    .append(escCreatedAt).append(',')
-                    .append(escStatusId).append('\n');
-        }
-        sw.stop();
-
-        sw.start("toString");
-        String csv = sb.toString();   // 대용량 복제
-        sw.stop();
-
+        final long statusId = StatusIds.Notification.UNREAD;
         Connection conn = DataSourceUtils.getConnection(dataSource);
         try {
             PGConnection pgConn = conn.unwrap(PGConnection.class);
-            CopyManager copyManager = pgConn.getCopyAPI();
 
             final String copySql =
                     "COPY notification (" +
-                            "  notification_received_member_id, " +
-                            "  notification_template_id, " +
-                            "  notification_title, " +
-                            "  notification_content, " +
-                            "  notification_created_at, " +
+                            "  notification_received_member_id," +
+                            "  notification_template_id," +
+                            "  notification_title," +
+                            "  notification_content," +
+                            "  notification_created_at," +
                             "  status_id" +
-                            ") FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '\"', ESCAPE '\"', NULL '')";
+                            ") FROM STDIN WITH (FORMAT binary)";
 
-            sw.start("copyIn");
-            long rows;
-            try (Reader reader = new StringReader(csv)) {
-                rows = copyManager.copyIn(copySql, reader);
+            try (PGCopyOutputStream pgOut = new PGCopyOutputStream(pgConn, copySql);
+                 DataOutputStream out = new DataOutputStream(pgOut)) {
+
+                PgCopyBinaryUtils.writeHeader(out);
+
+                final int COLS = 6;
+                for (Long id : memberIdList) {
+                    out.writeShort(COLS);           // number of columns (int16)
+
+                    PgCopyBinaryUtils.writeInt8(out, id);          // BIGINT
+                    PgCopyBinaryUtils.writeInt8(out, templateId);         // BIGINT
+                    PgCopyBinaryUtils.writeText(out, subject);            // TEXT
+                    PgCopyBinaryUtils.writeText(out, content);            // TEXT
+                    PgCopyBinaryUtils.writeTimestamptz(out, createdAt);   // TIMESTAMPTZ
+                    PgCopyBinaryUtils.writeInt8(out, statusId);           // BIGINT
+                }
+
+                PgCopyBinaryUtils.writeTrailer(out);
+                out.flush();
             }
-            sw.stop();
 
-            log.info("\n{}", sw.prettyPrint());  // 각 구간 소요시간 로그로 확인
-            return rows;
+            return memberIdList.size();
         } finally {
             DataSourceUtils.releaseConnection(conn, dataSource);
-        }
-    }
-
-    /** 상수 필드용 간단 이스케이퍼 */
-    static final class CsvEscaper {
-        static String escape(Object v) {
-            if (v == null) return ""; // COPY NULL ''에 맞춤
-            String s = (v instanceof Instant i) ? i.toString() : String.valueOf(v);
-            boolean q = s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0;
-            if (!q) return s;
-            StringBuilder b = new StringBuilder(s.length() + 8).append('"');
-            for (int i = 0; i < s.length(); i++) {
-                char c = s.charAt(i);
-                if (c == '"') b.append("\"\"");
-                else b.append(c);
-            }
-            return b.append('"').toString();
         }
     }
 }
