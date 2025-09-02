@@ -49,7 +49,7 @@ public class SettlementMonthlyService {
 
         // 월간에 upsert할 주간 정산 조회
         List<SettlementMonthlyFindTargetDto> aggregates =
-                Optional.ofNullable(settlementMonthlyMapper.findByWeek(map))
+                Optional.ofNullable(settlementMonthlyMapper.aggregateFromWeeklyToMonthly(map))
                         .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_TARGET_DB_ERROR));
 
         if(aggregates.isEmpty()){
@@ -63,8 +63,7 @@ public class SettlementMonthlyService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
             Status settlementStatus = statusProvider.provide(Settlement.SCHEDULED);
 
-            SettlementMonthly stlMonthly = SettlementMonthly.create(dto, member, settlementStatus,
-                    period.yearStr(), period.monthStr(), settlementDate);
+            SettlementMonthly stlMonthly = SettlementMonthly.create(dto, member, settlementStatus);
             monthlyList.add(stlMonthly);
         }
         try {

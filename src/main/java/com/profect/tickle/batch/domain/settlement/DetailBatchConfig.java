@@ -1,19 +1,18 @@
 package com.profect.tickle.batch.domain.settlement;
 
+import com.profect.tickle.batch.domain.settlement.csvSerializer.SettlementCsvSerializer;
 import com.profect.tickle.batch.listener.ChunkTimingListener;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
 import com.profect.tickle.domain.settlement.entity.SettlementDetail;
-import com.profect.tickle.domain.settlement.service.SettlementDetailService;
-import com.profect.tickle.domain.settlement.service.SettlementMonthlyService;
-import com.profect.tickle.domain.settlement.service.SettlementWeeklyService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import com.profect.tickle.global.status.service.StatusProvider;
+import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.batch.MyBatisPagingItemReader;
 import org.mybatis.spring.batch.builder.MyBatisPagingItemReaderBuilder;
@@ -28,8 +27,6 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,64 +41,43 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Configuration
-// 스프링배치 작동 시 디폴트로 'transactionManager' 찾아서 주입하려고 함
-// 배치 전용으로 만든 txManager 사용하려면 아래처럼 명시해서 사용
 @EnableBatchProcessing
-public class SettlementBatchConfig {
+@RequiredArgsConstructor
+public class DetailBatchConfig {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager txManager;
-    private final SettlementDetailService settlementDetailService;
-    private final SettlementWeeklyService settlementWeeklyService;
-    private final SettlementMonthlyService settlementMonthlyService;
     private final SqlSessionFactory sqlSessionFactory;
+    private final DataSource dataSource;
     private final MemberRepository memberRepository;
     private final StatusRepository statusRepository;
     private final StatusProvider statusProvider;
-    private final DataSource dataSource;
     private final ChunkTimingListener chunkTimingListener;
+    private final SettlementCsvSerializer settlementCsvSerializer;
 
-    public SettlementBatchConfig(
-            JobRepository jobRepository,
-            @Qualifier("transactionManager") PlatformTransactionManager txManager,
-            SettlementDetailService settlementDetailService,
-            SettlementWeeklyService settlementWeeklyService,
-            SettlementMonthlyService settlementMonthlyService,
-            SqlSessionFactory sqlSessionFactory,
-            MemberRepository memberRepository,
-            StatusRepository statusRepository,
-            StatusProvider statusProvider,
-            DataSource dataSource,
-            ChunkTimingListener chunkTimingListener) {
-        this.jobRepository = jobRepository;
-        this.txManager = txManager;
-        this.settlementDetailService = settlementDetailService;
-        this.settlementWeeklyService = settlementWeeklyService;
-        this.settlementMonthlyService = settlementMonthlyService;
-        this.sqlSessionFactory = sqlSessionFactory;
-        this.memberRepository = memberRepository;
-        this.statusRepository = statusRepository;
-        this.statusProvider = statusProvider;
-        this.dataSource = dataSource;
-        this.chunkTimingListener = chunkTimingListener;
-    }
-
+    /**
+     * 건별 정산 Job
+     * Job Name: settlementDetailJob
+     */
     @Bean
     public Job settlementDetailJob() {
         return new JobBuilder("settlementDetailJob", jobRepository)
-                .start(detailStep())
+                .start(settlementDetailStep())
                 .build();
     }
 
+    /**
+     * 건별 정산 Step
+     * Step Name: settlementDetailStep
+     * Chunk Size: 10_000
+     */
     @Bean
-    public Step detailStep() {
-        return new StepBuilder("detailStep", jobRepository)
-                .<SettlementDetailFindTargetDto, SettlementDetail>chunk(50_000, txManager)
+    public Step settlementDetailStep() {
+        return new StepBuilder("settlementDetailStep", jobRepository)
+                .<SettlementDetailFindTargetDto, SettlementDetail>chunk(10_000, txManager)
                 .reader(settlementDetailReader(null, null))
                 .processor(settlementDetailProcessor())
                 .writer(settlementDetailCopyWriter()) // COPY 방식
@@ -111,26 +87,38 @@ public class SettlementBatchConfig {
                 .build();
     }
 
+    /**
+     * 건별 정산 MyBatisPagingItemReader
+     * Paging Size: 50_000
+     * @param settlementBatchStartedAt: 건별 정산, 배치 메타테이블에 insert, update할 배치 시간(from. JobLauncher)
+     * @param lastTimeSeconds: beforStep 단계에서 배치 메타테이블로부터 가져온 마지막 배치 시간(where절 비교용)
+     * @return SettlementDetailFindTargetDto
+     */
     @Bean
     @StepScope
     public MyBatisPagingItemReader<SettlementDetailFindTargetDto> settlementDetailReader(
-            @Value("#{jobParameters['settlementDetailCreatedAt']}") String creatredAtString,
+            @Value("#{jobParameters['settlementBatchStartedAt']}") String settlementBatchStartedAt,
             @Value("#{stepExecutionContext['lastTimeSeconds']}") Instant lastTimeSeconds
     ) {
         Map<String, Object> params = Map.of(
-                "now", Instant.parse(creatredAtString),
+                "now", Instant.parse(settlementBatchStartedAt),
                 "lastTimeSeconds", lastTimeSeconds
         );
 
         return new MyBatisPagingItemReaderBuilder<SettlementDetailFindTargetDto>()
                 .sqlSessionFactory(sqlSessionFactory)
-                .queryId("com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper.findTargetReservations")
+                .queryId("com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper.findTargetFromReservations")
                 .parameterValues(params)
-                .pageSize(1_000_000)
+                .pageSize(50_000)
                 .maxItemCount(Integer.MAX_VALUE)
                 .build();
     }
 
+    /**
+     * 건별 정산 ItemProcessor
+     * 판매금액, 환불금액, 정산대상금액, 수수료, 대납금액, 환불상태
+     * @return SettlementDetail
+     */
     @Bean
     public ItemProcessor<SettlementDetailFindTargetDto, SettlementDetail> settlementDetailProcessor() {
         return targetDto -> {
@@ -154,7 +142,8 @@ public class SettlementBatchConfig {
                 settlementStatus = statusProvider.provide(StatusIds.Settlement.REFUND_REQUESTED);
             }
 
-            Long grossAmount = salesAmount; // 정산대상금액 = 판매금액
+            // 정산대상금액 = 판매금액
+            Long grossAmount = salesAmount;
             // 수수료 = 판매금액 * 정산대상금액
             BigDecimal commission = contractCharge.multiply(BigDecimal.valueOf(grossAmount)).setScale(0, RoundingMode.HALF_UP);
             // 대납금액 = 정산대상금액 - 수수료
@@ -170,11 +159,15 @@ public class SettlementBatchConfig {
                     grossAmount,
                     commission.longValueExact(),
                     netAmount.longValueExact(),
-                    Instant.parse(targetDto.getSettlementDetailCreatedAt().toString())
+                    targetDto.getSettlementDetailCreatedAt()
             );
         };
     }
 
+    /**
+     * 건별 정산 ItemWriter: COPY(Postgresql COPY ... FROM STDIN 프로토콜)
+     * @return SettlementDetail
+     */
     @Bean
     public ItemWriter<SettlementDetail> settlementDetailCopyWriter() {
         return items -> {
@@ -183,31 +176,9 @@ public class SettlementBatchConfig {
                 PGConnection pgConn = conn.unwrap(PGConnection.class);
                 CopyManager copyManager = new CopyManager((BaseConnection) pgConn);
 
-                // 2) StringBuilder 에 CSV 포맷으로 직렬화
-                StringBuilder sb = new StringBuilder(items.size() * 200);
-                DateTimeFormatter fmt = DateTimeFormatter
-                        .ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-                        .withZone(ZoneOffset.UTC);
+                String sb = settlementCsvSerializer.detailCsvSerializer(items);
 
-                for (SettlementDetail it : items) {
-                    // 숫자/문자/타임스탬프를 CSV 규격으로 찍어준다 (쉼표, 개행)
-                    sb.append(it.getMember().getId()).append(',')
-                        .append(it.getStatus().getId()).append(',');
-                    // 3) performanceTitle (CSV quote 처리)
-                    appendCsvField(sb, it.getPerformanceTitle());
-                    sb.append(fmt.format(it.getPerformanceEndDate())).append(',')
-                        .append(it.getReservationCode()).append(',')
-                        .append(it.getSalesAmount()).append(',')
-                        .append(it.getRefundAmount()).append(',')
-                        .append(it.getGrossAmount()).append(',')
-                        .append(it.getContractCharge()).append(',')
-                        .append(it.getCommission()).append(',')
-                        .append(it.getNetAmount()).append(',')
-                        .append(fmt.format(it.getCreatedAt()))
-                        .append('\n');
-                }
-
-                // 3) COPY INTO STDIN
+                // 3) COPY ... FROM STDIN
                 String copySql = ""
                         + "COPY settlement_detail("
                         +   "member_id, status_id, performance_title, performance_end_date,"
@@ -217,7 +188,7 @@ public class SettlementBatchConfig {
                         +   "settlement_detail_net_amount, settlement_detail_created_at"
                         + ") FROM STDIN WITH (FORMAT csv)";
 
-                try (Reader reader = new StringReader(sb.toString())) {
+                try (Reader reader = new StringReader(sb)) {
                     copyManager.copyIn(copySql, reader);
                 }
             }
@@ -225,22 +196,9 @@ public class SettlementBatchConfig {
     }
 
     /**
-     * CSV 필드로 안전하게 변환해서 StringBuilder 에 붙여 준다.
+     * 건별 정산 ItemWriter: batchUpdate
+     * @return SettlementDetail
      */
-    private void appendCsvField(StringBuilder sb, String field) {
-        if (field == null) {
-            sb.append("\"\"");    // 빈 값도 "" 로
-        } else {
-            // 1) 내부 큰따옴표는 "" 로 이스케이프
-            String escaped = field.replace("\"", "\"\"");
-            // 2) 전체를 "..." 로 감싸서 append
-            sb.append('"')
-                    .append(escaped)
-                    .append('"');
-        }
-        sb.append(','); // 다음 필드와 구분
-    }
-
     @Bean
     public ItemWriter<SettlementDetail> settlementDetailWriter() {
         final String SQL =
@@ -279,62 +237,5 @@ public class SettlementBatchConfig {
                 ps.executeBatch();
             }
         };
-    }
-
-
-    // MVP 단계 Tasklet 구조
-    /**
-     * 건별, 일간 정산 배치
-     */
-    @Bean
-    public Job settlementDetailDailyJob() {
-        // 1) 정산 tasklet 구조 step 생성
-        // 건별정산, 배치_스텝 테이블에서 식별자로 구분
-        Step detailStep = new StepBuilder("stepSettlementDetail", jobRepository)
-                .tasklet((contribution, chunkContext) -> {
-                    settlementDetailService.getSettlementDetail();
-                    return RepeatStatus.FINISHED;
-                }, txManager)
-                .build();
-        // 일간정산
-//        Step dailyStep = new StepBuilder("stepSettlementDaily", jobRepository)
-//                .tasklet((contribution, chunkContext) -> {
-//                    settlementDailyService.getSettlementDaily();
-//                    return RepeatStatus.FINISHED;
-//                }, txManager)
-//                .build();
-
-        // 2) JobBuilder로 Job 구성(순차 실행)
-        return new JobBuilder("settlementDetailDailyJob", jobRepository)
-                .start(detailStep)
-//                .next(dailyStep)
-                .build();
-    }
-
-    /**
-     * 주간, 월간 정산 배치
-     */
-    @Bean
-    public Job settlementWeeklyMonthlyJob() {
-        // 주간정산
-        Step weeklyStep = new StepBuilder("stepSettlementWeekly", jobRepository)
-                .tasklet((contribution, chunkContext) -> {
-                    settlementWeeklyService.getSettlementWeekly();
-                    return RepeatStatus.FINISHED;
-                }, txManager)
-                .build();
-
-        // 월간정산
-        Step monthlyStep = new StepBuilder("stepSettlementMonthly", jobRepository)
-                .tasklet((contribution, chunkContext) -> {
-                    settlementMonthlyService.getSettlementMonthly();
-                    return RepeatStatus.FINISHED;
-                }, txManager)
-                .build();
-
-        return new JobBuilder("settlementWeeklyMonthlyJob", jobRepository)
-                .start(weeklyStep)
-                .next(monthlyStep)
-                .build();
     }
 }
