@@ -116,6 +116,11 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+// AOT 비활성화 (테스트)
+tasks.matching { it.name == "processTestAot" }.configureEach {
+    enabled = false
+}
+
 jacoco {
     toolVersion = "0.8.11"
 }
