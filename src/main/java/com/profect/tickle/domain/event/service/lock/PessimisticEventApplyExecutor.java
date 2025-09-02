@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.event.service.lock;
 
+import com.profect.tickle.domain.event.dto.EventDecision;
 import com.profect.tickle.domain.event.dto.response.TicketApplyResponseDto;
 import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.entity.Event;
@@ -9,10 +10,8 @@ import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
-import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
@@ -31,44 +30,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PessimisticEventApplyExecutor {
-    private final PointTarget eventTarget = PointTarget.EVENT;
 
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final CouponReceivedRepository couponReceivedRepository;
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
-    private final ReservationRepository reservationRepository;
-    private final PointRepository pointRepository;
     private final StatusProvider statusProvider;
+    private final EventCoreLockService core;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TicketApplyResponseDto applyTicketEventOnce(Long eventId) {
-        Event event = getEvent(eventId);
+        Long memberId = SecurityUtil.getSignInMemberId();
 
+        EventDecision dec = core.applyCore(eventId, memberId);
 
-        Member member = getMemberOrThrow();
-        Point point = member.deductPoint(event.getPerPrice(), eventTarget);
-        pointRepository.save(point);
-
-        event.accumulate(event.getPerPrice());
-
-        boolean isWinner = (event.getAccrued() >= event.getGoalPrice());
-        if (isWinner) {
-            Seat seat = getSeatOrThrow(event.getSeat().getId());
-            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
-
-            Status paid = statusProvider.provide(StatusIds.Reservation.PAID);
-            Reservation reservation = Reservation.create(member, seat.getPerformance(), paid, event.getAccrued());
-            reservation.assignSeat(seat);
-
-            Status reserved = statusProvider.provide(StatusIds.Seat.RESERVED);
-            seat.completeReservation(member, reserved, null);
-
-            reservationRepository.save(reservation);
-        }
-
-        return TicketApplyResponseDto.from(eventId, member.getId(), isWinner);
+        return TicketApplyResponseDto.from(dec.eventId(), dec.memberId(), dec.winner());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
