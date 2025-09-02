@@ -80,7 +80,9 @@ public class ReservationController {
     public ResultResponse<ReservationCompletionResponseDto> completeReservation(
             @RequestBody @Valid ReservationCompletionRequestDto request) {
 
-        ReservationCompletionResponseDto response = reservationService.completeReservation(request);
+        Long memberId = SecurityUtil.getSignInMemberId();
+
+        ReservationCompletionResponseDto response = reservationService.completeReservation(request, memberId);
         return ResultResponse.of(ResultCode.RESERVATION_COMPLETE_SUCCESS, response);
     }
 }
