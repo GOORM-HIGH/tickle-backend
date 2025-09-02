@@ -54,8 +54,8 @@ public class ReservationController {
     public ResultResponse<SeatPreemptionResponseDto> preemptSeats(
             @RequestBody @Valid SeatPreemptionRequestDto request) {
 
-        Long userId = SecurityUtil.getSignInMemberId();
-        SeatPreemptionResponseDto response = seatPreemptionService.preemptSeats(request, userId);
+        Long memberId = SecurityUtil.getSignInMemberId();
+        SeatPreemptionResponseDto response = seatPreemptionService.preemptSeats(request, memberId);
 
         ResultCode resultCode = response.isSuccess()
                 ? ResultCode.RESERVATION_SEAT_PREEMPTION_SUCCESS
@@ -80,7 +80,9 @@ public class ReservationController {
     public ResultResponse<ReservationCompletionResponseDto> completeReservation(
             @RequestBody @Valid ReservationCompletionRequestDto request) {
 
-        ReservationCompletionResponseDto response = reservationService.completeReservation(request);
+        Long memberId = SecurityUtil.getSignInMemberId();
+
+        ReservationCompletionResponseDto response = reservationService.completeReservation(request, memberId);
         return ResultResponse.of(ResultCode.RESERVATION_COMPLETE_SUCCESS, response);
     }
 }

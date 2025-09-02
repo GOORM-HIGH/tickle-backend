@@ -98,6 +98,9 @@ public enum ErrorCode {
     PREEMPTION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "좌석은 최대 5개까지 선점할 수 있습니다."),
     PREEMPTION_DUPLICATE_SEAT(HttpStatus.CONFLICT, "이미 선점한 좌석이 포함되어 있습니다."),
     SEAT_PREEMPTION_FAILED(HttpStatus.BAD_REQUEST, "선택한 좌석 중 선점할 수 없는 좌석이 있습니다."),
+    SEAT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "이미 최대 좌석을 보유하여 더 이상 선점할 수 없습니다."),
+    SEAT_SELECTION_EXCEEDED(HttpStatus.BAD_REQUEST, "좌석 선택 가능 개수를 초과했습니다."),
+    SEAT_PREEMPTION_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "좌석 선점 중 오류가 발생했습니다."),
 
     // 공연장 유형 관련
     HALL_TYPE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "홀 타입을 찾을 수 없습니다."),
