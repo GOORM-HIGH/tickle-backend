@@ -1,4 +1,4 @@
-name: [API Server] Build & Deploy (SSH to Mac)
+name: "[API Server] Build & Deploy (SSH to Mac)"
 
 on:
   push:
@@ -13,39 +13,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Repository 코드 깃허브 러너에 내려받기
+
+      - name: Checkout backend repo
         uses: actions/checkout@v4
 
-      - name: JDK 21 설치하기
+      - name: Checkout security repo (private)
+        uses: actions/checkout@v4
+        with:
+          repository: GOORM-HIGH/tickle-security
+          ref: main
+          path: tickle-security
+          token: ${{ secrets.SECURITY_REPO_TOKEN }}
+
+      - name: Prepare application.yml from security repo
+        run: |
+          cp tickle-security/application.yml ./application.yml
+
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: 프로젝트 Gradle 래퍼 파일에 실행 권한 부여
+      - name: Grant Gradle wrapper execute permission
         run: chmod +x ./gradlew
 
-      - name: Spring Boot 실행 JAR 빌드
+      - name: Build (Gradle Boot Jar)
         run: ./gradlew clean bootJar --no-daemon
 
-      - name: 첫 번쨰 JAR 파일 경로 찾아서 저장
+      - name: Find artifact
         id: artifact
         run: |
           ARTIFACT=$(ls build/libs/*.jar | head -n 1)
           echo "artifact=$ARTIFACT" >> $GITHUB_OUTPUT
           echo "Using artifact: $ARTIFACT"
 
-      - name: 러너에 빌드된 JAR 파일을 원격 컴퓨터에 복사
+      - name: Upload JAR & application.yml to server (_incoming)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: ${{ steps.artifact.outputs.artifact }}
-          target: /Users/${{ secrets.SSH_USER }}/apps/tickle/
+          source: |
+            ${{ steps.artifact.outputs.artifact }}
+            application.yml
+          target: /Users/${{ secrets.SSH_USER }}/apps/tickle/_incoming/
 
-      - name: 복사한 JAR을 실행 서버에서 재시작
+      - name: Switch files & restart app on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -55,25 +70,34 @@ jobs:
           script: |
             set -euo pipefail
             APP_DIR="$HOME/apps/tickle"
-            mkdir -p "$APP_DIR/logs"
+            INCOMING="$APP_DIR/_incoming"
+            mkdir -p "$APP_DIR/logs" "$INCOMING"
 
-            # 최신 jar를 app.jar로 교체
-            LATEST_JAR=$(ls -t "$APP_DIR"/*.jar 2>/dev/null | head -n 1)
+            rm -f "$APP_DIR/application.yml"
+            if [ -f "$INCOMING/application.yml" ]; then
+              mv -f "$INCOMING/application.yml" "$APP_DIR/application.yml"
+              echo "application.yml updated."
+            else
+              echo "application.yml not found in _incoming" && exit 1
+            fi
+
+            LATEST_JAR=$(ls -t "$INCOMING"/*.jar 2>/dev/null | head -n 1 || true)
             if [ -z "${LATEST_JAR:-}" ]; then
-              echo "No JAR found in $APP_DIR" && exit 1
+              echo "No JAR found in $INCOMING" && exit 1
             fi
             mv -f "$LATEST_JAR" "$APP_DIR/app.jar"
-
-            # 기존 프로세스 종료
+            
             if [ -f "$APP_DIR/app.pid" ] && ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1; then
               echo "Stopping old process $(cat "$APP_DIR/app.pid")"
               kill -TERM "$(cat "$APP_DIR/app.pid")" || true
               for i in {1..10}; do ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1 || break; sleep 1; done
             fi
 
-            # 새 프로세스 실행
             nohup java -jar "$APP_DIR/app.jar" --spring.profiles.active=local \
+              --spring.config.location="$APP_DIR/application.yml" \
               > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
 
             echo $! > "$APP_DIR/app.pid"
             echo "Started PID: $(cat "$APP_DIR/app.pid")"
+
+            find "$INCOMING" -type f -name '*.jar' -mtime +1 -delete || true
