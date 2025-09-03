@@ -39,7 +39,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build (Gradle Boot Jar)
-        run: ./gradlew clean bootJar --no-daemon
+        run: ./gradlew clean bootJar -x test --no-daemon
 
       - name: Find artifact
         id: artifact

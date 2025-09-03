@@ -200,7 +200,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<ExpiringSoonCouponResponseDto> getCouponListExpiringUntil(@NotNull LocalDate untilDate) {
+    public List<ExpiringSoonCouponResponseDto> getCouponListExpiringUntil(LocalDate untilDate) {
         Instant now = Instant.now(clock);
         Instant endExclusive = untilDate.plusDays(1).atStartOfDay(zone).toInstant();
 
