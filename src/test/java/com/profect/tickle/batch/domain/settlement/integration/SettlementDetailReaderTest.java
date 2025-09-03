@@ -1,7 +1,7 @@
 package com.profect.tickle.batch.domain.settlement.integration;
 
-import com.profect.tickle.batch.domain.settlement.DetailBatchConfig;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
+import com.profect.tickle.batch.domain.settlement.settlementDetail.DetailBatchConfig;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.batch.MyBatisPagingItemReader;

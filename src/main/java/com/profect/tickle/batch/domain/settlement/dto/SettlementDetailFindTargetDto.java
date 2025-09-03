@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.settlement.dto.batch;
+package com.profect.tickle.batch.domain.settlement.dto;
 
 import lombok.Builder;
 import lombok.Getter;

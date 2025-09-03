@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.settlement.util;
+package com.profect.tickle.batch.domain.settlement.timeUtil;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;

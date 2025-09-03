@@ -1,6 +1,6 @@
-package com.profect.tickle.domain.settlement.mapper;
+package com.profect.tickle.batch.domain.settlement.mapper;
 
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDailyFindTargetDto;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDailyFindTargetDto;
 import com.profect.tickle.domain.settlement.entity.SettlementDaily;
 import com.profect.tickle.global.status.Status;
 import org.apache.ibatis.annotations.Mapper;

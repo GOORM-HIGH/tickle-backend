@@ -1,10 +1,10 @@
-package com.profect.tickle.batch.domain.settlement;
+package com.profect.tickle.batch.domain.settlement.settlementDetail;
 
 import com.profect.tickle.batch.domain.settlement.csvSerializer.SettlementCsvSerializer;
 import com.profect.tickle.batch.listener.ChunkTimingListener;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetDto;
 import com.profect.tickle.domain.settlement.entity.SettlementDetail;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
@@ -107,7 +107,7 @@ public class DetailBatchConfig {
 
         return new MyBatisPagingItemReaderBuilder<SettlementDetailFindTargetDto>()
                 .sqlSessionFactory(sqlSessionFactory)
-                .queryId("com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper.findTargetFromReservations")
+                .queryId("com.profect.tickle.batch.domain.settlement.mapper.SettlementDetailMapper.findTargetFromReservations")
                 .parameterValues(params)
                 .pageSize(50_000)
                 .maxItemCount(Integer.MAX_VALUE)
