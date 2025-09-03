@@ -166,4 +166,5 @@ jobs:
               > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
             echo $! > "$APP_DIR/app.pid"
 
+
             find "$INCOMING" -type f -name '*.jar' -mtime +1 -delete || true
