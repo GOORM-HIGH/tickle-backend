@@ -1,14 +1,12 @@
-name: "[API Server] Build & Deploy (SSH to Mac)"
+name: "[API Server] CI & Deploy"
 
 on:
   pull_request:
     branches: [ develop ]
-    types: [ opened, synchronize, reopened ]
   push:
     branches: [ develop ]
 
 jobs:
-  # CI
   ci:
     name: "PR CI (build only)"
     runs-on: ubuntu-latest
@@ -20,37 +18,61 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: chmod +x ./gradlew
-      - name: Build (skip tests)
-        run: ./gradlew clean build -x test --no-daemon
+      - name: Assemble (no tests)
+        run: ./gradlew clean assemble --no-daemon
 
-  # CD
-  deploy:
-    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
+  deploy-check:
+    name: "PR Deploy Check (simulation)"
     runs-on: ubuntu-latest
-
+    if: github.event_name == 'pull_request'
     steps:
-      - name: Checkout backend repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: chmod +x ./gradlew
+      - name: Build BootJar (no test)
+        run: ./gradlew clean bootJar -x test --no-daemon
+      - name: Verify artifact exists
+        run: |
+          set -euo pipefail
+          ARTIFACT=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1 || true)
+          if [ -z "${ARTIFACT:-}" ]; then
+            echo "No bootJar built"; exit 1
+          fi
+          echo "Found artifact: $ARTIFACT"
+      - name: Verify application.yml exists
+        run: |
+          test -f tickle-security/application.yml || { echo "application.yml missing"; exit 1; }
+          echo "application.yml found"
 
-      - name: Checkout security repo (private)
-        uses: actions/checkout@v4
+  deploy:
+    name: "Deploy to Mac Server"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
         with:
           repository: GOORM-HIGH/tickle-security
           ref: main
           path: tickle-security
           token: ${{ secrets.SECURITY_REPO_TOKEN }}
 
-      - name: Prepare application.yml from security repo
-        run: cp tickle-security/application.yml ./application.yml
+      - name: Prepare application.yml
+        run: |
+          set -euo pipefail
+          cp tickle-security/application.yml ./application.yml
+          ls -la ./application.yml
 
-      - name: Setup Java 21
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Grant Gradle wrapper execute permission
-        run: chmod +x ./gradlew
+      - run: chmod +x ./gradlew
 
       - name: Build (Gradle Boot Jar)
         run: ./gradlew clean bootJar -x test --no-daemon
@@ -58,8 +80,12 @@ jobs:
       - name: Find artifact (exclude *-plain.jar)
         id: artifact
         run: |
-          ARTIFACT=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1)
-          echo "artifact=$ARTIFACT" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          ARTIFACT=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1 || true)
+          if [ -z "${ARTIFACT:-}" ]; then
+            echo "No non-plain JAR found in build/libs"; exit 1
+          fi
+          echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
           echo "Using artifact: $ARTIFACT"
 
       - name: Ensure directories on server
@@ -72,17 +98,19 @@ jobs:
           script: |
             mkdir -p "$HOME/apps/tickle/_incoming" "$HOME/apps/tickle/logs"
 
-      - name: Upload JAR & application.yml to server (_incoming)
+      - name: Upload JAR & application.yml
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: ${{ steps.artifact.outputs.artifact }},application.yml
+          source: |
+            ${{ steps.artifact.outputs.artifact }}
+            ./application.yml
           target: /Users/${{ secrets.SSH_USER }}/apps/tickle/_incoming/
 
-      - name: Switch files & restart app on server
+      - name: Switch & restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -95,21 +123,13 @@ jobs:
             INCOMING="$APP_DIR/_incoming"
 
             rm -f "$APP_DIR/application.yml"
-            if [ -f "$INCOMING/application.yml" ]; then
-              mv -f "$INCOMING/application.yml" "$APP_DIR/application.yml"
-              echo "application.yml updated."
-            else
-              echo "application.yml not found in _incoming" && exit 1
-            fi
+            mv -f "$INCOMING/application.yml" "$APP_DIR/application.yml"
 
             LATEST_JAR=$(ls -t "$INCOMING"/*.jar 2>/dev/null | head -n 1 || true)
-            if [ -z "${LATEST_JAR:-}" ]; then
-              echo "No JAR found in $INCOMING" && exit 1
-            fi
+            test -n "${LATEST_JAR:-}" || { echo "No JAR found"; exit 1; }
             mv -f "$LATEST_JAR" "$APP_DIR/app.jar"
 
             if [ -f "$APP_DIR/app.pid" ] && ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1; then
-              echo "Stopping old process $(cat "$APP_DIR/app.pid")"
               kill -TERM "$(cat "$APP_DIR/app.pid")" || true
               for i in {1..10}; do ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1 || break; sleep 1; done
             fi
@@ -117,8 +137,6 @@ jobs:
             nohup java -jar "$APP_DIR/app.jar" --spring.profiles.active=prod \
               --spring.config.location="file:$APP_DIR/application.yml" \
               > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
-
             echo $! > "$APP_DIR/app.pid"
-            echo "Started PID: $(cat "$APP_DIR/app.pid")"
 
             find "$INCOMING" -type f -name '*.jar' -mtime +1 -delete || true
