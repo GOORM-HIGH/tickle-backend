@@ -1,9 +1,9 @@
 package com.profect.tickle.batch.domain.settlement.unit;
 
-import com.profect.tickle.batch.domain.settlement.DetailBatchConfig;
+import com.profect.tickle.batch.domain.settlement.settlementDetail.DetailBatchConfig;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetDto;
 import com.profect.tickle.domain.settlement.entity.SettlementDetail;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
@@ -52,8 +52,7 @@ public class SettlementDetailProcessorTest {
         BDDMockito.given(memberRepository.findById(1L))
                 .willReturn(Optional.of(new Member(
                         1L, "host1@email.com", "pwd1", "host1", null, "", HOST, "01012341234",
-                        0, Instant.now(), Instant.now(), null, "", "", "", "", "", "", "", "", null, null
-                )));
+                        0, Instant.now(), Instant.now(), null, "", "", "", "", "", "", "", "", null)));
         BDDMockito.given(statusRepository.findById(9L))
                 .willReturn(Optional.of(reservationStatus));
         BDDMockito.given(statusProvider.provide(StatusIds.Settlement.SCHEDULED))
@@ -88,8 +87,7 @@ public class SettlementDetailProcessorTest {
         BDDMockito.given(memberRepository.findById(1L))
                 .willReturn(Optional.of(new Member(
                         1L, "host1@email.com", "pwd1", "host1", null, "", HOST, "01012341234",
-                        0, Instant.now(), Instant.now(), null, "", "", "", "", "", "", "", "", null, null
-                )));
+                        0, Instant.now(), Instant.now(), null, "", "", "", "", "", "", "", "", null)));
         BDDMockito.given(statusRepository.findById(10L))
                 .willReturn(Optional.of(reservationStatus));
         BDDMockito.given(statusProvider.provide(StatusIds.Settlement.REFUND_REQUESTED))

@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.settlement.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyFindTargetDto;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementWeeklyFindTargetDto;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.*;
@@ -40,7 +40,7 @@ public class SettlementWeekly {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
-    @Column(name = "performance_title", length = 50, nullable = false)
+    @Column(name = "performance_title", length = 255, nullable = false)
     private String performanceTitle;
 
     @Column(name = "settlement_year", length = 4, nullable = false)
