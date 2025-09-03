@@ -1,19 +1,34 @@
 name: "[API Server] Build & Deploy (SSH to Mac)"
 
 on:
-  push:
-    branches: [ develop ]
   pull_request:
-    types: [ closed ]
+    branches: [ develop ]
+    types: [ opened, synchronize, reopened ]
+  push:
     branches: [ develop ]
 
 jobs:
+  # CI
+  ci:
+    name: "PR CI (build only)"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: chmod +x ./gradlew
+      - name: Build (skip tests)
+        run: ./gradlew clean build -x test --no-daemon
+
+  # CD
   deploy:
     if: github.event_name == 'push' || (github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout backend repo
         uses: actions/checkout@v4
 
@@ -26,8 +41,7 @@ jobs:
           token: ${{ secrets.SECURITY_REPO_TOKEN }}
 
       - name: Prepare application.yml from security repo
-        run: |
-          cp tickle-security/application.yml ./application.yml
+        run: cp tickle-security/application.yml ./application.yml
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -41,12 +55,22 @@ jobs:
       - name: Build (Gradle Boot Jar)
         run: ./gradlew clean bootJar -x test --no-daemon
 
-      - name: Find artifact
+      - name: Find artifact (exclude *-plain.jar)
         id: artifact
         run: |
-          ARTIFACT=$(ls build/libs/*.jar | head -n 1)
+          ARTIFACT=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1)
           echo "artifact=$ARTIFACT" >> $GITHUB_OUTPUT
           echo "Using artifact: $ARTIFACT"
+
+      - name: Ensure directories on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            mkdir -p "$HOME/apps/tickle/_incoming" "$HOME/apps/tickle/logs"
 
       - name: Upload JAR & application.yml to server (_incoming)
         uses: appleboy/scp-action@v0.1.7
@@ -55,9 +79,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: |
-            ${{ steps.artifact.outputs.artifact }}
-            application.yml
+          source: ${{ steps.artifact.outputs.artifact }},application.yml
           target: /Users/${{ secrets.SSH_USER }}/apps/tickle/_incoming/
 
       - name: Switch files & restart app on server
@@ -71,7 +93,6 @@ jobs:
             set -euo pipefail
             APP_DIR="$HOME/apps/tickle"
             INCOMING="$APP_DIR/_incoming"
-            mkdir -p "$APP_DIR/logs" "$INCOMING"
 
             rm -f "$APP_DIR/application.yml"
             if [ -f "$INCOMING/application.yml" ]; then
@@ -86,15 +107,15 @@ jobs:
               echo "No JAR found in $INCOMING" && exit 1
             fi
             mv -f "$LATEST_JAR" "$APP_DIR/app.jar"
-            
+
             if [ -f "$APP_DIR/app.pid" ] && ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1; then
               echo "Stopping old process $(cat "$APP_DIR/app.pid")"
               kill -TERM "$(cat "$APP_DIR/app.pid")" || true
               for i in {1..10}; do ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1 || break; sleep 1; done
             fi
 
-            nohup java -jar "$APP_DIR/app.jar" --spring.profiles.active=local \
-              --spring.config.location="$APP_DIR/application.yml" \
+            nohup java -jar "$APP_DIR/app.jar" --spring.profiles.active=prod \
+              --spring.config.location="file:$APP_DIR/application.yml" \
               > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
 
             echo $! > "$APP_DIR/app.pid"
