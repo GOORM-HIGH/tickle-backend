@@ -5,7 +5,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -13,13 +12,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class SseRepository {
 
     // emitterId → Emitter
-    private final ConcurrentMap<String, SseEmitter> emittersById = new ConcurrentHashMap<>();
+    private final Map<String, SseEmitter> emittersById = new ConcurrentHashMap<>();
 
     // memberId → {emitterId set}
-    private final ConcurrentMap<Long, CopyOnWriteArraySet<String>> emitterIdsByMember = new ConcurrentHashMap<>();
+    private final Map<Long, CopyOnWriteArraySet<String>> emitterIdsByMember = new ConcurrentHashMap<>();
 
     // memberId → {eventId → json} (시간순 정렬)
-    private final ConcurrentMap<Long, ConcurrentSkipListMap<Long, String>> eventsByMember = new ConcurrentHashMap<>();
+    private final Map<Long, ConcurrentSkipListMap<Long, String>> eventsByMember = new ConcurrentHashMap<>();
 
     // 저장 (한 유저가 여러 탭을 열 수 있음)
     public void save(long memberId, String emitterId, SseEmitter emitter) {
@@ -30,7 +29,7 @@ public class SseRepository {
     // 개별 emitter 제거
     public void remove(long memberId, String emitterId) {
         emittersById.remove(emitterId);
-        var set = emitterIdsByMember.get(memberId);
+        Set<String> set = emitterIdsByMember.get(memberId);
         if (set != null) {
             set.remove(emitterId);
             if (set.isEmpty()) emitterIdsByMember.remove(memberId);
@@ -39,7 +38,7 @@ public class SseRepository {
 
     // 해당 유저의 모든 emitter 조회 (Emitter만 컬렉션으로)
     public Collection<SseEmitter> getAll(long memberId) {
-        var ids = emitterIdsByMember.getOrDefault(memberId, new CopyOnWriteArraySet<>());
+        Set<String> ids = emitterIdsByMember.getOrDefault(memberId, new CopyOnWriteArraySet<>());
         List<SseEmitter> list = new ArrayList<>(ids.size());
         for (String id : ids) {
             SseEmitter e = emittersById.get(id);
@@ -71,7 +70,7 @@ public class SseRepository {
 
     public void removeAll(long memberId, boolean clearEventCache) {
         // 1) emitterId 집합을 인덱스에서 제거하면서 스냅샷 확보
-        var ids = emitterIdsByMember.remove(memberId);
+        Set<String> ids = emitterIdsByMember.remove(memberId);
         if (ids != null) {
             // 2) 각 emitterId에 대한 Emitter 레코드 제거
             for (String emitterId : ids) {
@@ -101,7 +100,7 @@ public class SseRepository {
 
     // memberId → (emitterId → emitter) 형태로 조회 (개별 발송용)
     public Map<String, SseEmitter> getAllWithIds(long memberId) {
-        CopyOnWriteArraySet<String> ids = emitterIdsByMember.getOrDefault(memberId, new CopyOnWriteArraySet<>());
+        Set<String> ids = emitterIdsByMember.getOrDefault(memberId, new CopyOnWriteArraySet<>());
         Map<String, SseEmitter> map = new HashMap<>(ids.size());
         for (String id : ids) {
             SseEmitter e = emittersById.get(id);
