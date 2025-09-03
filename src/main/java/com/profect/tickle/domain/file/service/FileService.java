@@ -237,6 +237,46 @@ public class FileService {
     }
 
     /**
+     * 공연 이미지 업로드 (공연 담당자용)
+     */
+    public FileUploadResponseDto uploadPerformanceImage(MultipartFile file, Long performanceId, Long uploaderId) {
+        log.info("공연 이미지 업로드 요청: fileName={}, size={}, performanceId={}, uploaderId={}",
+                file.getOriginalFilename(), formatFileSize(file.getSize()), performanceId, uploaderId);
+
+        // 1. 사용자 존재 확인
+        memberRepository.findById(uploaderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 2. 파일 검증
+        validateFile(file);
+
+        // 3. 공연 이미지용 S3 Key 생성
+        String storedFileName = generateStoredFileName(file.getOriginalFilename());
+        String s3Key = s3Service.buildPerformanceImageKey(storedFileName, performanceId);
+
+        try {
+            // S3에 공연 이미지 업로드
+            s3Service.uploadPerformanceImage(s3Key, file.getInputStream(), file.getContentType(), performanceId);
+
+            // 4. 응답 DTO 생성
+            log.info("공연 이미지 업로드 완료: storedName={}, performanceId={}, s3Key={}", 
+                    storedFileName, performanceId, s3Key);
+
+            return FileUploadResponseDto.of(
+                    storedFileName,
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    (int) file.getSize(),
+                    s3Key  // S3 Key 저장
+            );
+
+        } catch (IOException e) {
+            log.error("공연 이미지 S3 저장 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("공연 이미지 저장에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
      * S3 연결 테스트
      */
     public void testS3Connection() {

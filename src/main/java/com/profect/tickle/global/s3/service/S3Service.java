@@ -67,6 +67,26 @@ public class S3Service {
     }
 
     /**
+     * 파일 업로드 (공연 이미지용)
+     */
+    public void uploadPerformanceImage(String key, InputStream inputStream, String contentType, Long performanceId) {
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(s3Properties.getBucketName())
+                .key(key)
+                .contentType(contentType)
+                .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, inputStream.available()));
+            log.info("📤 S3 공연 이미지 업로드 완료: key={}, performanceId={}", key, performanceId);
+
+        } catch (Exception e) {
+            log.error("❌ S3 공연 이미지 업로드 실패: key={}, performanceId={}, error={}", key, performanceId, e.getMessage());
+            throw new RuntimeException("S3 공연 이미지 업로드에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
      * 파일 다운로드 URL 생성 (PreSigned URL)
      */
     public String generatePreSignedUrl(String key) {
@@ -140,10 +160,26 @@ public class S3Service {
     }
 
     /**
+     * S3 Key 생성 (채팅방별 파일용)
+     */
+    public String buildChatFileKey(String fileName, Long chatRoomId) {
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        return "chat/" + chatRoomId + "/" + datePath + "/" + fileName;
+    }
+
+    /**
      * S3 Key 생성 (사용자 파일용)
      */
     public String buildUserFileKey(String fileName, Long userId, String fileType) {
         return "users/" + userId + "/" + fileType + "/" + fileName;
+    }
+
+    /**
+     * S3 Key 생성 (공연 이미지용)
+     */
+    public String buildPerformanceImageKey(String fileName, Long performanceId) {
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        return "performance/" + performanceId + "/images/" + datePath + "/" + fileName;
     }
 
     /**

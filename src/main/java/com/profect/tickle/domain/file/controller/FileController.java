@@ -190,6 +190,37 @@ public class FileController {
     }
 
     /**
+     * 공연 이미지 업로드 (공연 담당자용)
+     */
+    @Operation(
+            summary = "공연 이미지 업로드",
+            description = "공연 이미지를 S3에 업로드합니다. 공연 담당자만 사용 가능합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "공연 이미지 업로드 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 이미지 형식"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @PostMapping("/performance-image")
+    public ResultResponse<FileUploadResponseDto> uploadPerformanceImage(
+            @Parameter(description = "업로드할 공연 이미지 파일", required = true)
+            @RequestParam("file") MultipartFile file,
+            @Parameter(description = "공연 ID", required = true, example = "1")
+            @RequestParam("performanceId") Long performanceId,
+            @Parameter(description = "현재 사용자 ID (JWT에서 추출)", hidden = true)
+            @CurrentMember Long uploaderId) {
+        
+        // 이미지 파일 검증
+        if (!file.getContentType().startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
+        }
+        
+        FileUploadResponseDto response = fileService.uploadPerformanceImage(file, performanceId, uploaderId);
+        return ResultResponse.of(ResultCode.FILE_UPLOAD_SUCCESS, response);
+    }
+
+    /**
      * S3 연결 테스트
      */
     @Operation(
