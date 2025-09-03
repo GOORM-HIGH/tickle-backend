@@ -1,5 +1,6 @@
 name: "[API Server] CI & Deploy"
 
+
 on:
   pull_request:
     branches: [ develop ]
@@ -108,6 +109,12 @@ jobs:
           echo "artifact=$CANDIDATE" >> "$GITHUB_OUTPUT"
           echo "✅ Using artifact: $CANDIDATE"
 
+      - name: Rename artifact to app.jar
+        run: |
+          set -euo pipefail
+          cp "${{ steps.artifact.outputs.artifact }}" app.jar
+          ls -lh app.jar
+
       - name: Ensure directories on server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -122,10 +129,10 @@ jobs:
       - name: Sanity check before SCP
         run: |
           set -euo pipefail
-          echo "artifact=${{ steps.artifact.outputs.artifact }}"
           ls -la .
-          test -f "${{ steps.artifact.outputs.artifact }}" || { echo "❌ artifact missing"; exit 1; }
+          test -f "./app.jar" || { echo "❌ app.jar missing"; exit 1; }
           test -f "./application.yml" || { echo "❌ application.yml missing"; exit 1; }
+
 
       - name: Upload JAR & application.yml
         uses: appleboy/scp-action@v0.1.7
@@ -134,7 +141,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "${{ steps.artifact.outputs.artifact }},./application.yml"
+          source: "app.jar,application.yml"
           target: "/Users/${{ secrets.SSH_USER }}/apps/tickle/_incoming/"
 
       - name: Switch & restart
@@ -149,21 +156,28 @@ jobs:
             APP_DIR="$HOME/apps/tickle"
             INCOMING="$APP_DIR/_incoming"
 
+
+            # yml 교체
             rm -f "$APP_DIR/application.yml"
             mv -f "$INCOMING/application.yml" "$APP_DIR/application.yml"
 
-            LATEST_JAR=$(ls -t "$INCOMING"/*.jar 2>/dev/null | head -n 1 || true)
-            test -n "${LATEST_JAR:-}" || { echo "❌ No JAR found"; exit 1; }
-            mv -f "$LATEST_JAR" "$APP_DIR/app.jar"
+            # jar는 항상 app.jar로 업로드됨
+            test -f "$INCOMING/app.jar" || { echo "❌ app.jar not found in _incoming"; exit 1; }
+            mv -f "$INCOMING/app.jar" "$APP_DIR/app.jar"
 
+            # 기존 프로세스 종료
             if [ -f "$APP_DIR/app.pid" ] && ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1; then
               kill -TERM "$(cat "$APP_DIR/app.pid")" || true
               for i in {1..10}; do ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1 || break; sleep 1; done
             fi
 
+            # 재기동
             nohup java -jar "$APP_DIR/app.jar" --spring.profiles.active=prod \
               --spring.config.location="file:$APP_DIR/application.yml" \
               > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
-            echo $! > "$APP_DIR/app.pid"
 
-            find "$INCOMING" -type f -name '*.jar' -mtime +1 -delete || true
+            echo $! > "$APP_DIR/app.pid"
+            echo "✅ Started PID: $(cat "$APP_DIR/app.pid")"
+
+            # (옵션) _incoming 오래된 잔여물 정리
+            find "$INCOMING" -type f -mtime +7 -delete || true
