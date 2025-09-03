@@ -188,4 +188,29 @@ public class FileController {
             throw new RuntimeException("파일 다운로드에 실패했습니다: " + e.getMessage());
         }
     }
+
+    /**
+     * S3 연결 테스트
+     */
+    @Operation(
+            summary = "S3 연결 테스트",
+            description = "AWS S3 연결 상태를 테스트합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "S3 연결 성공"),
+            @ApiResponse(responseCode = "500", description = "S3 연결 실패")
+    })
+    @GetMapping("/test-s3-connection")
+    public ResultResponse<String> testS3Connection() {
+        log.info("S3 연결 테스트 요청");
+        
+        try {
+            fileService.testS3Connection();
+            return ResultResponse.of(ResultCode.FILE_UPLOAD_SUCCESS, "✅ S3 연결 성공!");
+        } catch (Exception e) {
+            log.error("S3 연결 테스트 실패: {}", e.getMessage());
+            return ResultResponse.of(ResultCode.FILE_UPLOAD_SUCCESS, "❌ S3 연결 실패: " + e.getMessage());
+        }
+    }
 }

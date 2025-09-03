@@ -6,7 +6,7 @@ import com.profect.tickle.domain.file.service.FileService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.global.nas.service.WebDavService;
+import com.profect.tickle.global.s3.service.S3Service;
 import com.profect.tickle.global.security.util.JwtUtil;
 import com.profect.tickle.testsecurity.WithMockMember;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ class FileIntegrationTest {
     private JwtUtil jwtUtil;
 
     @MockBean
-    private WebDavService webDavService;
+    private S3Service s3Service;
 
     private Member testMember;
     private Long chatRoomId;
@@ -91,14 +91,14 @@ class FileIntegrationTest {
         when(jwtUtil.validateToken(anyString())).thenReturn(true);
         when(jwtUtil.getEmail(anyString())).thenReturn("ahn3931@naver.com");
 
-        // WebDavService Mock 설정 (실제 NAS 연결 방지)
+        // S3Service Mock 설정 (실제 S3 연결 방지)
         try {
-            doNothing().when(webDavService).uploadFile(anyString(), any(byte[].class));
-            doNothing().when(webDavService).uploadFile(anyString(), any(byte[].class), any(Long.class));
-            when(webDavService.fileExists(anyString())).thenReturn(true);
-            when(webDavService.downloadFile(anyString())).thenReturn(null);
+            doNothing().when(s3Service).uploadFile(anyString(), any(java.io.InputStream.class), anyString());
+            doNothing().when(s3Service).uploadFile(anyString(), any(java.io.InputStream.class), anyString(), any(Long.class));
+            when(s3Service.fileExists(anyString())).thenReturn(true);
+            when(s3Service.generatePreSignedUrl(anyString())).thenReturn("https://s3.amazonaws.com/test-url");
         } catch (Exception e) {
-            // IOException을 무시
+            // Exception을 무시
         }
     }
 
