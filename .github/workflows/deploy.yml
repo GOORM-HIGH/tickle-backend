@@ -80,6 +80,8 @@ jobs:
         run: |
           set -euo pipefail
           cp tickle-security/application.yml ./application.yml
+          echo "application.yml SHA256:"
+          (command -v shasum >/dev/null && shasum -a 256 ./application.yml) || sha256sum ./application.yml
           ls -la ./application.yml
 
       - uses: actions/setup-java@v4
@@ -96,12 +98,15 @@ jobs:
         id: artifact
         run: |
           set -euo pipefail
-          ARTIFACT=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1 || true)
-          if [ -z "${ARTIFACT:-}" ]; then
-            echo "No non-plain JAR found in build/libs"; exit 1
+          # 단일 모듈 우선
+          CANDIDATE=$(ls -t build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n 1 || true)
+          # 멀티모듈 보조
+          if [ -z "${CANDIDATE:-}" ]; then
+            CANDIDATE=$(ls -t */build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n 1 || true)
           fi
-          echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
-          echo "Using artifact: $ARTIFACT"
+          [ -n "${CANDIDATE:-}" ] || { echo "❌ No non-plain JAR found"; exit 1; }
+          echo "artifact=$CANDIDATE" >> "$GITHUB_OUTPUT"
+          echo "✅ Using artifact: $CANDIDATE"
 
       - name: Ensure directories on server
         uses: appleboy/ssh-action@v1.0.3
@@ -113,6 +118,15 @@ jobs:
           script: |
             mkdir -p "$HOME/apps/tickle/_incoming" "$HOME/apps/tickle/logs"
 
+      # ✅ 업로드 직전 존재 검증 (여기서 실패하면 scp 안 감)
+      - name: Sanity check before SCP
+        run: |
+          set -euo pipefail
+          echo "artifact=${{ steps.artifact.outputs.artifact }}"
+          ls -la .
+          test -f "${{ steps.artifact.outputs.artifact }}" || { echo "❌ artifact missing"; exit 1; }
+          test -f "./application.yml" || { echo "❌ application.yml missing"; exit 1; }
+
       - name: Upload JAR & application.yml
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -120,10 +134,8 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: |
-            ${{ steps.artifact.outputs.artifact }}
-            ./application.yml
-          target: /Users/${{ secrets.SSH_USER }}/apps/tickle/_incoming/
+          source: "${{ steps.artifact.outputs.artifact }},./application.yml"
+          target: "/Users/${{ secrets.SSH_USER }}/apps/tickle/_incoming/"
 
       - name: Switch & restart
         uses: appleboy/ssh-action@v1.0.3
@@ -141,7 +153,7 @@ jobs:
             mv -f "$INCOMING/application.yml" "$APP_DIR/application.yml"
 
             LATEST_JAR=$(ls -t "$INCOMING"/*.jar 2>/dev/null | head -n 1 || true)
-            test -n "${LATEST_JAR:-}" || { echo "No JAR found"; exit 1; }
+            test -n "${LATEST_JAR:-}" || { echo "❌ No JAR found"; exit 1; }
             mv -f "$LATEST_JAR" "$APP_DIR/app.jar"
 
             if [ -f "$APP_DIR/app.pid" ] && ps -p "$(cat "$APP_DIR/app.pid")" >/dev/null 2>&1; then
