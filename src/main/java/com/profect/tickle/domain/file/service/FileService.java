@@ -237,7 +237,7 @@ public class FileService {
     }
 
     /**
-     * 공연 이미지 업로드 (공연 담당자용)
+     * 공연 이미지 업로드
      */
     public FileUploadResponseDto uploadPerformanceImage(MultipartFile file, Long performanceId, Long uploaderId) {
         log.info("공연 이미지 업로드 요청: fileName={}, size={}, performanceId={}, uploaderId={}",

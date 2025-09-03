@@ -190,7 +190,7 @@ public class FileController {
     }
 
     /**
-     * 공연 이미지 업로드 (공연 담당자용)
+     * 공연 이미지 업로드
      */
     @Operation(
             summary = "공연 이미지 업로드",

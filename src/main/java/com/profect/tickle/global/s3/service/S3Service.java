@@ -67,7 +67,7 @@ public class S3Service {
     }
 
     /**
-     * 파일 업로드 (공연 이미지용)
+     * 파일 업로드
      */
     public void uploadPerformanceImage(String key, InputStream inputStream, String contentType, Long performanceId) {
         try {

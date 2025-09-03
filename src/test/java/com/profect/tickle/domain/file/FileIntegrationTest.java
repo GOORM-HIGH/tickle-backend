@@ -95,8 +95,9 @@ class FileIntegrationTest {
         try {
             doNothing().when(s3Service).uploadFile(anyString(), any(java.io.InputStream.class), anyString());
             doNothing().when(s3Service).uploadFile(anyString(), any(java.io.InputStream.class), anyString(), any(Long.class));
+            doNothing().when(s3Service).uploadPerformanceImage(anyString(), any(java.io.InputStream.class), anyString(), any(Long.class));
             when(s3Service.fileExists(anyString())).thenReturn(true);
-            when(s3Service.generatePreSignedUrl(anyString())).thenReturn("https://s3.amazonaws.com/test-url");
+            when(s3Service.generatePreSignedUrl(anyString())).thenReturn("https://tickle-file-storage-dev.s3.ap-northeast-2.amazonaws.com/test-file.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250903T151927Z&X-Amz-SignedHeaders=host&X-Amz-Expires=3600&X-Amz-Credential=AKIA3N4ANC2JFMDG3NP3%2F20250903%2Fap-northeast-2%2Fs3%2Faws4_request&X-Amz-Signature=711403fdd1005a8045be1d997ef33bf02a1797135eca84a99336a7225287f3e3");
         } catch (Exception e) {
             // Exception을 무시
         }
