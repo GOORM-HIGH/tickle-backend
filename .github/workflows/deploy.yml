@@ -155,6 +155,7 @@ jobs:
             APP_DIR="$HOME/apps/tickle"
             INCOMING="$APP_DIR/_incoming"
 
+
             # yml 교체
             rm -f "$APP_DIR/application.yml"
             mv -f "$INCOMING/application.yml" "$APP_DIR/application.yml"
