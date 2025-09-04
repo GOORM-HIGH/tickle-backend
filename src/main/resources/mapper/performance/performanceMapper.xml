@@ -117,26 +117,38 @@
     <!--  공연 키워드로 검색  -->
     <select id="searchPerformancesByKeyword" resultType="PerformanceDto">
         SELECT
-            p.performance_id   AS performanceId,
-            p.performance_title AS title,
-            p.performance_date  AS date,
-            p.performance_img   AS img
+        p.performance_id    AS performanceId,
+        p.performance_title AS title,
+        p.performance_date  AS date,
+        p.performance_img   AS img
         FROM performance p
         WHERE p.performance_deleted_at IS NULL
-          AND p.status_id IN (1,2)
-          AND p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
-        ORDER BY p.performance_date ASC
-            LIMIT #{limit} OFFSET #{offset}
+        AND p.status_id IN (1,2)
+        AND (
+        lower(p.performance_title) LIKE '%' || lower(#{keyword}) || '%' ESCAPE '\'
+        OR  lower(p.performance_title) %     lower(#{keyword})
+        )
+        <if test="cursorDate != null and cursorId != null">
+            AND (
+            p.performance_date &gt; #{cursorDate}
+            OR (p.performance_date = #{cursorDate} AND p.performance_id &gt; #{cursorId})
+            )
+        </if>
+        ORDER BY p.performance_date ASC, p.performance_id ASC
+        LIMIT #{limit}
     </select>
 
+    <!-- 카운트는 첫 페이지에서만 사용 -->
     <select id="countPerformancesByKeyword" resultType="long">
         SELECT COUNT(*)
         FROM performance p
         WHERE p.performance_deleted_at IS NULL
           AND p.status_id IN (1,2)
-          AND p.performance_title ILIKE CONCAT('%', #{keyword}, '%')
+          AND (
+            lower(p.performance_title) LIKE '%' || lower(#{keyword}) || '%' ESCAPE '\'
+                OR  lower(p.performance_title) %     lower(#{keyword})
+            )
     </select>
-
 
     <!--  관련공연 조회  -->
     <select id="findRelatedPerformances" resultType="PerformanceDto">

@@ -23,6 +23,8 @@ import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
 import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.paging.Cursor;
+import com.profect.tickle.global.paging.CursorPageResponse;
 import com.profect.tickle.global.paging.PageRequest;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
@@ -110,22 +112,32 @@ public class PerformanceService {
         return performanceMapper.findTop4UpcomingPerformances(now);
     }
 
-    public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
-        var pr = PageRequest.of(page, size);
+    public CursorPageResponse<PerformanceDto> searchByKeyword(
+            String keyword, int size,
+            Instant cursorDate, Long cursorId
+    ) {
+        int pageSize = Math.min(Math.max(size, 1), 100);
 
-        long total = performanceMapper.countPerformancesByKeyword(keyword);
-        if (total == 0) {
-            return emptyResponse(pr, total);
+        // LIMIT + 1 전략으로 hasNext 확인
+        List<PerformanceDto> rows = performanceMapper.searchPerformancesByKeyword(
+                keyword, pageSize + 1, cursorDate, cursorId
+        );
+
+        boolean hasNext = rows.size() > pageSize;
+        List<PerformanceDto> items = hasNext ? rows.subList(0, pageSize) : rows;
+
+        Cursor next = null;
+        if (hasNext) {
+            PerformanceDto last = items.get(items.size() - 1);
+            next = new Cursor(last.getDate(), last.getPerformanceId());
         }
 
-        int totalPages = PageRequest.calcTotalPages(total, pr.size());
-        if (pr.page() >= totalPages) {
-            return emptyResponse(pr, total);
-        }
+        return new CursorPageResponse<>(items, next, hasNext);
+    }
 
-        List<PerformanceDto> content =
-                performanceMapper.searchPerformancesByKeyword(keyword, pr.size(), pr.offset());
-        return PagingResponse.from(content, pr.page(), pr.size(), total);
+    // 첫 페이지에서만 호출
+    public Long countByKeyword(String keyword) {
+        return performanceMapper.countPerformancesByKeyword(keyword);
     }
 
     public List<PerformanceDto> getRelatedPerformances(Long performanceId) {
