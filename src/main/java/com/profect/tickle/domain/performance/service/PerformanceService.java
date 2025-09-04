@@ -23,6 +23,8 @@ import com.profect.tickle.domain.reservation.repository.SeatTemplateRepository;
 import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
+import com.profect.tickle.global.paging.Cursor;
+import com.profect.tickle.global.paging.CursorPageResponse;
 import com.profect.tickle.global.paging.PageRequest;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
@@ -79,66 +81,65 @@ public class PerformanceService {
             return emptyResponse(pr, total);
         }
 
-        List<Performance> performances = performanceRepository.findPerformancesByGenre(genreId, pr.offset(), pr.size());
-        List<PerformanceDto> content = performances.stream()
-                .map(this::convertToDtoWithImage)
-                .collect(java.util.stream.Collectors.toList());
+        List<PerformanceDto> content =
+                performanceMapper.findPerformancesByGenre(genreId, pr.offset(), pr.size());
         return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
     public List<PerformanceDto> getTop10ByGenre(Long genreId) {
         validateGenreId(genreId);
-        List<Performance> performances = performanceRepository.findTop10ByGenre(genreId);
-        return performances.stream()
-                .map(this::convertToDtoWithImage)
-                .collect(java.util.stream.Collectors.toList());
+        return performanceMapper.findTop10ByGenre(genreId);
     }
 
     public List<PerformanceDto> getTop10Performances() {
-        List<Performance> performances = performanceRepository.findTop10ByClickCount();
-        return performances.stream()
-                .map(this::convertToDtoWithImage)
-                .collect(java.util.stream.Collectors.toList());
+        return performanceMapper.findTop10ByClickCount();
     }
 
     @Transactional
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {
         validatePerfId(performanceId);
 
-        Performance performance = performanceRepository.findById(performanceId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
+        PerformanceDetailDto result = performanceMapper.findDetailById(performanceId);
+            if (result == null) {
+                throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
+        }
 
         performanceMapper.increaseLookCount(performanceId);
 
-        return convertToDetailDtoWithImage(performance);
+        return result;
     }
 
     public List<PerformanceDto> getTop4UpcomingPerformances() {
-        LocalDateTime now = LocalDateTime.now();
-        List<Performance> performances = performanceRepository.findTop4UpcomingPerformances(now);
-        return performances.stream()
-                .map(this::convertToDtoWithImage)
-                .collect(java.util.stream.Collectors.toList());
+        LocalDateTime now =  LocalDateTime.now();
+        return performanceMapper.findTop4UpcomingPerformances(now);
     }
 
-    public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
-        var pr = PageRequest.of(page, size);
+    public CursorPageResponse<PerformanceDto> searchByKeyword(
+            String keyword, int size,
+            Instant cursorDate, Long cursorId
+    ) {
+        int pageSize = Math.min(Math.max(size, 1), 100);
 
-        long total = performanceMapper.countPerformancesByKeyword(keyword);
-        if (total == 0) {
-            return emptyResponse(pr, total);
+        // LIMIT + 1 전략으로 hasNext 확인
+        List<PerformanceDto> rows = performanceMapper.searchPerformancesByKeyword(
+                keyword, pageSize + 1, cursorDate, cursorId
+        );
+
+        boolean hasNext = rows.size() > pageSize;
+        List<PerformanceDto> items = hasNext ? rows.subList(0, pageSize) : rows;
+
+        Cursor next = null;
+        if (hasNext) {
+            PerformanceDto last = items.get(items.size() - 1);
+            next = new Cursor(last.getDate(), last.getPerformanceId());
         }
 
-        int totalPages = PageRequest.calcTotalPages(total, pr.size());
-        if (pr.page() >= totalPages) {
-            return emptyResponse(pr, total);
-        }
+        return new CursorPageResponse<>(items, next, hasNext);
+    }
 
-        List<Performance> performances = performanceRepository.searchPerformancesByKeyword(keyword, pr.offset(), pr.size());
-        List<PerformanceDto> content = performances.stream()
-                .map(this::convertToDtoWithImage)
-                .collect(java.util.stream.Collectors.toList());
-        return PagingResponse.from(content, pr.page(), pr.size(), total);
+    // 첫 페이지에서만 호출
+    public Long countByKeyword(String keyword) {
+        return performanceMapper.countPerformancesByKeyword(keyword);
     }
 
     public List<PerformanceDto> getRelatedPerformances(Long performanceId) {
@@ -149,10 +150,7 @@ public class PerformanceService {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
         }
 
-        List<Performance> performances = performanceRepository.findRelatedPerformances(genreId, performanceId);
-        return performances.stream()
-                .map(this::convertToDtoWithImage)
-                .collect(java.util.stream.Collectors.toList());
+        return performanceMapper.findRelatedPerformances(genreId, performanceId);
     }
 
     @Transactional
