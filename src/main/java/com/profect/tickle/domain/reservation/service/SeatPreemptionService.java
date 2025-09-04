@@ -77,8 +77,6 @@ public class SeatPreemptionService {
     }
 
     private List<Seat> filterAvailableSeats(List<Seat> seats, Long performanceId) {
-        Instant now = Instant.now();
-
         return seats.stream()
                 .filter(seat -> seat.belongsToPerformance(performanceId))
                 .filter(Seat::isAvailableForPreemption)
