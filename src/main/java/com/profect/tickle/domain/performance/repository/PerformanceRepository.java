@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,5 +44,29 @@ public interface PerformanceRepository extends JpaRepository<Performance,Long> {
                                         END
     """, nativeQuery = true)
     int updateAllStatusesByDateRule();
+
+    // 인기 공연 TOP10 조회 (조회수 기준)
+    @Query("SELECT p FROM Performance p WHERE p.deletedAt IS NULL ORDER BY p.lookCount DESC LIMIT 10")
+    List<Performance> findTop10ByClickCount();
+
+    // 장르별 인기 공연 TOP10 조회
+    @Query("SELECT p FROM Performance p WHERE p.genre.id = :genreId AND p.deletedAt IS NULL ORDER BY p.lookCount DESC LIMIT 10")
+    List<Performance> findTop10ByGenre(@Param("genreId") Long genreId);
+
+    // 오픈 예정 공연 TOP4 조회
+    @Query("SELECT p FROM Performance p WHERE p.startDate > :now AND p.deletedAt IS NULL ORDER BY p.startDate ASC LIMIT 4")
+    List<Performance> findTop4UpcomingPerformances(@Param("now") LocalDateTime now);
+
+    // 장르별 공연 목록 조회 (페이징)
+    @Query("SELECT p FROM Performance p WHERE p.genre.id = :genreId AND p.deletedAt IS NULL ORDER BY p.createdAt DESC")
+    List<Performance> findPerformancesByGenre(@Param("genreId") Long genreId, int offset, int limit);
+
+    // 공연 검색 (페이징)
+    @Query("SELECT p FROM Performance p WHERE p.title LIKE %:keyword% AND p.deletedAt IS NULL ORDER BY p.createdAt DESC")
+    List<Performance> searchPerformancesByKeyword(@Param("keyword") String keyword, int offset, int limit);
+
+    // 관련 공연 조회 (같은 장르, 제외할 공연 ID)
+    @Query("SELECT p FROM Performance p WHERE p.genre.id = :genreId AND p.id != :excludeId AND p.deletedAt IS NULL ORDER BY p.lookCount DESC LIMIT 4")
+    List<Performance> findRelatedPerformances(@Param("genreId") Long genreId, @Param("excludeId") Long excludeId);
 
 }

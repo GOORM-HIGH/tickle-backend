@@ -26,6 +26,7 @@ import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.paging.PageRequest;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.security.util.SecurityUtil;
+import com.profect.tickle.global.s3.service.S3Service;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,7 @@ public class PerformanceService {
     private final PerformanceMapper performanceMapper;
     private final MemberMapper memberMapper;
     private final ReservationMapper reservationMapper;
+    private final S3Service s3Service;
 
     public List<GenreDto> getAllGenre() {
         return performanceMapper.findAllGenres();
@@ -77,37 +79,46 @@ public class PerformanceService {
             return emptyResponse(pr, total);
         }
 
-        List<PerformanceDto> content =
-                performanceMapper.findPerformancesByGenre(genreId, pr.offset(), pr.size());
+        List<Performance> performances = performanceRepository.findPerformancesByGenre(genreId, pr.offset(), pr.size());
+        List<PerformanceDto> content = performances.stream()
+                .map(this::convertToDtoWithImage)
+                .collect(java.util.stream.Collectors.toList());
         return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
     public List<PerformanceDto> getTop10ByGenre(Long genreId) {
         validateGenreId(genreId);
-        return performanceMapper.findTop10ByGenre(genreId);
+        List<Performance> performances = performanceRepository.findTop10ByGenre(genreId);
+        return performances.stream()
+                .map(this::convertToDtoWithImage)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public List<PerformanceDto> getTop10Performances() {
-        return performanceMapper.findTop10ByClickCount();
+        List<Performance> performances = performanceRepository.findTop10ByClickCount();
+        return performances.stream()
+                .map(this::convertToDtoWithImage)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Transactional
     public PerformanceDetailDto getPerformanceDetail(Long performanceId) {
         validatePerfId(performanceId);
 
-        PerformanceDetailDto result = performanceMapper.findDetailById(performanceId);
-        if (result == null) {
-            throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
-        }
+        Performance performance = performanceRepository.findById(performanceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
 
         performanceMapper.increaseLookCount(performanceId);
 
-        return result;
+        return convertToDetailDtoWithImage(performance);
     }
 
     public List<PerformanceDto> getTop4UpcomingPerformances() {
-        LocalDateTime now =  LocalDateTime.now();
-        return performanceMapper.findTop4UpcomingPerformances(now);
+        LocalDateTime now = LocalDateTime.now();
+        List<Performance> performances = performanceRepository.findTop4UpcomingPerformances(now);
+        return performances.stream()
+                .map(this::convertToDtoWithImage)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public PagingResponse<PerformanceDto> searchPerformances(String keyword, int page, int size) {
@@ -123,8 +134,10 @@ public class PerformanceService {
             return emptyResponse(pr, total);
         }
 
-        List<PerformanceDto> content =
-                performanceMapper.searchPerformancesByKeyword(keyword, pr.offset(), pr.size());
+        List<Performance> performances = performanceRepository.searchPerformancesByKeyword(keyword, pr.offset(), pr.size());
+        List<PerformanceDto> content = performances.stream()
+                .map(this::convertToDtoWithImage)
+                .collect(java.util.stream.Collectors.toList());
         return PagingResponse.from(content, pr.page(), pr.size(), total);
     }
 
@@ -136,7 +149,10 @@ public class PerformanceService {
             throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
         }
 
-        return performanceMapper.findRelatedPerformances(genreId, performanceId);
+        List<Performance> performances = performanceRepository.findRelatedPerformances(genreId, performanceId);
+        return performances.stream()
+                .map(this::convertToDtoWithImage)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Transactional
@@ -271,6 +287,65 @@ public class PerformanceService {
 
     private <T> PagingResponse<T> emptyResponse(PageRequest pr, long total) {
         return PagingResponse.from(List.of(), pr.page(), pr.size(), total);
+    }
+
+    /**
+     * 공연 이미지 URL을 PreSigned URL로 변환하는 헬퍼 메서드
+     * S3에 저장된 파일이면 PreSigned URL을 생성하고, 기존 URL이면 그대로 반환
+     */
+    private String convertToPreSignedUrl(String imgUrl) {
+        if (imgUrl == null || imgUrl.isEmpty()) {
+            return null;
+        }
+        
+        // S3에 저장된 파일이면 PreSigned URL 생성
+        if (imgUrl.startsWith("performance/") || imgUrl.startsWith("users/")) {
+            try {
+                return s3Service.generatePreSignedUrl(imgUrl);
+            } catch (Exception e) {
+                log.warn("PreSigned URL 생성 실패: {}", imgUrl, e);
+                return null; // 기본 이미지 사용
+            }
+        }
+        
+        // 기존 URL이면 그대로 반환
+        return imgUrl;
+    }
+
+    /**
+     * PerformanceDto에 이미지 URL 변환을 적용하는 헬퍼 메서드
+     */
+    private PerformanceDto convertToDtoWithImage(Performance performance) {
+        String imgUrl = convertToPreSignedUrl(performance.getImg());
+        
+        return PerformanceDto.builder()
+                .performanceId(performance.getId())
+                .title(performance.getTitle())
+                .date(performance.getDate())
+                .img(imgUrl)
+                .build();
+    }
+
+    /**
+     * PerformanceDetailDto에 이미지 URL 변환을 적용하는 헬퍼 메서드
+     */
+    private PerformanceDetailDto convertToDetailDtoWithImage(Performance performance) {
+        String imgUrl = convertToPreSignedUrl(performance.getImg());
+        
+        return PerformanceDetailDto.builder()
+                .performanceId(performance.getId())
+                .title(performance.getTitle())
+                .img(imgUrl)
+                .date(performance.getDate())
+                .statusDescription(performance.getStatus().getDescription())
+                .runtime(performance.getRuntime())
+                .isEvent(performance.getIsEvent())
+                .price(performance.getPrice())
+                .hallAddress(performance.getHall().getAddress())
+                .hostBizName(performance.getMember().getHostBizName())
+                .startDate(performance.getStartDate())
+                .endDate(performance.getEndDate())
+                .build();
     }
 
 }
