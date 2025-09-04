@@ -238,10 +238,10 @@ public class FileController {
         
         try {
             fileService.testS3Connection();
-            return ResultResponse.of(ResultCode.FILE_UPLOAD_SUCCESS, "✅ S3 연결 성공!");
+            return ResultResponse.of(ResultCode.FILE_UPLOAD_SUCCESS, "S3 연결 성공");
         } catch (Exception e) {
             log.error("S3 연결 테스트 실패: {}", e.getMessage());
-            return ResultResponse.of(ResultCode.FILE_UPLOAD_SUCCESS, "❌ S3 연결 실패: " + e.getMessage());
+            return ResultResponse.of(ResultCode.FILE_UPLOAD_SUCCESS, "S3 연결 실패: " + e.getMessage());
         }
     }
 }
