@@ -79,8 +79,9 @@ class FileControllerTest {
         );
 
         FileUploadResponseDto responseDto = FileUploadResponseDto.builder()
-                .fileName("test-file.txt")
-                .filePath("/uploads/chat/test-file.txt")
+                .fileName("uuid-generated-name.txt")
+                .originalName("test-file.txt")
+                .filePath("chat/2025/09/04/uuid-generated-name.txt")
                 .fileSize(13)
                 .fileType("text/plain")
                 .build();
@@ -92,8 +93,9 @@ class FileControllerTest {
                         .file(file)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fileName").value("test-file.txt"))
-                .andExpect(jsonPath("$.data.filePath").value("/uploads/chat/test-file.txt"))
+                .andExpect(jsonPath("$.data.fileName").value("uuid-generated-name.txt"))
+                .andExpect(jsonPath("$.data.originalName").value("test-file.txt"))
+                .andExpect(jsonPath("$.data.filePath").value("chat/2025/09/04/uuid-generated-name.txt"))
                 .andExpect(jsonPath("$.data.fileSize").value(13))
                 .andExpect(jsonPath("$.data.fileType").value("text/plain"));
     }
@@ -142,8 +144,9 @@ class FileControllerTest {
         );
 
         FileUploadResponseDto responseDto = FileUploadResponseDto.builder()
-                .fileName("profile.jpg")
-                .filePath("/uploads/profile/profile.jpg")
+                .fileName("uuid-generated-name.jpg")
+                .originalName("profile.jpg")
+                .filePath("users/6/profile/uuid-generated-name.jpg")
                 .fileSize(15)
                 .fileType("image/jpeg")
                 .build();
@@ -156,8 +159,9 @@ class FileControllerTest {
                         .param("imageType", "profile")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fileName").value("profile.jpg"))
-                .andExpect(jsonPath("$.data.filePath").value("/uploads/profile/profile.jpg"));
+                .andExpect(jsonPath("$.data.fileName").value("uuid-generated-name.jpg"))
+                .andExpect(jsonPath("$.data.originalName").value("profile.jpg"))
+                .andExpect(jsonPath("$.data.filePath").value("users/6/profile/uuid-generated-name.jpg"));
     }
 
     @Test
@@ -172,8 +176,9 @@ class FileControllerTest {
         );
 
         FileUploadResponseDto responseDto = FileUploadResponseDto.builder()
-                .fileName("performance.jpg")
-                .filePath("/uploads/performance/performance.jpg")
+                .fileName("uuid-generated-name.jpg")
+                .originalName("performance.jpg")
+                .filePath("users/6/performance/uuid-generated-name.jpg")
                 .fileSize(15)
                 .fileType("image/jpeg")
                 .build();
@@ -186,8 +191,9 @@ class FileControllerTest {
                         .param("imageType", "performance")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fileName").value("performance.jpg"))
-                .andExpect(jsonPath("$.data.filePath").value("/uploads/performance/performance.jpg"));
+                .andExpect(jsonPath("$.data.fileName").value("uuid-generated-name.jpg"))
+                .andExpect(jsonPath("$.data.originalName").value("performance.jpg"))
+                .andExpect(jsonPath("$.data.filePath").value("users/6/performance/uuid-generated-name.jpg"));
     }
 
     @Test
@@ -331,5 +337,96 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(get("/api/v1/files/chat/download"))
                 .andExpect(status().isInternalServerError());
+    }
+
+    // ===== 공연 이미지 업로드 테스트 (새로 추가) =====
+
+    @Test
+    @DisplayName("TC-FILE-PERFORMANCE-001: 공연 이미지 업로드 성공 (새 API)")
+    void shouldUploadPerformanceImageWithNewApiSuccessfully() throws Exception {
+        // Given
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "performance-image.jpg",
+                "image/jpeg",
+                "fake-performance-image-data".getBytes()
+        );
+
+        FileUploadResponseDto responseDto = FileUploadResponseDto.builder()
+                .fileName("uuid-generated-name.jpg")
+                .originalName("performance-image.jpg")
+                .filePath("performance/1/images/2025/09/04/uuid-generated-name.jpg")
+                .fileSize(25)
+                .fileType("image/jpeg")
+                .build();
+
+        when(fileService.uploadPerformanceImage(any(), eq(1L), eq(MEMBER_ID))).thenReturn(responseDto);
+
+        // When & Then
+        mockMvc.perform(multipart("/api/v1/files/performance-image")
+                        .file(file)
+                        .param("performanceId", "1")
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.fileName").value("uuid-generated-name.jpg"))
+                .andExpect(jsonPath("$.data.originalName").value("performance-image.jpg"))
+                .andExpect(jsonPath("$.data.filePath").value("performance/1/images/2025/09/04/uuid-generated-name.jpg"))
+                .andExpect(jsonPath("$.data.fileSize").value(25))
+                .andExpect(jsonPath("$.data.fileType").value("image/jpeg"));
+    }
+
+    @Test
+    @DisplayName("TC-FILE-PERFORMANCE-002: 공연 이미지 업로드 실패 - 잘못된 파일 타입")
+    void shouldFailWhenUploadingNonImageFileForPerformance() throws Exception {
+        // Given
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.txt",
+                "text/plain",
+                "Hello, World!".getBytes()
+        );
+
+        // When & Then
+        mockMvc.perform(multipart("/api/v1/files/performance-image")
+                        .file(file)
+                        .param("performanceId", "1")
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("TC-FILE-PERFORMANCE-003: 공연 이미지 업로드 실패 - 서비스 오류")
+    void shouldFailWhenServiceThrowsExceptionForPerformance() throws Exception {
+        // Given
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "performance.jpg",
+                "image/jpeg",
+                "fake-image-data".getBytes()
+        );
+
+        when(fileService.uploadPerformanceImage(any(), eq(1L), eq(MEMBER_ID)))
+                .thenThrow(new RuntimeException("공연 이미지 업로드 실패"));
+
+        // When & Then
+        mockMvc.perform(multipart("/api/v1/files/performance-image")
+                        .file(file)
+                        .param("performanceId", "1")
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isInternalServerError());
+    }
+
+    // ===== S3 연결 테스트 (새로 추가) =====
+
+    @Test
+    @DisplayName("TC-FILE-S3-001: S3 연결 테스트 성공")
+    void shouldTestS3ConnectionSuccessfully() throws Exception {
+        // Given
+        // S3 연결 테스트는 실제 S3Service를 호출하므로 Mock 설정 불필요
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/files/test-s3-connection"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value("✅ S3 연결 성공!"));
     }
 }
