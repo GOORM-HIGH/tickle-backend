@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.settlement.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementMonthlyFindTargetDto;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementMonthlyFindTargetDto;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,7 +39,7 @@ public class SettlementMonthly {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
-    @Column(name = "performance_title", length = 50, nullable = false)
+    @Column(name = "performance_title", length = 255, nullable = false)
     private String performanceTitle;
 
     @Column(name = "settlement_year", length = 4, nullable = false)
@@ -71,22 +71,19 @@ public class SettlementMonthly {
 
     public static SettlementMonthly create(SettlementMonthlyFindTargetDto dto,
                                            Member member,
-                                           Status status,
-                                           String year,
-                                           String month,
-                                           Instant now) {
+                                           Status status) {
         return SettlementMonthly.builder()
                 .member(member)
                 .status(status)
                 .performanceTitle(dto.getPerformanceTitle())
-                .year(year)
-                .month(month)
+                .year(dto.getYear())
+                .month(dto.getMonth())
                 .monthlySalesAmount(dto.getMonthlySalesAmount())
                 .monthlyRefundAmount(dto.getMonthlyRefundAmount())
                 .monthlyGrossAmount(dto.getMonthlyGrossAmount())
                 .monthlyCommission(dto.getMonthlyCommission())
                 .monthlyNetAmount(dto.getMonthlyNetAmount())
-                .monthlyCreatedAt(now)
+                .monthlyCreatedAt(dto.getSettlementMonthlyCreatedAt())
                 .build();
     }
 

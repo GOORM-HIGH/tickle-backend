@@ -63,7 +63,13 @@ dependencies {
 
     // ===== Test Dependencies =====
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.batch:spring-batch-test:5.1.3'
     testImplementation "org.mockito:mockito-inline:5.2.0"
+    
+    // ===== Locust Performance Testing =====
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.github.bonigarcia:webdrivermanager:5.3.2'
+    testImplementation 'org.python:jython-standalone:2.7.3'
 
     // ===== Jwt Dependencies =====
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
@@ -80,24 +86,20 @@ dependencies {
     // ==== thymeleaf ====
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
-    // WebDAV 의존성
-    implementation 'com.github.lookfirst:sardine:5.10'
-
-    // @PostConstruct 어노테이션
-    implementation 'javax.annotation:javax.annotation-api:1.3.2'
-
-    // Jakarta JAXB (Spring Boot 3.x용)
-    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-    implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
-
-    // 구 버전 JAXB (sardine 라이브러리용)
-    implementation 'javax.xml.bind:jaxb-api:2.3.1'
-    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
+    // AWS S3 SDK
+    implementation 'software.amazon.awssdk:s3:2.20.26'
+    implementation 'software.amazon.awssdk:auth:2.20.26'
+    implementation 'software.amazon.awssdk:regions:2.20.26'
 
     // 엑셀 다운로드
     implementation "org.apache.poi:poi:${poiVersion}"
     implementation "org.apache.poi:poi-ooxml:${poiVersion}"
     implementation "org.apache.xmlbeans:xmlbeans:${xmlbeansVersion}"
+
+    // 1) 운영용 엔드포인트(ex: health, info, loggers, metrics...) 노출
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    // 2) Micrometer → Prometheus 연동 레지스트리
+    implementation "io.micrometer:micrometer-registry-prometheus"
 }
 
 hibernate {
@@ -108,6 +110,11 @@ hibernate {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// AOT 비활성화 (테스트)
+tasks.matching { it.name == "processTestAot" }.configureEach {
+    enabled = false
 }
 
 jacoco {

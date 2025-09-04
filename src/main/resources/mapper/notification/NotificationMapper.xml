@@ -13,14 +13,11 @@
             n.notification_title AS title,
             n.notification_content AS content,
             CASE
-                WHEN s.status_id = 7 THEN FALSE  -- 읽지 않음
-                WHEN s.status_id = 8 THEN TRUE   -- 읽음
+                WHEN n.status_id = 7 THEN FALSE  -- 읽지 않음
+                WHEN n.status_id = 8 THEN TRUE   -- 읽음
                 END AS isRead,
             n.notification_created_at AS createdAt
-        FROM notification n
-                 JOIN notification_template nt ON n.notification_template_id = nt.notification_template_id
-                 JOIN member m ON n.notification_received_member_id = m.member_id
-                 JOIN status s ON n.status_id = s.status_id
+        FROM notification AS n
         WHERE m.member_id = #{memberId}
         ORDER BY n.notification_created_at DESC
             LIMIT #{limit}

@@ -4,8 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 
 import com.profect.tickle.batch.metadata.BatchMetadataMapper;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
-import com.profect.tickle.domain.settlement.entity.SettlementDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -18,17 +16,19 @@ import org.springframework.stereotype.Component;
 @Component
 @StepScope
 public class ChunkTimingListener
-        implements ChunkListener,
-        ItemReadListener<SettlementDetailFindTargetDto>,
-        ItemProcessListener<SettlementDetailFindTargetDto, SettlementDetail>,
-        ItemWriteListener<SettlementDetail>,
+        implements
+        ChunkListener,
         JobExecutionListener,
-        StepExecutionListener {
+        StepExecutionListener,
+        ItemReadListener<Object>,
+        ItemProcessListener<Object, Object>,
+        ItemWriteListener<Object>{
 
     private final BatchMetadataMapper batchMetadataMapper;
 
-    @Value("#{jobParameters['settlementDetailCreatedAt']}")
-    private String jobParam;
+    // 정산 Job Parameters
+    @Value("#{jobParameters['settlementBatchStartedAt']}")
+    private String settlementJobParam;
 
     // 청크 시작 시 reset
     private Instant chunkStart;
@@ -111,7 +111,7 @@ public class ChunkTimingListener
         readStart.set(Instant.now());
     }
     @Override
-    public void afterRead(SettlementDetailFindTargetDto item) {
+    public void afterRead(Object item) {
         readNanos += Duration.between(readStart.get(), Instant.now()).toNanos();
     }
     @Override
@@ -119,38 +119,42 @@ public class ChunkTimingListener
 
     // 3) ItemProcessor 호출 전/후
     @Override
-    public void beforeProcess(SettlementDetailFindTargetDto item) {
+    public void beforeProcess(Object item) {
         processStart.set(Instant.now());
     }
     @Override
     public void afterProcess(
-            SettlementDetailFindTargetDto item, SettlementDetail result) {
+            Object item, Object result) {
         processNanos += Duration.between(processStart.get(), Instant.now()).toNanos();
     }
     @Override
     public void onProcessError(
-            SettlementDetailFindTargetDto item, Exception ex) { /* 필요 시 */ }
+            Object item, Exception ex) { /* 필요 시 */ }
 
     // 4) ItemWriter 호출 전/후
     @Override
-    public void beforeWrite(Chunk<? extends SettlementDetail> chunk) {
+    public void beforeWrite(Chunk<? extends Object> chunk) {
         writeStart.set(Instant.now());
     }
     @Override
-    public void afterWrite(Chunk<? extends SettlementDetail> chunk) {
+    public void afterWrite(Chunk<? extends Object> chunk) {
         writeNanos += Duration.between(writeStart.get(), Instant.now()).toNanos();
     }
     @Override
     public void onWriteError(
-            Exception exception, Chunk<? extends SettlementDetail> chunk) { /* 필요 시 */ }
+            Exception exception, Chunk<? extends Object> chunk) { /* 필요 시 */ }
 
     // 5) 스텝 끝날 때 최종 누적 통계
     @Override
     public ExitStatus afterStep(StepExecution stepExecution) {
+        if(stepExecution.getReadCount() == 0) {
+            return ExitStatus.COMPLETED;
+        }
+
         // Job Name, Job Params 호출해서 메테 테이블에 마지막 배치 시점 저장
         String jobName = stepExecution.getJobExecution().getJobInstance().getJobName();
-        if(jobName.equals("settlementDetailJob")){
-            Instant createdAt = Instant.parse(jobParam);
+        if(jobName.startsWith("settlement")){
+            Instant createdAt = Instant.parse(settlementJobParam);
             batchMetadataMapper.upsertLastProcessedAt(jobName, createdAt);
         }
 

@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.settlement.entity;
 
 import com.profect.tickle.domain.member.entity.Member;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetDto;
 import com.profect.tickle.global.status.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -31,7 +31,7 @@ public class SettlementDetail {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
-    @Column(name = "performance_title", length = 50, nullable = false)
+    @Column(name = "performance_title", length = 255, nullable = false)
     private String performanceTitle;
 
     @Column(name = "performance_end_date", nullable = false)
@@ -75,7 +75,7 @@ public class SettlementDetail {
                                           Long grossAmount,
                                           Long commission,
                                           Long netAmount,
-                                          Instant now) {
+                                          Instant createdAt) {
         return SettlementDetail.builder()
                 .member(member)
                 .status(status)
@@ -88,7 +88,7 @@ public class SettlementDetail {
                 .contractCharge(dto.getContractCharge())
                 .commission(commission)
                 .netAmount(netAmount)
-                .createdAt(now)
+                .createdAt(createdAt)
                 .build();
     }
 }

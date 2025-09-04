@@ -16,7 +16,7 @@ public class PerformanceDetailDto {
     private String title; //공연 제목
     private String img; //공연 이미지
     private Instant date; //공연 일자
-    private String StatusDescription;
+    private String statusDescription; //공연 상태 설명
     private short runtime; //공연 시간
     private boolean isEvent;
     private String price; //공연 금액

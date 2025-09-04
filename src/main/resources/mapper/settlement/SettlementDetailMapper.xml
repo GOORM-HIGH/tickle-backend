@@ -2,45 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.profect.tickle.domain.settlement.mapper.SettlementDetailMapper">
-
-    <select id="findTargetReservationsCount" resultType="int">
-        select count(*) from (
-        SELECT
-        m.member_id AS memberId,
-        sr.status_id AS reservationStatusId,
-        p.performance_title AS performanceTitle,
-        p.performance_end_date AS performanceEndDate,
-        r.reservation_code AS reservationCode,
-        r.reservation_price AS reservationPrice,
-        c.contract_charge AS contractCharge
-        FROM reservation r
-        JOIN performance p ON r.performance_id = p.performance_id
-        JOIN member m ON p.member_id = m.member_id
-        JOIN contract c ON m.member_id = c.member_id
-        AND c.contract_effective_from &lt;= #{now}
-        AND (c.contract_effective_to IS NULL
-        OR c.contract_effective_to &gt;= #{now})
-        JOIN status sr ON r.status_id = sr.status_id
-        JOIN status sp ON p.status_id = sp.status_id
-        WHERE (CASE
-        WHEN r.reservation_updated_at IS NULL
-        THEN r.reservation_created_at
-        ELSE r.reservation_updated_at
-        END)
-        &gt; (
-        SELECT COALESCE(MAX(settlement_detail_created_at), '1970-01-01'::TIMESTAMPTZ)
-        FROM settlement_detail
-        )
-        AND #{now} BETWEEN p.performance_start_date
-        AND p.performance_end_date
-        AND sr.status_id IN (9, 10)
-        AND sp.status_id = 1
-        );
-    </select>
+<mapper namespace="com.profect.tickle.batch.domain.settlement.mapper.SettlementDetailMapper">
 
     <!-- Chunk :: 건별 정산에 사용될 데이터 집합 추출 -->
-    <select id="findTargetReservations" resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto">
+    <select id="findTargetFromReservations" resultType="com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetDto">
         SELECT
             m.member_id AS memberId,
             sr.status_id AS reservationStatusId,
@@ -61,76 +26,12 @@
         JOIN status sp ON p.status_id = sp.status_id
         WHERE COALESCE(r.reservation_updated_at, r.reservation_created_at)
          &gt; #{lastTimeSeconds}
-                AND #{now}::TIMESTAMPTZ - INTERVAL '1 min' BETWEEN p.performance_start_date
-                        AND p.performance_end_date
+            AND #{now}::TIMESTAMPTZ - INTERVAL '1 min' BETWEEN p.performance_start_date AND p.performance_end_date
             AND sr.status_id IN (9, 10)
             AND sp.status_id = 1
         ORDER BY r.reservation_id
         LIMIT #{_pagesize} OFFSET #{_skiprows}
     </select>
-
-    <!-- Tasklet :: 건별 정산에 사용될 데이터 집합 추출 -->
-<!--    <select id="findTargetReservations" resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDetailFindTargetDto">-->
-<!--        SELECT-->
-<!--            m.member_id AS memberId,-->
-<!--            sr.status_id AS reservationStatusId,-->
-<!--            p.performance_title AS performanceTitle,-->
-<!--            p.performance_end_date AS performanceEndDate,-->
-<!--            r.reservation_code AS reservationCode,-->
-<!--            r.reservation_price AS reservationPrice,-->
-<!--            c.contract_charge AS contractCharge,-->
-<!--            #{now} AS settlementDetailCreatedAt-->
-<!--        FROM reservation r-->
-<!--                 JOIN performance p ON r.performance_id = p.performance_id-->
-<!--                 JOIN member m ON p.member_id = m.member_id-->
-<!--                 JOIN contract c ON m.member_id = c.member_id-->
-<!--            AND c.contract_effective_from &lt;= #{now}-->
-<!--            AND (c.contract_effective_to IS NULL-->
-<!--                OR c.contract_effective_to &gt;= #{now})-->
-<!--                 JOIN status sr ON r.status_id = sr.status_id-->
-<!--                 JOIN status sp ON p.status_id = sp.status_id-->
-<!--        WHERE COALESCE(r.reservation_updated_at, r.reservation_created_at)-->
-<!--            &gt; (SELECT COALESCE(MAX(settlement_detail_created_at), '1970-01-01'::TIMESTAMPTZ)-->
-<!--                             FROM settlement_detail)-->
-<!--            AND #{now}::TIMESTAMPTZ - INTERVAL '1 min' BETWEEN p.performance_start_date-->
-<!--                        AND p.performance_end_date-->
-<!--            AND sr.status_id IN (9, 10)-->
-<!--            AND sp.status_id = 1-->
-<!--    </select>-->
-
-    <!-- 건별 정산 멀티 insert -->
-    <insert id="insertSettlementDetail" parameterType="map">
-        INSERT INTO settlement_detail (
-            member_id,
-            status_id,
-            performance_title,
-            performance_end_date,
-            reservation_code,
-            settlement_detail_sales_amount,
-            settlement_detail_refund_amount,
-            settlement_detail_gross_amount,
-            contract_charge,
-            settlement_detail_commission,
-            settlement_detail_net_amount,
-            settlement_detail_created_at
-        ) VALUES
-        <foreach collection="list" item="detail" separator=",">
-        (
-            #{detail.member.id},
-            #{detail.status.id},
-            #{detail.performanceTitle},
-            #{detail.performanceEndDate},
-            #{detail.reservationCode},
-            #{detail.salesAmount},
-            #{detail.refundAmount},
-            #{detail.grossAmount},
-            #{detail.contractCharge},
-            #{detail.commission},
-            #{detail.netAmount},
-            #{detail.createdAt}
-        )
-        </foreach>
-    </insert>
 
     <!-- 예매종료일시가 n일23시59분59초.999 이하 && 정산상태가 '정산완료'인 건들 업데이트 -->
     <update id="updateSettlementDetailStatus">
