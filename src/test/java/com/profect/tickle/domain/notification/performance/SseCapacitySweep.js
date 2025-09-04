@@ -23,8 +23,7 @@ const connAlive = new Trend("sse_conn_alive_ms");
 const earlyClose = new Counter("sse_early_close");
 const messagesReceived = new Counter("sse_messages_received");
 const connectionErrors = new Counter("sse_connection_errors");
-const timeToFirstMessage = new Trend("sse_time_to_first_message");
-const reconnectionAttempts = new Counter("sse_reconnection_attempts");
+const latency = new Trend("sse_time_to_first_message");
 const connectionRetries = new Counter("sse_connection_retries");
 const sessionsCompleted = new Counter("sse_sessions_completed");
 
@@ -97,7 +96,7 @@ export default function () {
   let connected = false;
   for (let attempt = 1; attempt <= MAX_RETRIES && !connected; attempt++) {
     if (attempt > 1) {
-      connectionRetries.add(1, tags);
+      connectionRetries.add(1, tags); // 연결 시도 횟수 추가
       debugLog(`Retry attempt ${attempt}/${MAX_RETRIES}`);
       sleep(1);
     }
@@ -113,7 +112,7 @@ export default function () {
         if (!firstMessageReceived) {
           firstMessageReceived = true;
           const timeToFirst = Date.now() - start;
-          timeToFirstMessage.add(timeToFirst, tags);
+          latency.add(timeToFirst, tags);
           debugLog(`First message received after ${timeToFirst}ms`);
         }
 
