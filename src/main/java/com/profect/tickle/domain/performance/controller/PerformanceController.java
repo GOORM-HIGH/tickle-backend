@@ -5,6 +5,7 @@ import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceReques
 import com.profect.tickle.domain.performance.dto.response.*;
 import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.performance.service.PerformanceService;
+import com.profect.tickle.global.paging.CursorPageResponse;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
@@ -13,9 +14,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Tag(name = "공연", description = "공연 API")
@@ -73,15 +78,20 @@ public class PerformanceController {
         return ResultResponse.of(ResultCode.PERFORMANCE_POPULAR_SUCCESS,popular);
     }
 
-    @Operation(summary = "공연 검색", description = "공연이름으로 공연을 검색합니다.")
-    @GetMapping("/search/{keyword}")
-    public ResultResponse<PagingResponse<PerformanceDto>> searchPerformances(
-            @PathVariable String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size
+    @GetMapping("/search")
+    public CursorPageResponse<PerformanceDto> search(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant cursorDate,
+            @RequestParam(required = false) Long cursorId
     ) {
-        PagingResponse<PerformanceDto> response = performanceService.searchPerformances(keyword, page, size);
-        return ResultResponse.of(ResultCode.PERFORMANCE_SEARCH_SUCCESS, response);
+        return performanceService.searchByKeyword(keyword,  size, cursorDate, cursorId);
+    }
+
+    @GetMapping("/search/count")
+    public Long count(@RequestParam String keyword) {
+        return performanceService.countByKeyword(keyword);
     }
 
     @Operation(summary = "공연 추천", description = "해당 공연과 관련있는 공연을 추천정보를 조회합니다.")
