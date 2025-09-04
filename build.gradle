@@ -70,6 +70,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.github.bonigarcia:webdrivermanager:5.3.2'
     testImplementation 'org.python:jython-standalone:2.7.3'
+    testImplementation "org.testcontainers:junit-jupiter:1.20.1"
+    testImplementation "org.testcontainers:postgresql:1.20.1"
 
     // ===== Jwt Dependencies =====
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
