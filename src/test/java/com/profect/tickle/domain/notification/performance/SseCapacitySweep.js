@@ -23,7 +23,7 @@ const connAlive = new Trend("sse_conn_alive_ms");
 const earlyClose = new Counter("sse_early_close");
 const messagesReceived = new Counter("sse_messages_received");
 const connectionErrors = new Counter("sse_connection_errors");
-const latency = new Trend("sse_time_to_first_message");
+const latency = new Trend("latency");
 const connectionRetries = new Counter("sse_connection_retries");
 const sessionsCompleted = new Counter("sse_sessions_completed");
 
@@ -42,7 +42,9 @@ export const options = {
 /* ==== 유틸리티 함수 ==== */
 function debugLog(message) {
   if (DEBUG) {
-    console.log(`[VU ${__VU}][${new Date().toISOString()}] ${message}`);
+    const timestamp = new Date().toISOString();
+    const vuInfo = `VU ${__VU}/${config.vus}`;
+    console.log(`[${vuInfo}][${timestamp}] ${message}`);
   }
 }
 
@@ -80,6 +82,7 @@ export default function () {
     scenario: "sse_connection_test",
     environment: ENVIRONMENT,
     memberId: MEMBER_ID,
+    targetVus: config.vus,
   };
 
   const start = Date.now();
@@ -96,7 +99,7 @@ export default function () {
   let connected = false;
   for (let attempt = 1; attempt <= MAX_RETRIES && !connected; attempt++) {
     if (attempt > 1) {
-      connectionRetries.add(1, tags); // 연결 시도 횟수 추가
+      connectionRetries.add(1, tags);
       debugLog(`Retry attempt ${attempt}/${MAX_RETRIES}`);
       sleep(1);
     }
@@ -186,11 +189,11 @@ export default function () {
 
   // 최종 결과 로그
   console.log(
-    `[VU ${__VU}] Summary: memberId=${MEMBER_ID}, opened=${opened}, errored=${errored}, ` +
+    `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, opened=${opened}, errored=${errored}, ` +
       `aliveMs=${aliveMs}, messagesReceived=${messageCount}, ` +
       `sessionCompleted=${sessionCompleted}, ` +
       `stayedFull=${aliveMs >= SESSION_SEC * 1000 * 0.9}, ` +
-      `firstMessageTime=${firstMessageReceived ? "received" : "not_received"}`
+      `latency=${firstMessageReceived ? "measured" : "not_measured"}`
   );
 
   if (!opened || errored) {
@@ -203,32 +206,68 @@ export default function () {
 
 /* ==== 설정 검증 ==== */
 export function setup() {
-  console.log("=== K6 SSE Performance Test Configuration ===");
+  console.log("🚀 === K6 SSE Performance Test Configuration ===");
   console.log(`Environment: ${ENVIRONMENT}`);
   console.log(`Base URL: ${config.baseUrl}`);
   console.log(`Target URL: ${URL}`);
   console.log(`Member ID: ${MEMBER_ID}`);
   console.log(`Session Duration: ${SESSION_SEC}s`);
   console.log(`Max Retries: ${MAX_RETRIES}`);
-  console.log(`VUs: ${config.vus}`);
-  console.log(`Debug Mode: ${DEBUG}`);
-  console.log(`Token Provided: ${TOKEN ? "Yes" : "No"}`);
+  // VU 정보 강화
+  console.log(`🎯 Target VUs: ${config.vus}`);
+  console.log(`📊 Load Pattern: ${JSON.stringify(config.stages)}`);
+  console.log(`🎚️  Thresholds: ${JSON.stringify(config.thresholds, null, 2)}`);
+  console.log(`Debug Mode: ${DEBUG ? "ON" : "OFF"}`);
+  console.log(`Token Provided: ${TOKEN ? "✅ Yes" : "❌ No"}`);
   console.log(`Last Event ID: ${LAST || "None"}`);
-  console.log(`Stages: ${JSON.stringify(config.stages)}`);
-  console.log("============================================");
+
+  // 예상 부하 정보
+  const totalDuration = config.stages.reduce(
+    (sum, stage) => sum + parseInt(stage.duration),
+    0
+  );
+  const maxVus = Math.max(...config.stages.map((stage) => stage.target));
+  console.log(`⏱️  Total Test Duration: ${totalDuration}s`);
+  console.log(`📈 Peak Load: ${maxVus} VUs`);
+  console.log("=================================================");
 }
 
 /* ==== 테스트 완료 후 정리 ==== */
 export function teardown() {
-  console.log("=== Test Completed ===");
+  console.log("🏁 === Test Completed ===");
   console.log(`Environment: ${ENVIRONMENT}`);
-  console.log("Check the metrics above for detailed results");
-  console.log("Key metrics to review:");
+  console.log(`Tested VUs: ${config.vus}`);
+
+  const totalDuration = config.stages.reduce(
+    (sum, stage) => sum + parseInt(stage.duration),
+    0
+  );
+  console.log(`Total Duration: ${totalDuration}s`);
+
+  console.log("");
+  console.log("📊 Key metrics to review:");
   console.log("- sse_open_ok: Connection success rate");
   console.log("- sse_stayed_full: Session completion rate");
   console.log("- sse_messages_received: Total messages processed");
   console.log("- sse_connection_errors: Error count");
-  console.log("- sse_time_to_first_message: First message response time");
+  console.log("- latency: First message response time");
   console.log("- sse_sessions_completed: Successfully completed sessions");
-  console.log("======================");
+
+  // 다음 단계 가이드 추가
+  console.log("");
+  console.log("🎯 === Next Step Recommendations ===");
+  console.log("📈 If success rate > 95%: Try higher VUs");
+  console.log("⚠️  If success rate < 90%: Check server resources");
+  console.log("🚫 If errors > threshold: Reduce VUs or check network");
+  console.log("📋 If stable: Document current capacity limits");
+
+  // 권장 다음 VU 수
+  const currentVu = config.vus;
+  const nextVuOptions = [
+    Math.ceil(currentVu * 1.25), // 25% 증가
+    Math.ceil(currentVu * 1.5), // 50% 증가
+    Math.ceil(currentVu * 2), // 100% 증가
+  ];
+  console.log(`🔄 Suggested next VU levels: ${nextVuOptions.join(", ")}`);
+  console.log("=====================================");
 }
