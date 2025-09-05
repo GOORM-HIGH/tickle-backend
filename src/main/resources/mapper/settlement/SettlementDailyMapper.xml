@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.profect.tickle.domain.settlement.mapper.SettlementDailyMapper">
+<mapper namespace="com.profect.tickle.batch.domain.settlement.mapper.SettlementDailyMapper">
 
     <!-- 일간 정산 데이터 집계 -->
-    <select id="aggregateFromDetailToDaily" resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyFindTargetDto">
+    <select id="aggregateFromDetailToDaily" resultType="com.profect.tickle.batch.domain.settlement.dto.SettlementDailyFindTargetDto">
         SELECT
             sdt.member_id AS memberId,
             sdt.performance_title AS performanceTitle,
@@ -32,100 +32,6 @@
         ORDER BY sdt.member_id
         LIMIT #{_pagesize} OFFSET #{_skiprows};
     </select>
-
-    <!-- 일간 정산 데이터 집계 -->
-<!--    <select id="aggregateByDetail" resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementDailyFindTargetDto">-->
-<!--        WITH last_run AS (-->
-<!--            SELECT COALESCE(-->
-<!--                   GREATEST(MAX(settlement_daily_created_at), MAX(settlement_daily_updated_at)),-->
-<!--                   '1970-01-01'::TIMESTAMPTZ)-->
-<!--            AS last_run_date-->
-<!--            FROM settlement_daily-->
-<!--        )-->
-<!--        SELECT-->
-<!--            sdt.member_id AS memberId,-->
-<!--            sdt.performance_title AS performanceTitle,-->
-<!--            sdt.performance_end_date AS performanceEndDate,-->
-<!--            sdt.contract_charge AS contractCharge,-->
-<!--            TO_CHAR(now(), 'YYYY') AS year,-->
-<!--            TO_CHAR(now(), 'MM') AS month,-->
-<!--            TO_CHAR(now(), 'DD') AS day,-->
-<!--			SUM(sdt.settlement_detail_sales_amount) AS dailySalesAmount,-->
-<!--            SUM(sdt.settlement_detail_refund_amount) AS dailyRefundAmount,-->
-<!--            SUM(sdt.settlement_detail_gross_amount) AS dailyGrossAmount,-->
-<!--            SUM(sdt.settlement_detail_commission) AS dailyCommission,-->
-<!--            SUM(sdt.settlement_detail_net_amount) AS dailyNetAmount-->
-<!--        FROM settlement_detail sdt-->
-<!--            &#45;&#45; 일간정산 테이블의 마지막 배치시점 이후에 쌓인 건별정산 테이블의 데이터를 가져오는 조건-->
-<!--            JOIN last_run lr-->
-<!--        ON sdt.settlement_detail_created_at > lr.last_run_date-->
-<!--        WHERE sdt.status_id IN (14, 16)-->
-<!--        &#45;&#45; 주최자별 주최한 공연과 공연예매종료일시 그룹-->
-<!--        GROUP BY sdt.member_id,-->
-<!--            sdt.performance_title,-->
-<!--            sdt.performance_end_date,-->
-<!--            sdt.contract_charge,-->
-<!--            TO_CHAR(now(), 'YYYY'),-->
-<!--            TO_CHAR(now(), 'MM'),-->
-<!--            TO_CHAR(now(), 'DD');-->
-<!--    </select>-->
-
-    <!-- 일간 정산 upsert -->
-<!--    <insert id="upsertSettlementDaily" parameterType="map">-->
-<!--        INSERT INTO settlement_daily (-->
-<!--            member_id,-->
-<!--            status_id,-->
-<!--            performance_title,-->
-<!--            performance_end_date,-->
-<!--            settlement_year,-->
-<!--            settlement_month,-->
-<!--            settlement_day,-->
-<!--            settlement_daily_sales_amount,-->
-<!--            settlement_daily_refund_amount,-->
-<!--            settlement_daily_gross_amount,-->
-<!--            contract_charge,-->
-<!--            settlement_daily_commission,-->
-<!--            settlement_daily_net_amount,-->
-<!--            settlement_daily_created_at-->
-<!--        ) VALUES-->
-<!--        <foreach collection="list" item="daily" separator=",">-->
-<!--        (-->
-<!--            #{daily.member.id},-->
-<!--            #{daily.status.id},-->
-<!--            #{daily.performanceTitle},-->
-<!--            #{daily.performanceEndDate},-->
-<!--            #{daily.year},-->
-<!--            #{daily.month},-->
-<!--            #{daily.day},-->
-<!--            #{daily.dailySalesAmount},-->
-<!--            #{daily.dailyRefundAmount},-->
-<!--            #{daily.dailyGrossAmount},-->
-<!--            #{daily.contractCharge},-->
-<!--            #{daily.dailyCommission},-->
-<!--            #{daily.dailyNetAmount},-->
-<!--            #{daily.dailyCreatedAt}-->
-<!--        )-->
-<!--        </foreach>-->
-<!--        ON CONFLICT (member_id, performance_title, settlement_year, settlement_month, settlement_day)-->
-<!--        DO UPDATE SET-->
-<!--            settlement_daily_sales_amount = settlement_daily.settlement_daily_sales_amount + EXCLUDED.settlement_daily_sales_amount,-->
-<!--            settlement_daily_refund_amount = settlement_daily.settlement_daily_refund_amount + EXCLUDED.settlement_daily_refund_amount,-->
-<!--            &#45;&#45; 기존 정산대상금액 + (새로운 판매금액 - 새로운 환불금액)-->
-<!--            settlement_daily_gross_amount =-->
-<!--            settlement_daily.settlement_daily_gross_amount + (EXCLUDED.settlement_daily_sales_amount - EXCLUDED.settlement_daily_refund_amount),-->
-<!--            &#45;&#45; 기존 수수료 + (새로운 판매금액 - 새로운 환불금액) * 적용수수료-->
-<!--            settlement_daily_commission =-->
-<!--            settlement_daily.settlement_daily_commission +-->
-<!--            (EXCLUDED.settlement_daily_sales_amount - EXCLUDED.settlement_daily_refund_amount) * EXCLUDED.contract_charge,-->
-<!--            &#45;&#45; ((기존 정산대상금액 + (새로운 판매금액 - 새로운 환불금액)) - (기존 수수료 + (새로운 판매금액 - 새로운 환불금액) * 적용수수료)-->
-<!--            settlement_daily_net_amount =-->
-<!--            (settlement_daily.settlement_daily_gross_amount + (EXCLUDED.settlement_daily_sales_amount - EXCLUDED.settlement_daily_refund_amount))-->
-<!--            - -->
-<!--            (settlement_daily.settlement_daily_commission +-->
-<!--            (EXCLUDED.settlement_daily_sales_amount - EXCLUDED.settlement_daily_refund_amount) * EXCLUDED.contract_charge),-->
-<!--            &#45;&#45; 수정 날짜 = 받은 날짜-->
-<!--            settlement_daily_updated_at = EXCLUDED.settlement_daily_created_at-->
-<!--    </insert>-->
 
     <!-- 1) 예매 종료일시 <= n일23시59분59초.999 && '정산예정'
          2) 오늘이 월요일 또는 1일인 경우, 이전 건들 업데이트 -->

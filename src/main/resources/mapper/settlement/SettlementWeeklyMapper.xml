@@ -2,13 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.profect.tickle.domain.settlement.mapper.SettlementWeeklyMapper">
+<mapper namespace="com.profect.tickle.batch.domain.settlement.mapper.SettlementWeeklyMapper">
 
     <!--
     * 일간정산 집계하여 주간정산
     -->
     <select id="aggregateFromDailyToWeekly" parameterType="map"
-            resultType="com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyFindTargetDto">
+            resultType="com.profect.tickle.batch.domain.settlement.dto.SettlementWeeklyFindTargetDto">
         SELECT
             member_id AS memberId,
             performance_title AS performanceTitle,
@@ -22,55 +22,15 @@
             SUM(settlement_daily_commission) AS weeklyCommission,
             SUM(settlement_daily_net_amount) AS weeklyNetAmount
         FROM settlement_daily
-        WHERE (settlement_year || '-' || lpad(settlement_month, 2, '0') || '-' || lpad(settlement_day, 2, '0'))::date
+        WHERE COALESCE(settlement_daily_updated_at, settlement_daily_created_at)
+            &gt; #{lastTimeSeconds}
+            AND (settlement_year || '-' || lpad(settlement_month, 2, '0') || '-' || lpad(settlement_day, 2, '0'))::date
             BETWEEN #{from}::date AND #{to}::date
         GROUP BY member_id,
                  performance_title
         ORDER BY member_id
         LIMIT #{_pagesize} OFFSET #{_skiprows};
     </select>
-
-    <!-- 주간 정산 누적 집계 upsert -->
-    <insert id="upsertSettlementWeekly" parameterType="map">
-        INSERT INTO settlement_weekly (
-            member_id,
-            status_id,
-            performance_title,
-            settlement_year,
-            settlement_month,
-            settlement_week,
-            settlement_weekly_sales_amount,
-            settlement_weekly_refund_amount,
-            settlement_weekly_gross_amount,
-            settlement_weekly_commission,
-            settlement_weekly_net_amount,
-            settlement_weekly_created_at
-        ) VALUES
-        <foreach collection="list" item="weekly" separator=",">
-        (
-            #{weekly.member.id},
-            #{weekly.status.id},
-            #{weekly.performanceTitle},
-            #{weekly.year},
-            #{weekly.month},
-            #{weekly.week},
-            #{weekly.weeklySalesAmount},
-            #{weekly.weeklyRefundAmount},
-            #{weekly.weeklyGrossAmount},
-            #{weekly.weeklyCommission},
-            #{weekly.weeklyNetAmount},
-            #{weekly.weeklyCreatedAt}
-        )
-        </foreach>
-        ON CONFLICT (member_id, performance_title, settlement_year, settlement_month, settlement_week)
-        DO UPDATE SET
-            settlement_weekly_sales_amount = EXCLUDED.settlement_weekly_sales_amount,
-            settlement_weekly_refund_amount = EXCLUDED.settlement_weekly_refund_amount,
-            settlement_weekly_gross_amount = EXCLUDED.settlement_weekly_gross_amount,
-            settlement_weekly_commission = EXCLUDED.settlement_weekly_commission,
-            settlement_weekly_net_amount = EXCLUDED.settlement_weekly_net_amount,
-            settlement_weekly_updated_at = EXCLUDED.settlement_weekly_created_at
-    </insert>
 
     <!-- 월요일 또는 1일인 경우 n-1회차의 정산예정 건들 업데이트-->
     <update id="updateSettlementDetailStatus">

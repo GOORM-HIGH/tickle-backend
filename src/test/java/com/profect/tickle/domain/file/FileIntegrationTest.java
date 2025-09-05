@@ -6,7 +6,7 @@ import com.profect.tickle.domain.file.service.FileService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.entity.MemberRole;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.global.nas.service.WebDavService;
+import com.profect.tickle.global.s3.service.S3Service;
 import com.profect.tickle.global.security.util.JwtUtil;
 import com.profect.tickle.testsecurity.WithMockMember;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ class FileIntegrationTest {
     private JwtUtil jwtUtil;
 
     @MockBean
-    private WebDavService webDavService;
+    private S3Service s3Service;
 
     private Member testMember;
     private Long chatRoomId;
@@ -91,14 +91,15 @@ class FileIntegrationTest {
         when(jwtUtil.validateToken(anyString())).thenReturn(true);
         when(jwtUtil.getEmail(anyString())).thenReturn("ahn3931@naver.com");
 
-        // WebDavService Mock 설정 (실제 NAS 연결 방지)
+        // S3Service Mock 설정 (실제 S3 연결 방지)
         try {
-            doNothing().when(webDavService).uploadFile(anyString(), any(byte[].class));
-            doNothing().when(webDavService).uploadFile(anyString(), any(byte[].class), any(Long.class));
-            when(webDavService.fileExists(anyString())).thenReturn(true);
-            when(webDavService.downloadFile(anyString())).thenReturn(null);
+            doNothing().when(s3Service).uploadFile(anyString(), any(java.io.InputStream.class), anyString());
+            doNothing().when(s3Service).uploadFile(anyString(), any(java.io.InputStream.class), anyString(), any(Long.class));
+            doNothing().when(s3Service).uploadPerformanceImage(anyString(), any(java.io.InputStream.class), anyString(), any(Long.class));
+            when(s3Service.fileExists(anyString())).thenReturn(true);
+            when(s3Service.generatePreSignedUrl(anyString())).thenReturn("https://tickle-file-storage-dev.s3.ap-northeast-2.amazonaws.com/test-file.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250903T151927Z&X-Amz-SignedHeaders=host&X-Amz-Expires=3600&X-Amz-Credential=AKIA3N4ANC2JFMDG3NP3%2F20250903%2Fap-northeast-2%2Fs3%2Faws4_request&X-Amz-Signature=711403fdd1005a8045be1d997ef33bf02a1797135eca84a99336a7225287f3e3");
         } catch (Exception e) {
-            // IOException을 무시
+            // Exception을 무시
         }
     }
 

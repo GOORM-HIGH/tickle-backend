@@ -1,12 +1,12 @@
-package com.profect.tickle.batch.domain.settlement;
+package com.profect.tickle.batch.domain.settlement.settlementMonthly;
 
 import com.profect.tickle.batch.domain.settlement.csvSerializer.SettlementCsvSerializer;
 import com.profect.tickle.batch.listener.ChunkTimingListener;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.settlement.dto.batch.SettlementWeeklyFindTargetDto;
-import com.profect.tickle.domain.settlement.entity.SettlementWeekly;
-import com.profect.tickle.domain.settlement.util.SettlementTimeUtil;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementMonthlyFindTargetDto;
+import com.profect.tickle.domain.settlement.entity.SettlementMonthly;
+import com.profect.tickle.batch.domain.settlement.timeUtil.SettlementTimeUtil;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
@@ -48,7 +48,7 @@ import java.util.Map;
 @Configuration
 @EnableBatchProcessing
 @RequiredArgsConstructor
-public class WeeklyBatchConfig {
+public class MonthlyBatchConfig {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager txManager;
@@ -61,46 +61,46 @@ public class WeeklyBatchConfig {
     private final SettlementCsvSerializer settlementCsvSerializer;
 
     /**
-     * 주간 정산 Job
-     * Job Name: settlementWeeklyJob
+     * 월간 정산 Job
+     * Job Name: settlementMonthlyJob
      */
     @Bean
-    public Job settlementWeeklyJob() {
-        return new JobBuilder("settlementWeeklyJob", jobRepository)
-                .start(settlementWeeklyStep())
-                .next(settlementWeeklyUpsertStep())
+    public Job settlementMonthlyJob() {
+        return new JobBuilder("settlementMonthlyJob", jobRepository)
+                .start(settlementMonthlyStep())
+                .next(settlementMonthlyUpsertStep())
                 .build();
     }
 
     /**
-     * 주간 정산 Step
-     * Step Name: settlementWeeklyStep
+     * 월간 정산 Step
+     * Step Name: settlementMonthlyStep
      * Chunk Size: 10_000
      */
     @Bean
-    public Step settlementWeeklyStep() {
-        return new StepBuilder("settlementWeeklyStep", jobRepository)
-                .<SettlementWeeklyFindTargetDto, SettlementWeekly>chunk(10_000, txManager)
-                .reader(settlementWeeklyReader(null, null))
-                .processor(settlementWeeklyProcessor())
-                .writer(settlementWeeklyWriter())
+    public Step settlementMonthlyStep() {
+        return new StepBuilder("settlementMonthlyStep", jobRepository)
+                .<SettlementMonthlyFindTargetDto, SettlementMonthly>chunk(10_000, txManager)
+                .reader(settlementMonthlyReader(null, null))
+                .processor(settlementMonthlyProcessor())
+                .writer(settlementMonthlyWriter())
                 .listener((ChunkListener) chunkTimingListener)
                 .listener((StepExecutionListener) chunkTimingListener)
                 .build();
     }
 
     /**
-     * 주간 정산 MyBatisPagingItemReader
+     * 월간 정산 MyBatisPagingItemReader
      * Paging Size: 50_000
      * @param settlementBatchStartedAt: 건별 정산, 배치 메타테이블에 insert, update할 배치 시간(from. JobLauncher)
      * @param lastTimeSeconds: beforStep 단계에서 배치 메타테이블로부터 가져온 마지막 배치 시간(where절 비교용)
-     * @return SettlementWeeklyFindTargetDto
+     * @return SettlementMonthlyFindTargetDto
      */
     @Bean
     @StepScope
-    public MyBatisPagingItemReader<SettlementWeeklyFindTargetDto> settlementWeeklyReader(
+    public MyBatisPagingItemReader<SettlementMonthlyFindTargetDto> settlementMonthlyReader(
             @Value("#{jobParameters['settlementBatchStartedAt']}") String settlementBatchStartedAt,
-            @Value("#{stepExecutionContext['lastTimeSeconds']}")Instant lastTimeSeconds
+            @Value("#{stepExecutionContext['lastTimeSeconds']}") Instant lastTimeSeconds
     ) {
         LocalDate today = SettlementTimeUtil.localDate(Instant.parse(settlementBatchStartedAt));
         SettlementTimeUtil period = SettlementTimeUtil.get(today);
@@ -108,16 +108,12 @@ public class WeeklyBatchConfig {
                 "now", Instant.parse(settlementBatchStartedAt),
                 "lastTimeSeconds", lastTimeSeconds,
                 "year", period.yearStr(),
-                "month", period.monthStr(),
-                "day", period.dayOfMonthStr(),
-                "week", period.weekOfMonthStr(),
-                "from", period.yearStr() + "-" + period.monthStr() + "-" + period.startOfWeek(),
-                "to", period.yearStr() + "-" + period.monthStr() + "-" + period.endOfWeek()
+                "month", period.monthStr()
         );
 
-        return new MyBatisPagingItemReaderBuilder<SettlementWeeklyFindTargetDto>()
+        return new MyBatisPagingItemReaderBuilder<SettlementMonthlyFindTargetDto>()
                 .sqlSessionFactory(sqlSessionFactory)
-                .queryId("com.profect.tickle.domain.settlement.mapper.SettlementWeeklyMapper.aggregateFromDailyToWeekly")
+                .queryId("com.profect.tickle.batch.domain.settlement.mapper.SettlementMonthlyMapper.aggregateFromWeeklyToMonthly")
                 .parameterValues(params)
                 .pageSize(50_000)
                 .maxItemCount(Integer.MAX_VALUE)
@@ -125,18 +121,18 @@ public class WeeklyBatchConfig {
     }
 
     /**
-     * 주간 정산 ItemProcessor
+     * 월간 정산 ItemProcessor
      * 판매금액, 환불금액, 정산대상금액, 수수료, 대납금액, 환불상태
-     * @return SettlementWeekly
+     * @return SettlementMonthly
      */
     @Bean
-    public ItemProcessor<SettlementWeeklyFindTargetDto, SettlementWeekly> settlementWeeklyProcessor() {
+    public ItemProcessor<SettlementMonthlyFindTargetDto, SettlementMonthly> settlementMonthlyProcessor() {
         return targetDto -> {
             Member member = memberRepository.findById(targetDto.getMemberId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
             Status settlementStatus = statusProvider.provide(StatusIds.Settlement.SCHEDULED);
 
-            return SettlementWeekly.create(
+            return SettlementMonthly.create(
                     targetDto,
                     member,
                     settlementStatus
@@ -145,26 +141,26 @@ public class WeeklyBatchConfig {
     }
 
     /**
-     * 주간 정산 ItemWriter: COPY(Postgresql COPY ... FROM STDIN 프로토콜)
+     * 월간 정산 ItemWriter: COPY(Postgresql COPY ... FROM STDIN 프로토콜)
      * COPY는 upsert가 안되므로 staging용 테이블에 먼저 COPY
-     * @return SettlementWeekly
+     * @return SettlementMonthly
      */
     @Bean
-    public ItemWriter<SettlementWeekly> settlementWeeklyWriter() {
+    public ItemWriter<SettlementMonthly> settlementMonthlyWriter() {
         return items -> {
             try (Connection conn = dataSource.getConnection()) {
                 PGConnection pgConn = conn.unwrap(PGConnection.class);
                 CopyManager copyManager = new CopyManager((BaseConnection) pgConn);
 
-                String sb = settlementCsvSerializer.weeklyCsvSerializer(items);
+                String sb = settlementCsvSerializer.monthlyCsvSerializer(items);
 
                 String copySql = ""
-                        + "COPY settlement_weekly_stage("
+                        + "COPY settlement_monthly_stage("
                         +   "member_id, status_id, performance_title,"
-                        +   "settlement_year, settlement_month, settlement_week,"
-                        +   "settlement_weekly_sales_amount, settlement_weekly_refund_amount,"
-                        +   "settlement_weekly_gross_amount, settlement_weekly_commission,"
-                        +   "settlement_weekly_net_amount, settlement_weekly_created_at"
+                        +   "settlement_year, settlement_month,"
+                        +   "settlement_monthly_sales_amount, settlement_monthly_refund_amount,"
+                        +   "settlement_monthly_gross_amount, settlement_monthly_commission,"
+                        +   "settlement_monthly_net_amount, settlement_monthly_created_at"
                         + ") FROM STDIN WITH (FORMAT csv)";
 
                 try (Reader reader = new StringReader(sb)) {
@@ -175,40 +171,40 @@ public class WeeklyBatchConfig {
     }
 
     /**
-     * 주간 정산 Upsert
-     * Staging 용 테이블로부터 실제 주간 정산 테이블에 upsert
+     * 월간 정산 Upsert
+     * Staging 용 테이블로부터 실제 월간 정산 테이블에 upsert
      */
     @Bean
-    public Step settlementWeeklyUpsertStep() {
+    public Step settlementMonthlyUpsertStep() {
         return new StepBuilder("upsertFromStaging", jobRepository)
-                .tasklet((contribution, chunkContext) -> {
+                .tasklet((contribution, chunkContext) ->{
                     jdbcTemplate.update(
-                            """
-                                INSERT INTO settlement_weekly (
+                                """
+                                INSERT INTO settlement_monthly (
                                     member_id, status_id, performance_title,
-                                    settlement_year, settlement_month, settlement_week,
-                                    settlement_weekly_sales_amount, settlement_weekly_refund_amount,
-                                    settlement_weekly_gross_amount, settlement_weekly_commission,
-                                    settlement_weekly_net_amount, settlement_weekly_created_at
+                                    settlement_year, settlement_month,
+                                    settlement_monthly_sales_amount, settlement_monthly_refund_amount,
+                                    settlement_monthly_gross_amount, settlement_monthly_commission,
+                                    settlement_monthly_net_amount, settlement_monthly_created_at
                                 )
                                 SELECT
                                     s.member_id, s.status_id, s.performance_title,
-                                    s.settlement_year, s.settlement_month, s.settlement_week,
-                                    s.settlement_weekly_sales_amount, s.settlement_weekly_refund_amount,
-                                    s.settlement_weekly_gross_amount, s.settlement_weekly_commission,
-                                    s.settlement_weekly_net_amount, s.settlement_weekly_created_at
-                                FROM settlement_weekly_stage s
-                                ON CONFLICT (member_id, performance_title, settlement_year, settlement_month, settlement_week)
+                                    s.settlement_year, s.settlement_month,
+                                    s.settlement_monthly_sales_amount, s.settlement_monthly_refund_amount,
+                                    s.settlement_monthly_gross_amount, s.settlement_monthly_commission,
+                                    s.settlement_monthly_net_amount, s.settlement_monthly_created_at
+                                FROM settlement_monthly_stage s
+                                ON CONFLICT (member_id, performance_title, settlement_year, settlement_month)
                                 DO UPDATE SET
-                                    settlement_weekly_sales_amount = EXCLUDED.settlement_weekly_sales_amount,
-                                    settlement_weekly_refund_amount = EXCLUDED.settlement_weekly_refund_amount,
-                                    settlement_weekly_gross_amount = EXCLUDED.settlement_weekly_gross_amount,
-                                    settlement_weekly_commission = EXCLUDED.settlement_weekly_commission,
-                                    settlement_weekly_net_amount = EXCLUDED.settlement_weekly_net_amount,
-                                    settlement_weekly_updated_at = EXCLUDED.settlement_weekly_created_at
+                                    settlement_monthly_sales_amount = EXCLUDED.settlement_monthly_sales_amount,
+                                    settlement_monthly_refund_amount = EXCLUDED.settlement_monthly_refund_amount,
+                                    settlement_monthly_gross_amount = EXCLUDED.settlement_monthly_gross_amount,
+                                    settlement_monthly_commission = EXCLUDED.settlement_monthly_commission,
+                                    settlement_monthly_net_amount = EXCLUDED.settlement_monthly_net_amount,
+                                    settlement_monthly_updated_at = EXCLUDED.settlement_monthly_created_at
                                 """
                     );
-                    jdbcTemplate.execute("TRUNCATE settlement_weekly_stage");
+                    jdbcTemplate.execute("TRUNCATE TABLE settlement_monthly_stage");
                     return RepeatStatus.FINISHED;
                 }, txManager)
                 .build();

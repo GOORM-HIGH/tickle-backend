@@ -16,13 +16,13 @@ public class SeatPreemptionReleaser {
 
     @Transactional
     public void releaseExpiredPreemptions() {
-        Instant now = Instant.now();
-        int count = seatRepository.clearExpiredPreemptionsBulk(now);
-
-        if (count > 0) {
-            log.info("벌크로 {}개 좌석 선점 해제", count);
-        } else {
-            log.debug("해제된 좌석 없음");
-        }
+//        Instant now = Instant.now();
+//        int count = seatRepository.clearExpiredPreemptionsBulk(now);
+//
+//        if (count > 0) {
+//            log.info("벌크로 {}개 좌석 선점 해제", count);
+//        } else {
+//            log.debug("해제된 좌석 없음");
+//        }
     }
 }
