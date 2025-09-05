@@ -1,6 +1,5 @@
 package com.profect.tickle.domain.notification.event.performance.listener;
 
-import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
 import com.profect.tickle.domain.notification.dto.request.MailCreateServiceRequestDto;
@@ -39,7 +38,7 @@ public class PerformanceEventListener {
 
     // 제휴 업체 공연 게시 시 알림 전송 (브로드캐스트)
     @EventListener
-    public void handlePartnerPerformancePublished(PartnerPerformancePublishedEvent event) {
+    public void handlePartnerPerformancePublished(PartnerPerformancePublishedEvent event) throws Exception {
         log.info("[이벤트 감지] 제휴 공연 게시: \"{}\"", event.performance().title());
 
         // 1) 템플릿 조회
@@ -62,8 +61,8 @@ public class PerformanceEventListener {
         String content = String.format(template.getContent(), contentBody);
 
         // 3) 회원 알림 저장
-        List<MemberResponseDto> memberList = memberService.findMemberListByDeletedAtIsNull(true);
-        memberList.forEach(member -> notificationService.saveNotification(member.getEmail(), template, subject, content, now));
+        List<Long> memberIdList = memberService.findMemberListByDeletedAtIsNull(true);
+        notificationService.saveAll(memberIdList, template.getId(), subject, content, now);
 
         // 4) SSE 브로드캐스트
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED, subject, content, now, link, null);

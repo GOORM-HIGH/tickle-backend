@@ -17,5 +17,5 @@ public interface MemberMapper {
 
     Optional<MemberResponseDto> getMemberDtoByEmail(@Param(value = "email") String email);
 
-    List<MemberResponseDto> findMemberListByDeletedAtIsNull(@Param(value = "deletedAtIsNull") boolean isNull);
+    List<Long> findActiveMemberIdList();
 }

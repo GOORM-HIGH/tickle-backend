@@ -329,8 +329,8 @@ public class MemberService implements UserDetailsService {
     }
 
     // 활성(비활성) 회원들의 정보를 반환하는 메서드
-    public List<MemberResponseDto> findMemberListByDeletedAtIsNull(boolean deletedAtIsNull) {
-        return memberMapper.findMemberListByDeletedAtIsNull(deletedAtIsNull);
+    public List<Long> findMemberListByDeletedAtIsNull(boolean deletedAtIsNull) {
+        return memberMapper.findActiveMemberIdList();
     }
 
     // 로그아웃 메서드
