@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @RestController
-@RequestMapping("test/notification-event")
+@RequestMapping("/test/notification-event")
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationDevController {
