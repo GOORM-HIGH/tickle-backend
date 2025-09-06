@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.event.service.impl;
+package com.profect.tickle.domain.event.service.event.impl;
 
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
@@ -11,17 +11,14 @@ import com.profect.tickle.domain.event.mapper.CouponReceivedMapper;
 import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
-import com.profect.tickle.domain.event.service.EventService;
-import com.profect.tickle.domain.event.service.lock.EventApplyExecutor;
+import com.profect.tickle.domain.event.service.event.EventService;
+import com.profect.tickle.domain.event.service.message.publisher.EventPublisher;
 import com.profect.tickle.domain.event.service.lock.PessimisticEventApplyExecutor;
-import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
-import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.event.service.message.dto.TicketLockMessage;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
 import com.profect.tickle.domain.point.entity.PointTarget;
-import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.reservation.entity.Seat;
-import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
@@ -30,7 +27,6 @@ import com.profect.tickle.global.security.util.SecurityUtil;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,20 +49,17 @@ public class EventServiceImpl implements EventService {
     private final ZoneId zone = ZoneId.systemDefault();
 
     // mapper & repositories
-    private final EventApplyExecutor executor;
-    private final PessimisticEventApplyExecutor pessimisticExecutor;
+    private final PessimisticEventApplyExecutor pessimisticEventApplyExecutor;
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
     private final EventRepository eventRepository;
-    private final MemberRepository memberRepository;
-    private final ReservationRepository reservationRepository;
-    private final CouponReceivedRepository couponReceivedRepository;
-    private final PointRepository pointRepository;
     private final EventMapper eventMapper;
     private final CouponMapper couponMapper;
     private final CouponReceivedMapper couponReceivedMapper;
     private final PerformanceRepository performanceRepository;
     private final StatusProvider statusProvider;
+    private final EventPublisher eventPublisher;
+
 
     @Override
     @Transactional
@@ -109,8 +102,17 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public TicketApplyResponseDto applyTicketEvent(Long eventId) {
-        return pessimisticExecutor.applyTicketEventOnce(eventId);
+    public void applyTicketEvent(Long eventId) {
+        Long memberId = SecurityUtil.getSignInMemberId();
+
+        // 1️⃣ 메시지 생성
+        TicketLockMessage msg = new TicketLockMessage(
+                eventId,
+                memberId
+        );
+
+        // 2️⃣ 메시지 발행 (비동기)
+        eventPublisher.publish(msg);
     }
 
     @Override
@@ -135,6 +137,7 @@ public class EventServiceImpl implements EventService {
         };
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public TicketEventDetailResponseDto getTicketEventDetail(Long eventId) {
@@ -146,7 +149,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public void issueCoupon(Long eventId) {
-        pessimisticExecutor.issueCouponOnce(eventId);
+        pessimisticEventApplyExecutor.issueCouponOnce(eventId);
     }
 
     @Override
@@ -219,11 +222,5 @@ public class EventServiceImpl implements EventService {
     private Performance getPerformanceOrThrow(TicketEventCreateRequestDto request) {
         return performanceRepository.findById(request.performanceId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND));
-    }
-
-    private void endEventIfCouponOutOfStock(Coupon coupon, Event event) {
-        if (coupon.getCount() == 0) {
-            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
-        }
     }
 }
