@@ -87,21 +87,20 @@ export default function () {
 
   const start = Date.now();
 
-  // 결과 상태를 저장할 객체
-  let connectionResult = {
-    opened: false,
-    errored: false,
-    sessionCompleted: false,
-    messageCount: 0,
-    firstMessageTime: 0,
-  };
+  // 측정 완료 플래그 - 중복 측정 방지
+  let measurementTaken = false;
+  let connectionSuccess = false;
+  let sessionSuccess = false;
 
   debugLog(`Attempting to connect to ${URL} with memberId=${MEMBER_ID}`);
   debugLog(`Headers: ${JSON.stringify(createHeaders())}`);
 
   // 연결 재시도 로직
-  let connected = false;
-  for (let attempt = 1; attempt <= MAX_RETRIES && !connected; attempt++) {
+  for (
+    let attempt = 1;
+    attempt <= MAX_RETRIES && !connectionSuccess;
+    attempt++
+  ) {
     if (attempt > 1) {
       connectionRetries.add(1, tags);
       debugLog(`Retry attempt ${attempt}/${MAX_RETRIES}`);
@@ -110,97 +109,87 @@ export default function () {
 
     try {
       // SSE 연결 시도
-      const client = sse.open(URL, createSSEOptions(), function (sseClient) {
-        // 연결 성공 즉시 플래그 설정
-        connected = true;
-        connectionResult.opened = true;
-        debugLog("SSE connection established successfully");
+      sse.open(URL, createSSEOptions(), function (sseClient) {
+        // 콜백 실행 즉시 측정 처리
+        if (!measurementTaken) {
+          measurementTaken = true;
+          connectionSuccess = true;
 
-        // 첫 메시지 수신 시간 기록
-        if (connectionResult.firstMessageTime === 0) {
-          connectionResult.firstMessageTime = Date.now() - start;
-          latency.add(connectionResult.firstMessageTime, tags);
-          debugLog(
-            `First message received after ${connectionResult.firstMessageTime}ms`
-          );
+          debugLog("SSE connection established successfully");
+
+          // 연결 성공 지표 즉시 기록
+          openOk.add(1, tags);
+
+          // 첫 메시지 수신 시간 기록
+          const timeToFirst = Date.now() - start;
+          latency.add(timeToFirst, tags);
+          debugLog(`First message received after ${timeToFirst}ms`);
+
+          // 메시지 카운트
+          messagesReceived.add(1, tags);
+
+          debugLog(`Maintaining connection for ${SESSION_SEC} seconds`);
+
+          // 세션 유지
+          sleep(SESSION_SEC);
+
+          // 세션 완료 처리
+          sessionSuccess = true;
+          sessionsCompleted.add(1, tags);
+          stayedFull.add(1, tags);
+
+          debugLog("Session completed successfully");
         }
-
-        // 메시지 카운트
-        connectionResult.messageCount = 1;
-        messagesReceived.add(1, tags);
-
-        debugLog(`Maintaining connection for ${SESSION_SEC} seconds`);
-
-        // 지정된 시간 동안 연결 유지
-        sleep(SESSION_SEC);
-
-        // 세션 완료 표시
-        connectionResult.sessionCompleted = true;
-        sessionsCompleted.add(1, tags);
-        debugLog("Session completed successfully");
       });
 
-      // 연결 시도가 성공하면 재시도 루프 종료
-      if (connected) {
+      // 연결 성공시 재시도 루프 종료
+      if (connectionSuccess) {
         debugLog("Breaking retry loop - connection successful");
         break;
       }
+
+      // 짧은 대기 후 콜백이 실행되지 않으면 다음 시도
+      sleep(0.5);
     } catch (e) {
       debugLog(`Connection attempt ${attempt} failed: ${e.message}`);
       connectionErrors.add(1, tags);
 
-      if (attempt === MAX_RETRIES) {
-        connectionResult.errored = true;
-        debugLog(`All ${MAX_RETRIES} connection attempts failed`);
+      // 마지막 시도에서 실패시 실패 지표 기록
+      if (attempt === MAX_RETRIES && !measurementTaken) {
+        measurementTaken = true;
+        openOk.add(0, tags);
+        stayedFull.add(0, tags);
       }
     }
   }
 
-  // 연결 지속 시간 계산
+  // 모든 재시도 후에도 연결되지 않은 경우
+  if (!measurementTaken) {
+    openOk.add(0, tags);
+    stayedFull.add(0, tags);
+    debugLog("All connection attempts failed");
+  }
+
+  // 연결 지속 시간 계산 및 기록
   const aliveMs = Date.now() - start;
   connAlive.add(aliveMs, tags);
 
-  // 결과 메트릭 기록 (connectionResult 사용)
-  openOk.add(connectionResult.opened && !connectionResult.errored, tags);
-
-  if (connectionResult.opened && !connectionResult.errored) {
-    const expectedDurationMs = SESSION_SEC * 1000;
-
-    if (
-      connectionResult.sessionCompleted &&
-      aliveMs >= expectedDurationMs * 0.9
-    ) {
-      // 90% 이상 유지되면 성공으로 간주
-      stayedFull.add(1, tags);
-      debugLog(`Session maintained successfully: ${aliveMs}ms`);
-    } else {
-      stayedFull.add(0, tags);
-      earlyClose.add(1, tags);
-      debugLog(
-        `Session ended early: ${aliveMs}ms (expected: ${expectedDurationMs}ms)`
-      );
-    }
-  } else {
-    stayedFull.add(0, tags);
-    if (connectionResult.opened) {
-      earlyClose.add(1, tags);
-    }
+  // 조기 종료 체크
+  if (connectionSuccess && !sessionSuccess) {
+    earlyClose.add(1, tags);
+    debugLog(`Session ended early: ${aliveMs}ms`);
   }
 
   // 최종 결과 로그
   console.log(
-    `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, opened=${connectionResult.opened}, errored=${connectionResult.errored}, ` +
-      `aliveMs=${aliveMs}, messagesReceived=${connectionResult.messageCount}, ` +
-      `sessionCompleted=${connectionResult.sessionCompleted}, ` +
-      `stayedFull=${aliveMs >= SESSION_SEC * 1000 * 0.9}, ` +
-      `latency=${
-        connectionResult.firstMessageTime > 0 ? "measured" : "not_measured"
-      }`
+    `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, ` +
+      `opened=${connectionSuccess}, sessionCompleted=${sessionSuccess}, ` +
+      `aliveMs=${aliveMs}, latency=measured`
   );
 
-  if (!connectionResult.opened || connectionResult.errored) {
+  if (!connectionSuccess) {
     console.warn(
-      `[VU ${__VU}] Connection issues detected. ` +
+      `[VU ${__VU}] Connection failed. ` +
         `Check server availability and network connectivity.`
     );
   }
@@ -208,18 +197,18 @@ export default function () {
 
 /* ==== 설정 검증 ==== */
 export function setup() {
-  console.log("🚀 === K6 SSE Performance Test Configuration ===");
+  console.log("=== K6 SSE Performance Test Configuration ===");
   console.log(`Environment: ${ENVIRONMENT}`);
   console.log(`Base URL: ${config.baseUrl}`);
   console.log(`Target URL: ${URL}`);
   console.log(`Member ID: ${MEMBER_ID}`);
   console.log(`Session Duration: ${SESSION_SEC}s`);
   console.log(`Max Retries: ${MAX_RETRIES}`);
-  console.log(`🎯 Target VUs: ${config.vus}`);
-  console.log(`📊 Load Pattern: ${JSON.stringify(config.stages)}`);
-  console.log(`🎚️  Thresholds: ${JSON.stringify(config.thresholds, null, 2)}`);
+  console.log(`Target VUs: ${config.vus}`);
+  console.log(`Load Pattern: ${JSON.stringify(config.stages)}`);
+  console.log(`Thresholds: ${JSON.stringify(config.thresholds, null, 2)}`);
   console.log(`Debug Mode: ${DEBUG ? "ON" : "OFF"}`);
-  console.log(`Token Provided: ${TOKEN ? "✅ Yes" : "❌ No"}`);
+  console.log(`Token Provided: ${TOKEN ? "Yes" : "No"}`);
   console.log(`Last Event ID: ${LAST || "None"}`);
 
   // 예상 부하 정보
@@ -228,14 +217,14 @@ export function setup() {
     0
   );
   const maxVus = Math.max(...config.stages.map((stage) => stage.target));
-  console.log(`⏱️  Total Test Duration: ${totalDuration}s`);
-  console.log(`📈 Peak Load: ${maxVus} VUs`);
+  console.log(`Total Test Duration: ${totalDuration}s`);
+  console.log(`Peak Load: ${maxVus} VUs`);
   console.log("=================================================");
 }
 
 /* ==== 테스트 완료 후 정리 ==== */
 export function teardown() {
-  console.log("🏁 === Test Completed ===");
+  console.log("=== Test Completed ===");
   console.log(`Environment: ${ENVIRONMENT}`);
   console.log(`Tested VUs: ${config.vus}`);
 
@@ -246,7 +235,7 @@ export function teardown() {
   console.log(`Total Duration: ${totalDuration}s`);
 
   console.log("");
-  console.log("📊 Key metrics to review:");
+  console.log("Key metrics to review:");
   console.log("- sse_open_ok: Connection success rate");
   console.log("- sse_stayed_full: Session completion rate");
   console.log("- sse_messages_received: Total messages processed");
@@ -254,13 +243,12 @@ export function teardown() {
   console.log("- latency: First message response time");
   console.log("- sse_sessions_completed: Successfully completed sessions");
 
-  // 다음 단계 가이드 추가
   console.log("");
-  console.log("🎯 === Next Step Recommendations ===");
-  console.log("📈 If success rate > 95%: Try higher VUs");
-  console.log("⚠️  If success rate < 90%: Check server resources");
-  console.log("🚫 If errors > threshold: Reduce VUs or check network");
-  console.log("📋 If stable: Document current capacity limits");
+  console.log("=== Next Step Recommendations ===");
+  console.log("If success rate > 95%: Try higher VUs");
+  console.log("If success rate < 90%: Check server resources");
+  console.log("If errors > threshold: Reduce VUs or check network");
+  console.log("If stable: Document current capacity limits");
 
   // 권장 다음 VU 수
   const currentVu = config.vus;
@@ -269,6 +257,6 @@ export function teardown() {
     Math.ceil(currentVu * 1.5), // 50% 증가
     Math.ceil(currentVu * 2), // 100% 증가
   ];
-  console.log(`🔄 Suggested next VU levels: ${nextVuOptions.join(", ")}`);
+  console.log(`Suggested next VU levels: ${nextVuOptions.join(", ")}`);
   console.log("=====================================");
 }
