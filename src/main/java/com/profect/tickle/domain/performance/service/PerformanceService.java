@@ -118,6 +118,8 @@ public class PerformanceService {
             String keyword, int size,
             Instant cursorDate, Long cursorId
     ) {
+        long totalCount = performanceMapper.countPerformancesByKeyword(keyword);
+        long cappedTotalCount = Math.min(totalCount, 10001);
         int pageSize = Math.min(Math.max(size, 1), 100);
 
         // LIMIT + 1 전략으로 hasNext 확인
@@ -134,7 +136,7 @@ public class PerformanceService {
             next = new Cursor(last.getDate(), last.getPerformanceId());
         }
 
-        return new CursorPageResponse<>(items, next, hasNext);
+        return new CursorPageResponse<>(items, next, hasNext,cappedTotalCount);
     }
 
     // 첫 페이지에서만 호출

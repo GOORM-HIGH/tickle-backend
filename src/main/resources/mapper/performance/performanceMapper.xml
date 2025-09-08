@@ -113,21 +113,22 @@
             LIMIT 4
     </select>
 
-
-    <!--  공연 키워드로 검색  -->
     <select id="searchPerformancesByKeyword" resultType="PerformanceDto">
+        <bind name="kw" value="keyword == null ? '' : keyword.trim()" />
+        <bind name="tsquery" value="kw.replaceAll(' ', ' &amp; ')" />
+
+
         SELECT
-        p.performance_id    AS performanceId,
+        p.performance_id AS performanceId,
         p.performance_title AS title,
-        p.performance_date  AS date,
-        p.performance_img   AS img
+        p.performance_date AS date,
+        p.performance_img AS img
         FROM performance p
         WHERE p.performance_deleted_at IS NULL
-        AND p.status_id IN (1,2)
-        AND (
-        lower(p.performance_title) LIKE '%' || lower(#{keyword}) || '%' ESCAPE '\'
-        OR  lower(p.performance_title) %     lower(#{keyword})
-        )
+        AND p.status_id IN (1, 2)
+        AND p.performance_title_vector @@ to_tsquery('simple', unaccent(lower(#{tsquery})))
+        AND p.performance_date &gt;= current_date
+        AND p.performance_date &lt; current_date + interval '12 months'
         <if test="cursorDate != null and cursorId != null">
             AND (
             p.performance_date &gt; #{cursorDate}
@@ -138,17 +139,24 @@
         LIMIT #{limit}
     </select>
 
-    <!-- 카운트는 첫 페이지에서만 사용 -->
+
     <select id="countPerformancesByKeyword" resultType="long">
-        SELECT COUNT(*)
+        <bind name="kw" value="keyword == null ? '' : keyword.trim()" />
+        <bind name="tsquery" value="kw.replaceAll(' ', ' &amp; ')" />
+
+        SELECT COUNT(*) FROM (
+        SELECT 1
         FROM performance p
         WHERE p.performance_deleted_at IS NULL
-          AND p.status_id IN (1,2)
-          AND (
-            lower(p.performance_title) LIKE '%' || lower(#{keyword}) || '%' ESCAPE '\'
-                OR  lower(p.performance_title) %     lower(#{keyword})
-            )
+        AND p.status_id IN (1, 2)
+        AND p.performance_title_vector @@ to_tsquery('simple', unaccent(lower(#{tsquery})))
+        AND p.performance_date &gt;= current_date
+        AND p.performance_date &lt; current_date + interval '12 months'
+        LIMIT 10001
+        ) AS limited
     </select>
+
+
 
     <!--  관련공연 조회  -->
     <select id="findRelatedPerformances" resultType="PerformanceDto">
