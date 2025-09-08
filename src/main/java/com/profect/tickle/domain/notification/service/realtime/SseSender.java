@@ -57,12 +57,12 @@ public class SseSender implements RealtimeSender {
     private final MeterRegistry meterRegistry;
 
     // metrics
-    private Counter connectionsCreated;
-    private Counter connectionsCompleted;
-    private Counter connectionsTimeout;
-    private Counter connectionsError;
-    private Counter messagesSent;
-    private Counter messagesFailed;
+    private Counter connectionsCreated;     // SSE 연결 생성 총 횟수
+    private Counter connectionsCompleted;   // SSE 연결 정상 완료 총 횟수
+    private Counter connectionsTimeout;     // SSE 연결 타임아웃 총 횟수
+    private Counter connectionsError;       // SSE 연결 에러 발생 총 횟수
+    private Counter messagesSent;           // SSE 메시지 전송 성공 총 횟수
+    private Counter messagesFailed;         // SSE 메시지 전송 실패 총 횟수
 
     @PostConstruct
     private void initMetrics() {
