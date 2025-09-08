@@ -1,0 +1,18 @@
+{
+  "name": "stomp-chat-test",
+  "version": "1.0.0",
+  "description": "STOMP WebSocket 채팅 성능 테스트 도구",
+  "main": "stomp-test.js",
+  "scripts": {
+    "test": "node stomp-test.js",
+    "test:multiple": "node multiple-stomp-test.js"
+  },
+  "dependencies": {
+    "@stomp/stompjs": "^7.0.0",
+    "node-fetch": "^3.3.2",
+    "sockjs-client": "^1.6.1",
+    "ws": "^8.14.2"
+  },
+  "author": "",
+  "license": "MIT"
+}
