@@ -70,4 +70,18 @@ out/
 *.http*
 
 ### K6 테스트 바이너리 파일 ###
-*k6*
+*k6*%
+
+### 성능 테스트 관련 추가 ###
+# 테스트 결과 파일들 (용량이 크고 실행할 때마다 달라짐)
+chat-file-websocket-tests/results/*.json
+
+# Node.js 의존성
+chat-file-websocket-tests/node_modules/
+
+# 데이터베이스 덤프 파일 (대용량)
+*.dump
+kopis_full.dump
+
+# 애플리케이션 로그
+application.log
