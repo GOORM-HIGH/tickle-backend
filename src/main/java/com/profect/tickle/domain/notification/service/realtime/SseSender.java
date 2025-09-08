@@ -91,31 +91,30 @@ public class SseSender implements RealtimeSender {
                 .description("Total number of SSE messages failed to send")
                 .register(meterRegistry);
 
-        // Gauge 메트릭 등록 - SseRepository의 기존 메서드 활용
-        Gauge.builder("sse_connections_total")
-                .description("Current number of active SSE connections")
-                .register(meterRegistry, () -> {
+        Gauge.builder("sse_connections_total", () -> {
                     return sseRepository.getAllWithIdsGroupedByMember()
                             .values()
                             .stream()
                             .mapToLong(Map::size)
                             .sum();
-                });
+                })
+                .description("Current number of active SSE connections")
+                .register(meterRegistry);
 
-        Gauge.builder("sse_connections_members")
-                .description("Current number of active members with SSE connections")
-                .register(meterRegistry, () -> {
+        Gauge.builder("sse_connections_members", () -> {
                     return sseRepository.getAllWithIdsGroupedByMember().size();
-                });
+                })
+                .description("Current number of active members with SSE connections")
+                .register(meterRegistry);
 
-        Gauge.builder("sse_connections_avg_per_member")
-                .description("Average SSE connections per member")
-                .register(meterRegistry, () -> {
+        Gauge.builder("sse_connections_avg_per_member", () -> {
                     Map<Long, Map<String, SseEmitter>> grouped = sseRepository.getAllWithIdsGroupedByMember();
                     long totalConnections = grouped.values().stream().mapToLong(Map::size).sum();
                     long activeMembers = grouped.size();
                     return activeMembers > 0 ? (double) totalConnections / activeMembers : 0.0;
-                });
+                })
+                .description("Average SSE connections per member")
+                .register(meterRegistry);
     }
 
     @Override
