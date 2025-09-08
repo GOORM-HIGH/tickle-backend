@@ -24,6 +24,12 @@ public class StompSessionManager {
             accessor.setUser(() -> finalUserId.toString());
             accessor.setHeader("userId", finalUserId);
             
+            // SessionAttributes에도 저장 (영구 보관용)
+            if (accessor.getSessionAttributes() != null) {
+                accessor.getSessionAttributes().put("userId", finalUserId);
+                accessor.getSessionAttributes().put("userIdString", finalUserId.toString());
+            }
+            
             log.info("STOMP 세션 설정 완료: userId={}", finalUserId);
             
         } catch (Exception e) {
