@@ -108,7 +108,7 @@ export default function() {
   });
   
   const joinSuccess = check(joinResponse, {
-    'chat room join successful': (r) => r.status === 201, // 201: 참여 성공
+    'chat room join successful': (r) => r.status === 201 || r.status === 200, // 201: 신규 참여, 200: 이미 참여 중
   });
   
   if (joinSuccess) {
