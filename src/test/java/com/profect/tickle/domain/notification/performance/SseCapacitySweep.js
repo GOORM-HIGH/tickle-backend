@@ -133,14 +133,14 @@ export default function () {
         debugLog("Session completed successfully");
 
         // 명시적 연결 종료 시도
-        try {
-          if (sseClient && typeof sseClient.close === "function") {
-            sseClient.close();
-            debugLog("SSE connection closed by client");
-          }
-        } catch (closeError) {
-          debugLog(`Error closing SSE connection: ${closeError.message}`);
-        }
+        // try {
+        //   if (sseClient && typeof sseClient.close === "function") {
+        //     sseClient.close();
+        //     debugLog("SSE connection closed by client");
+        //   }
+        // } catch (closeError) {
+        //   debugLog(`Error closing SSE connection: ${closeError.message}`);
+        // }
       });
 
       // 연결 시도가 성공하면 재시도 루프 종료
