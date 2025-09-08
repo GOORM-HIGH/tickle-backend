@@ -56,7 +56,7 @@ public class SseSender implements RealtimeSender {
     private final SseRepository sseRepository;
     private final MeterRegistry meterRegistry;
 
-    // 메트릭 필드들 (초기화는 @PostConstruct에서)
+    // metrics
     private Counter connectionsCreated;
     private Counter connectionsCompleted;
     private Counter connectionsTimeout;
@@ -126,13 +126,13 @@ public class SseSender implements RealtimeSender {
 
         log.info("SSE connect - memberId={}, emitterId={}", memberId, emitterId);
 
-        // 🆕 연결 생성 메트릭 증가
+        // 연결 생성 메트릭 증가
         connectionsCreated.increment();
 
-        // 타임아웃 설정
+        // emitter 생성
         SseEmitter emitter = new SseEmitter(notificationProperty.sseTimeout().toMillis());
-        sseRepository.save(memberId, emitterId, emitter);
         setEmitter(memberId, emitter, emitterId);
+        sseRepository.save(memberId, emitterId, emitter);
 
         // 초기 핑(Last-Event-ID 체인 시작)
         try {
