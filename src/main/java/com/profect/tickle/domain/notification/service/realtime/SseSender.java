@@ -7,7 +7,11 @@ import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.util.JsonUtils;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nullable;
+import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +39,8 @@ import java.util.function.Supplier;
 public class SseSender implements RealtimeSender {
 
     // properties
-    private static final int MAX_REPLAY_PER_MEMBER = 50;                                // 개수 상한
-    private static final long REPLAY_TTL_MS = TimeUnit.MINUTES.toMillis(10);    // TTL
+    private static final int MAX_REPLAY_PER_MEMBER = 50;
+    private static final long REPLAY_TTL_MS = TimeUnit.MINUTES.toMillis(10);
 
     // utils
     private final ObjectMapper objectMapper;
@@ -44,12 +48,75 @@ public class SseSender implements RealtimeSender {
     private final Supplier<UUID> uuidSupplier;
     private final Executor sseExecutor;
 
-    private final ConcurrentMap<String, SerialExecutor> lanes = new ConcurrentHashMap<>();    // 순서 저장용 맵
-    private final AtomicLong lastEventId = new AtomicLong(0);                       // SSE 아이디 카운터
+    private final ConcurrentMap<String, SerialExecutor> lanes = new ConcurrentHashMap<>();
+    private final AtomicLong lastEventId = new AtomicLong(0);
 
     // repositories / properties
     private final NotificationProperty notificationProperty;
     private final SseRepository sseRepository;
+    private final MeterRegistry meterRegistry;
+
+    // 메트릭 필드들 (초기화는 @PostConstruct에서)
+    private Counter connectionsCreated;
+    private Counter connectionsCompleted;
+    private Counter connectionsTimeout;
+    private Counter connectionsError;
+    private Counter messagesSent;
+    private Counter messagesFailed;
+
+    @PostConstruct
+    private void initMetrics() {
+        // Counter 메트릭 초기화
+        this.connectionsCreated = Counter.builder("sse_connections_created_total")
+                .description("Total number of SSE connections created")
+                .register(meterRegistry);
+
+        this.connectionsCompleted = Counter.builder("sse_connections_completed_total")
+                .description("Total number of SSE connections completed normally")
+                .register(meterRegistry);
+
+        this.connectionsTimeout = Counter.builder("sse_connections_timeout_total")
+                .description("Total number of SSE connections timed out")
+                .register(meterRegistry);
+
+        this.connectionsError = Counter.builder("sse_connections_error_total")
+                .description("Total number of SSE connections ended with error")
+                .register(meterRegistry);
+
+        this.messagesSent = Counter.builder("sse_messages_sent_total")
+                .description("Total number of SSE messages sent successfully")
+                .register(meterRegistry);
+
+        this.messagesFailed = Counter.builder("sse_messages_failed_total")
+                .description("Total number of SSE messages failed to send")
+                .register(meterRegistry);
+
+        // Gauge 메트릭 등록 - SseRepository의 기존 메서드 활용
+        Gauge.builder("sse_connections_total")
+                .description("Current number of active SSE connections")
+                .register(meterRegistry, () -> {
+                    return sseRepository.getAllWithIdsGroupedByMember()
+                            .values()
+                            .stream()
+                            .mapToLong(Map::size)
+                            .sum();
+                });
+
+        Gauge.builder("sse_connections_members")
+                .description("Current number of active members with SSE connections")
+                .register(meterRegistry, () -> {
+                    return sseRepository.getAllWithIdsGroupedByMember().size();
+                });
+
+        Gauge.builder("sse_connections_avg_per_member")
+                .description("Average SSE connections per member")
+                .register(meterRegistry, () -> {
+                    Map<Long, Map<String, SseEmitter>> grouped = sseRepository.getAllWithIdsGroupedByMember();
+                    long totalConnections = grouped.values().stream().mapToLong(Map::size).sum();
+                    long activeMembers = grouped.size();
+                    return activeMembers > 0 ? (double) totalConnections / activeMembers : 0.0;
+                });
+    }
 
     @Override
     public SseEmitter connect(@NotNull Long memberId, @Nullable String lastEventIdHeader) {
@@ -59,6 +126,9 @@ public class SseSender implements RealtimeSender {
         String emitterId = memberId + "_" + connectedAt.toEpochMilli() + "_" + uuid;
 
         log.info("SSE connect - memberId={}, emitterId={}", memberId, emitterId);
+
+        // 🆕 연결 생성 메트릭 증가
+        connectionsCreated.increment();
 
         // 타임아웃 설정
         SseEmitter emitter = new SseEmitter(notificationProperty.sseTimeout().toMillis());
@@ -95,7 +165,8 @@ public class SseSender implements RealtimeSender {
             json = JsonUtils.toJson(objectMapper, payload);
         } catch (Exception e) {
             log.warn("[SSE 전송] payload 직렬화에 실패했습니다. {}번 회원에게 전송하는 실시간알림 전송을 종료합니다.", memberId, e);
-            throw new BusinessException(ErrorCode.REALTIME_NOTIFICATION_SEND_FAILED); // 저장/트리밍/전송 모두 생략
+            messagesFailed.increment();
+            throw new BusinessException(ErrorCode.REALTIME_NOTIFICATION_SEND_FAILED);
         }
 
         // 2) 유실 캐시 저장 + TTL 정리 (항상 수행)
@@ -106,7 +177,7 @@ public class SseSender implements RealtimeSender {
         Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
         if (targets.isEmpty()) {
             log.debug("no active SSE emitters; cached event for replay. memberId={}, eventId={}", memberId, eventId);
-            return; // 전송은 하지 않음
+            return;
         }
 
         // 4) 전송 (같은 emitter 내에서는 직렬화된 순서 유지)
@@ -117,8 +188,10 @@ public class SseSender implements RealtimeSender {
                             .name("notification")
                             .id(Long.toString(eventId))
                             .data(json, MediaType.APPLICATION_JSON));
+                    messagesSent.increment();
                 } catch (IOException ex) {
                     log.warn("send failed - memberId={}, emitterId={}, err={}", memberId, emitterId, ex.toString());
+                    messagesFailed.increment();
                     disconnectEmitterWithError(memberId, emitterId, ex);
                     removeLane(emitterId);
                 }
@@ -146,14 +219,40 @@ public class SseSender implements RealtimeSender {
                                 .name("notification")
                                 .id(Long.toString(eventId))
                                 .data(json, MediaType.APPLICATION_JSON));
+                        // 브로드캐스트 메시지 전송 성공
+                        messagesSent.increment();
                     } catch (IOException ex) {
                         log.warn("sendAll failed - memberId={}, emitterId={}, err={}",
                                 memberId, emitterId, ex.toString());
+                        // 브로드캐스트 메시지 전송 실패
+                        messagesFailed.increment();
                         disconnectEmitterWithError(memberId, emitterId, ex);
-                        removeLane(emitterId); // lane 정리
+                        removeLane(emitterId);
                     }
                 });
             });
+        });
+    }
+
+    private void setEmitter(long memberId, SseEmitter emitter, String emitterId) {
+        emitter.onCompletion(() -> {
+            log.info("onCompletion - {}", emitterId);
+            sseRepository.remove(memberId, emitterId);
+            removeLane(emitterId);
+            connectionsCompleted.increment();
+        });
+
+        emitter.onTimeout(() -> {
+            log.warn("onTimeout - {}", emitterId);
+            sseRepository.remove(memberId, emitterId);
+            removeLane(emitterId);
+            connectionsTimeout.increment();
+        });
+
+        emitter.onError(e -> {
+            log.warn("onError - {}: {}", emitterId, e.toString());
+            disconnectEmitterWithError(memberId, emitterId, e);
+            connectionsError.increment();
         });
     }
 
@@ -175,12 +274,10 @@ public class SseSender implements RealtimeSender {
             return;
         }
 
-        // 1) 최신 이벤트 ID 하나만 사용 (프론트엔드가 API를 호출하도록 하는 '신호')
         long latestId = later.lastKey();
         int missed = later.size();
         String payload = later.get(latestId);
 
-        // 2) 전송
         try {
             emitter.send(SseEmitter.event()
                     .name("notification")
@@ -198,7 +295,6 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void disconnectAll(long memberId) {
-        // 스냅샷을 떠서 안전하게 순회 (id 포함)
         Map<String, SseEmitter> targets = Map.copyOf(sseRepository.getAllWithIds(memberId));
         if (targets.isEmpty()) {
             log.debug("disconnectAll: no emitters for memberId={}", memberId);
@@ -259,23 +355,6 @@ public class SseSender implements RealtimeSender {
         }
     }
 
-    private void setEmitter(long memberId, SseEmitter emitter, String emitterId) {
-        emitter.onCompletion(() -> {
-            log.info("onCompletion - {}", emitterId);
-            sseRepository.remove(memberId, emitterId);
-            removeLane(emitterId);
-        });
-        emitter.onTimeout(() -> {
-            log.warn("onTimeout - {}", emitterId);
-            sseRepository.remove(memberId, emitterId);
-            removeLane(emitterId);
-        });
-        emitter.onError(e -> {
-            log.warn("onError - {}: {}", emitterId, e.toString());
-            disconnectEmitterWithError(memberId, emitterId, e);
-        });
-    }
-
     private SerialExecutor laneOf(String emitterId) {
         return lanes.computeIfAbsent(emitterId, id -> new SerialExecutor(sseExecutor));
     }
@@ -292,7 +371,6 @@ public class SseSender implements RealtimeSender {
         lanes.remove(emitterId);
     }
 
-    // ---- 간단한 직렬 실행기 (Guava SerializingExecutor 유사)
     static final class SerialExecutor implements Executor {
         private final Executor backend;
         private final ArrayDeque<Runnable> tasks = new ArrayDeque<>();
