@@ -177,7 +177,7 @@ export default function () {
       stayedFull.add(0, tags);
       earlyClose.add(1, tags);
       debugLog(
-          `Session ended early: ${aliveMs}ms (expected: ${expectedDurationMs}ms)`
+        `Session ended early: ${aliveMs}ms (expected: ${expectedDurationMs}ms)`
       );
     }
   } else {
@@ -189,7 +189,7 @@ export default function () {
 
   // 최종 결과 로그
   console.log(
-      `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, opened=${opened}, errored=${errored}, ` +
+    `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, opened=${opened}, errored=${errored}, ` +
       `aliveMs=${aliveMs}, messagesReceived=${messageCount}, ` +
       `sessionCompleted=${sessionCompleted}, ` +
       `stayedFull=${aliveMs >= SESSION_SEC * 1000 * 0.9}, ` +
@@ -198,7 +198,7 @@ export default function () {
 
   if (!opened || errored) {
     console.warn(
-        `[VU ${__VU}] Connection issues detected. ` +
+      `[VU ${__VU}] Connection issues detected. ` +
         `Check server availability and network connectivity.`
     );
   }
@@ -223,8 +223,8 @@ export function setup() {
 
   // 예상 부하 정보
   const totalDuration = config.stages.reduce(
-      (sum, stage) => sum + parseInt(stage.duration),
-      0
+    (sum, stage) => sum + parseInt(stage.duration),
+    0
   );
   const maxVus = Math.max(...config.stages.map((stage) => stage.target));
   console.log(`⏱️  Total Test Duration: ${totalDuration}s`);
@@ -239,8 +239,8 @@ export function teardown() {
   console.log(`Tested VUs: ${config.vus}`);
 
   const totalDuration = config.stages.reduce(
-      (sum, stage) => sum + parseInt(stage.duration),
-      0
+    (sum, stage) => sum + parseInt(stage.duration),
+    0
   );
   console.log(`Total Duration: ${totalDuration}s`);
 
