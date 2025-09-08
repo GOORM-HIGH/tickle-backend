@@ -86,11 +86,15 @@ export default function () {
   };
 
   const start = Date.now();
-  let opened = false;
-  let errored = false;
-  let firstMessageReceived = false;
-  let messageCount = 0;
-  let sessionCompleted = false;
+
+  // 결과 상태를 저장할 객체
+  let connectionResult = {
+    opened: false,
+    errored: false,
+    sessionCompleted: false,
+    messageCount: 0,
+    firstMessageTime: 0,
+  };
 
   debugLog(`Attempting to connect to ${URL} with memberId=${MEMBER_ID}`);
   debugLog(`Headers: ${JSON.stringify(createHeaders())}`);
@@ -107,40 +111,33 @@ export default function () {
     try {
       // SSE 연결 시도
       const client = sse.open(URL, createSSEOptions(), function (sseClient) {
+        // 연결 성공 즉시 플래그 설정
         connected = true;
-        opened = true;
+        connectionResult.opened = true;
         debugLog("SSE connection established successfully");
 
-        // 메시지 수신 시간 기록 (첫 메시지 추정)
-        if (!firstMessageReceived) {
-          firstMessageReceived = true;
-          const timeToFirst = Date.now() - start;
-          latency.add(timeToFirst, tags);
-          debugLog(`First message received after ${timeToFirst}ms`);
+        // 첫 메시지 수신 시간 기록
+        if (connectionResult.firstMessageTime === 0) {
+          connectionResult.firstMessageTime = Date.now() - start;
+          latency.add(connectionResult.firstMessageTime, tags);
+          debugLog(
+            `First message received after ${connectionResult.firstMessageTime}ms`
+          );
         }
 
-        // 메시지 카운트 (SSE 확장이 자동으로 메시지를 수신함)
-        messageCount = 1; // 초기 연결 메시지
+        // 메시지 카운트
+        connectionResult.messageCount = 1;
         messagesReceived.add(1, tags);
 
         debugLog(`Maintaining connection for ${SESSION_SEC} seconds`);
 
-        // 지정된 시간 동안 대기
+        // 지정된 시간 동안 연결 유지
         sleep(SESSION_SEC);
 
-        sessionCompleted = true;
+        // 세션 완료 표시
+        connectionResult.sessionCompleted = true;
         sessionsCompleted.add(1, tags);
         debugLog("Session completed successfully");
-
-        // 명시적 연결 종료 시도
-        // try {
-        //   if (sseClient && typeof sseClient.close === "function") {
-        //     sseClient.close();
-        //     debugLog("SSE connection closed by client");
-        //   }
-        // } catch (closeError) {
-        //   debugLog(`Error closing SSE connection: ${closeError.message}`);
-        // }
       });
 
       // 연결 시도가 성공하면 재시도 루프 종료
@@ -153,7 +150,7 @@ export default function () {
       connectionErrors.add(1, tags);
 
       if (attempt === MAX_RETRIES) {
-        errored = true;
+        connectionResult.errored = true;
         debugLog(`All ${MAX_RETRIES} connection attempts failed`);
       }
     }
@@ -163,13 +160,16 @@ export default function () {
   const aliveMs = Date.now() - start;
   connAlive.add(aliveMs, tags);
 
-  // 결과 메트릭 기록
-  openOk.add(opened && !errored, tags);
+  // 결과 메트릭 기록 (connectionResult 사용)
+  openOk.add(connectionResult.opened && !connectionResult.errored, tags);
 
-  if (opened && !errored) {
+  if (connectionResult.opened && !connectionResult.errored) {
     const expectedDurationMs = SESSION_SEC * 1000;
 
-    if (sessionCompleted && aliveMs >= expectedDurationMs * 0.9) {
+    if (
+      connectionResult.sessionCompleted &&
+      aliveMs >= expectedDurationMs * 0.9
+    ) {
       // 90% 이상 유지되면 성공으로 간주
       stayedFull.add(1, tags);
       debugLog(`Session maintained successfully: ${aliveMs}ms`);
@@ -182,21 +182,23 @@ export default function () {
     }
   } else {
     stayedFull.add(0, tags);
-    if (opened) {
+    if (connectionResult.opened) {
       earlyClose.add(1, tags);
     }
   }
 
   // 최종 결과 로그
   console.log(
-    `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, opened=${opened}, errored=${errored}, ` +
-      `aliveMs=${aliveMs}, messagesReceived=${messageCount}, ` +
-      `sessionCompleted=${sessionCompleted}, ` +
+    `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, opened=${connectionResult.opened}, errored=${connectionResult.errored}, ` +
+      `aliveMs=${aliveMs}, messagesReceived=${connectionResult.messageCount}, ` +
+      `sessionCompleted=${connectionResult.sessionCompleted}, ` +
       `stayedFull=${aliveMs >= SESSION_SEC * 1000 * 0.9}, ` +
-      `latency=${firstMessageReceived ? "measured" : "not_measured"}`
+      `latency=${
+        connectionResult.firstMessageTime > 0 ? "measured" : "not_measured"
+      }`
   );
 
-  if (!opened || errored) {
+  if (!connectionResult.opened || connectionResult.errored) {
     console.warn(
       `[VU ${__VU}] Connection issues detected. ` +
         `Check server availability and network connectivity.`
@@ -213,7 +215,6 @@ export function setup() {
   console.log(`Member ID: ${MEMBER_ID}`);
   console.log(`Session Duration: ${SESSION_SEC}s`);
   console.log(`Max Retries: ${MAX_RETRIES}`);
-  // VU 정보 강화
   console.log(`🎯 Target VUs: ${config.vus}`);
   console.log(`📊 Load Pattern: ${JSON.stringify(config.stages)}`);
   console.log(`🎚️  Thresholds: ${JSON.stringify(config.thresholds, null, 2)}`);

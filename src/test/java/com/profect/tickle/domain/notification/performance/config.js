@@ -61,7 +61,7 @@ const configs = {
     },
   },
 
-  // 🆕 동적 설정 조정 함수
+  // 동적 설정 조정 함수
   getAdjustedConfig: function (baseConfig, targetVus) {
     const scaleFactor = targetVus / baseConfig.vus;
 
