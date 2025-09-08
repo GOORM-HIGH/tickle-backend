@@ -22,7 +22,6 @@ const stayedFull = new Rate("sse_stayed_full");
 const connAlive = new Trend("sse_conn_alive_ms");
 const earlyClose = new Counter("sse_early_close");
 const messagesReceived = new Counter("sse_messages_received");
-const connectionErrors = new Counter("sse_connection_errors");
 const latency = new Trend("latency");
 const connectionRetries = new Counter("sse_connection_retries");
 const sessionsCompleted = new Counter("sse_sessions_completed");
@@ -138,7 +137,7 @@ export default function () {
           sessionsCompleted.add(1, tags);
           stayedFull.add(1, tags);
 
-          // 🔧 핵심 수정: 연결 유지 시간을 콜백 내부에서 측정
+          // 핵심 수정: 연결 유지 시간을 콜백 내부에서 측정
           const aliveMs = Date.now() - start;
           connAlive.add(aliveMs, tags);
 
@@ -158,7 +157,6 @@ export default function () {
       sleep(0.5);
     } catch (e) {
       debugLog(`Connection attempt ${attempt} failed: ${e.message}`);
-      connectionErrors.add(1, tags);
 
       // 마지막 시도에서 실패시 실패 지표 기록
       if (attempt === MAX_RETRIES && !measurementTaken) {
