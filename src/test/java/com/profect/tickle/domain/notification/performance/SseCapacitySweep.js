@@ -87,7 +87,7 @@ export default function () {
 
   const start = Date.now();
 
-  // 🔧 결과 상태를 저장할 객체
+  // 결과 상태를 저장할 객체
   let connectionResult = {
     opened: false,
     errored: false,
