@@ -16,7 +16,7 @@ const configs = {
       sse_stayed_full: ["rate>0.80"],
       sse_conn_alive_ms: ["p(95)<30000"],
       sse_connection_errors: ["count<10"],
-      latency: ["p(95)<5000"], // 변경: sse_time_to_first_message → latency
+      latency: ["p(95)<5000"],
     },
   },
 
@@ -36,7 +36,7 @@ const configs = {
       sse_stayed_full: ["rate>0.90"],
       sse_conn_alive_ms: ["p(95)<60000"],
       sse_connection_errors: ["count<15"],
-      latency: ["p(95)<3000"], // 변경: sse_time_to_first_message → latency
+      latency: ["p(95)<3000"],
     },
   },
 
@@ -57,60 +57,108 @@ const configs = {
       sse_stayed_full: ["rate>0.95"], // 95% 이상 세션 완료
       sse_conn_alive_ms: ["p(95)<65000"], // 60초 + 5초 여유
       sse_connection_errors: ["count<10"], // 에러 10개 이하
-      latency: ["p(95)<2000"], // 변경: sse_time_to_first_message → latency (첫 메시지 2초 이내)
+      latency: ["p(95)<2000"], // 첫 메시지 2초 이내
     },
   },
+};
 
-  // 🆕 동적 설정 조정 함수
-  getAdjustedConfig: function (baseConfig, targetVus) {
-    const scaleFactor = targetVus / baseConfig.vus;
+// 20% 단계별 증가 패턴 생성 함수
+function generateStagesByPercentage(targetVus) {
+  const stepRatio = 0.2; // 20%
+  const stages = [];
 
-    console.log(
+  // 20% → 40% → 60% → 80% → 100% 단계별 증가
+  for (let i = 1; i <= 5; i++) {
+    const target = Math.min(Math.ceil(targetVus * stepRatio * i), targetVus);
+    stages.push({ duration: "20s", target: target });
+  }
+
+  // 최대 부하 유지 단계
+  stages.push({ duration: "60s", target: targetVus });
+
+  // 종료 단계
+  stages.push({ duration: "20s", target: 0 });
+
+  return stages;
+}
+
+// VUS에 따른 임계값 조정 함수
+function adjustThresholdsForVus(vus) {
+  const scaleFactor = vus / 100; // 100 VU를 기준으로 스케일링
+
+  return {
+    sse_open_ok: [`rate>${Math.max(0.85, 0.95 - (scaleFactor - 1) * 0.02)}`],
+    sse_stayed_full: [`rate>${Math.max(0.8, 0.9 - (scaleFactor - 1) * 0.03)}`],
+    sse_conn_alive_ms: [
+      `p(95)<${Math.min(120000, 65000 + (scaleFactor - 1) * 2000)}`,
+    ],
+    sse_connection_errors: [
+      `count<${Math.min(100, Math.ceil(10 + scaleFactor * 2))}`,
+    ],
+    latency: [`p(95)<${Math.min(8000, 2000 + (scaleFactor - 1) * 300)}`],
+  };
+}
+
+// 기존 동적 설정 조정 함수 (레거시 지원용)
+const getAdjustedConfig = function (baseConfig, targetVus) {
+  const scaleFactor = targetVus / baseConfig.vus;
+
+  console.log(
       `📊 Scaling from ${
-        baseConfig.vus
+          baseConfig.vus
       } to ${targetVus} VUs (factor: ${scaleFactor.toFixed(2)})`
-    );
+  );
 
-    return {
-      ...baseConfig,
-      vus: targetVus,
-      stages: baseConfig.stages.map((stage) => ({
-        ...stage,
-        target: stage.target === 0 ? 0 : Math.ceil(stage.target * scaleFactor),
-      })),
-      thresholds: {
-        sse_open_ok: [`rate>${Math.max(0.9, 0.98 - (scaleFactor - 1) * 0.03)}`],
-        sse_stayed_full: [
-          `rate>${Math.max(0.85, 0.95 - (scaleFactor - 1) * 0.05)}`,
-        ],
-        sse_conn_alive_ms: [
-          `p(95)<${Math.min(90000, 65000 + (scaleFactor - 1) * 5000)}`,
-        ],
-        sse_connection_errors: [
-          `count<${Math.min(50, Math.ceil(10 * scaleFactor))}`,
-        ],
-        latency: [`p(95)<${Math.min(5000, 2000 + (scaleFactor - 1) * 500)}`],
-      },
-    };
-  },
+  return {
+    ...baseConfig,
+    vus: targetVus,
+    stages: baseConfig.stages.map((stage) => ({
+      ...stage,
+      target: stage.target === 0 ? 0 : Math.ceil(stage.target * scaleFactor),
+    })),
+    thresholds: {
+      sse_open_ok: [`rate>${Math.max(0.9, 0.98 - (scaleFactor - 1) * 0.03)}`],
+      sse_stayed_full: [
+        `rate>${Math.max(0.85, 0.95 - (scaleFactor - 1) * 0.05)}`,
+      ],
+      sse_conn_alive_ms: [
+        `p(95)<${Math.min(90000, 65000 + (scaleFactor - 1) * 5000)}`,
+      ],
+      sse_connection_errors: [
+        `count<${Math.min(50, Math.ceil(10 * scaleFactor))}`,
+      ],
+      latency: [`p(95)<${Math.min(5000, 2000 + (scaleFactor - 1) * 500)}`],
+    },
+  };
 };
 
 export function getConfig() {
   const environment = __ENV.ENVIRONMENT || "development";
+  const targetVus = Number(__ENV.VUS);
+
   let config = configs[environment];
 
   if (!config) {
     throw new Error(
-      `Unknown environment: ${environment}. Available: ${Object.keys(configs)
-        .filter((key) => key !== "getAdjustedConfig")
-        .join(", ")}`
+        `Unknown environment: ${environment}. Available: ${Object.keys(
+            configs
+        ).join(", ")}`
     );
   }
 
-  // 🆕 VUS 환경변수로 동적 조정
-  const targetVus = Number(__ENV.VUS);
+  // VUS 환경변수로 동적 조정 + 20% 단계별 증가
   if (targetVus && targetVus !== config.vus) {
-    config = configs.getAdjustedConfig(config, targetVus);
+    config = {
+      ...config,
+      vus: targetVus,
+      stages: generateStagesByPercentage(targetVus),
+      thresholds: adjustThresholdsForVus(targetVus),
+    };
+
+    console.log(`🎯 Using 20% step ramp-up pattern for ${targetVus} VUs`);
+    console.log(`📊 Stages: ${JSON.stringify(config.stages)}`);
+
+    return config;
   }
 
   return {
@@ -129,5 +177,5 @@ export function getConfig() {
 }
 
 export function getEnvironments() {
-  return Object.keys(configs).filter((key) => key !== "getAdjustedConfig");
+  return Object.keys(configs);
 }
