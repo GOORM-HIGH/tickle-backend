@@ -22,7 +22,7 @@ const stayedFull = new Rate("sse_stayed_full");
 const connAlive = new Trend("sse_conn_alive_ms");
 const earlyClose = new Counter("sse_early_close");
 const messagesReceived = new Counter("sse_messages_received");
-const latency = new Trend("latency");
+const latency = new Trend("latency(ms)");
 const connectionRetries = new Counter("sse_connection_retries");
 const sessionsCompleted = new Counter("sse_sessions_completed");
 
