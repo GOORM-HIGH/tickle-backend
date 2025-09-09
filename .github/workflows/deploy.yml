@@ -172,9 +172,10 @@ jobs:
             fi
 
             # 재기동
-            nohup java -jar "$APP_DIR/app.jar" --spring.profiles.active=prod \
+            nohup java -XX:-MaxFDLimit -Xms4g -Xmx8g -jar "$APP_DIR/app.jar" \
+              --spring.profiles.active=prod \
               --spring.config.location="file:$APP_DIR/application.yml" \
-              > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
+            > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
 
             echo $! > "$APP_DIR/app.pid"
             echo "✅ Started PID: $(cat "$APP_DIR/app.pid")"
