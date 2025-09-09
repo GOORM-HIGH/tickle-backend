@@ -22,8 +22,7 @@ const stayedFull = new Rate("sse_stayed_full");
 const connAlive = new Trend("sse_conn_alive_ms");
 const earlyClose = new Counter("sse_early_close");
 const messagesReceived = new Counter("sse_messages_received");
-const connectionErrors = new Counter("sse_connection_errors");
-const latency = new Trend("latency");
+const latency = new Trend("latency(ms)");
 const connectionRetries = new Counter("sse_connection_retries");
 const sessionsCompleted = new Counter("sse_sessions_completed");
 
@@ -138,7 +137,13 @@ export default function () {
           sessionsCompleted.add(1, tags);
           stayedFull.add(1, tags);
 
-          debugLog("Session completed successfully");
+          // 핵심 수정: 연결 유지 시간을 콜백 내부에서 측정
+          const aliveMs = Date.now() - start;
+          connAlive.add(aliveMs, tags);
+
+          debugLog(
+            `Session completed successfully - Connection alive for ${aliveMs}ms`
+          );
         }
       });
 
@@ -152,13 +157,15 @@ export default function () {
       sleep(0.5);
     } catch (e) {
       debugLog(`Connection attempt ${attempt} failed: ${e.message}`);
-      connectionErrors.add(1, tags);
 
       // 마지막 시도에서 실패시 실패 지표 기록
       if (attempt === MAX_RETRIES && !measurementTaken) {
         measurementTaken = true;
         openOk.add(0, tags);
         stayedFull.add(0, tags);
+        // 실패한 경우에도 연결 시간 측정
+        const failedAliveMs = Date.now() - start;
+        connAlive.add(failedAliveMs, tags);
       }
     }
   }
@@ -167,24 +174,23 @@ export default function () {
   if (!measurementTaken) {
     openOk.add(0, tags);
     stayedFull.add(0, tags);
+    // 연결 실패한 경우에도 시도한 시간 측정
+    const noConnAliveMs = Date.now() - start;
+    connAlive.add(noConnAliveMs, tags);
     debugLog("All connection attempts failed");
   }
-
-  // 연결 지속 시간 계산 및 기록
-  const aliveMs = Date.now() - start;
-  connAlive.add(aliveMs, tags);
 
   // 조기 종료 체크
   if (connectionSuccess && !sessionSuccess) {
     earlyClose.add(1, tags);
-    debugLog(`Session ended early: ${aliveMs}ms`);
+    debugLog(`Session ended early`);
   }
 
   // 최종 결과 로그
   console.log(
     `[VU ${__VU}/${config.vus}] Summary: memberId=${MEMBER_ID}, ` +
       `opened=${connectionSuccess}, sessionCompleted=${sessionSuccess}, ` +
-      `aliveMs=${aliveMs}, latency=measured`
+      `aliveMs=measured, latency=measured`
   );
 
   if (!connectionSuccess) {
@@ -242,6 +248,7 @@ export function teardown() {
   console.log("- sse_connection_errors: Error count");
   console.log("- latency: First message response time");
   console.log("- sse_sessions_completed: Successfully completed sessions");
+  console.log("- sse_conn_alive_ms: Connection duration time");
 
   console.log("");
   console.log("=== Next Step Recommendations ===");

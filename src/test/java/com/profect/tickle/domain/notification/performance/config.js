@@ -107,7 +107,7 @@ export function getConfig() {
     );
   }
 
-  // 🆕 VUS 환경변수로 동적 조정
+  // VUS 환경변수로 동적 조정
   const targetVus = Number(__ENV.VUS);
   if (targetVus && targetVus !== config.vus) {
     config = configs.getAdjustedConfig(config, targetVus);
