@@ -22,7 +22,7 @@ const stayedFull = new Rate("sse_stayed_full");
 const connAlive = new Trend("sse_conn_alive_ms");
 const earlyClose = new Counter("sse_early_close");
 const messagesReceived = new Counter("sse_messages_received");
-const latency = new Trend("latency(ms)");
+const latency = new Trend("latency");
 const connectionRetries = new Counter("sse_connection_retries");
 const sessionsCompleted = new Counter("sse_sessions_completed");
 
@@ -245,7 +245,7 @@ export function teardown() {
   console.log("- sse_open_ok: Connection success rate");
   console.log("- sse_stayed_full: Session completion rate");
   console.log("- sse_messages_received: Total messages processed");
-  console.log("- sse_connection_errors: Error count");
+  // console.log("- sse_connection_errors: Error count");
   console.log("- latency: First message response time");
   console.log("- sse_sessions_completed: Successfully completed sessions");
   console.log("- sse_conn_alive_ms: Connection duration time");
