@@ -26,6 +26,8 @@ public class EventCoreLockService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
 
+        //TODO: 임계영역에 대해서 동시성을 보장하면 원하는 결과가 나올겁니다?
+        //TODO: 영한님의 고급 1편을 보세요. 자바 코드에 대한 동시성을 찾아보세요
         if (!StatusIds.Event.IN_PROGRESS.equals(event.getStatus().getId())) {
             throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
         }

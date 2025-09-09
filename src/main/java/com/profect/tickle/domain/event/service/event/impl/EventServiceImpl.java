@@ -105,13 +105,11 @@ public class EventServiceImpl implements EventService {
     public void applyTicketEvent(Long eventId) {
         Long memberId = SecurityUtil.getSignInMemberId();
 
-        // 1️⃣ 메시지 생성
         TicketLockMessage msg = new TicketLockMessage(
                 eventId,
                 memberId
         );
 
-        // 2️⃣ 메시지 발행 (비동기)
         eventPublisher.publish(msg);
     }
 

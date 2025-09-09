@@ -106,6 +106,7 @@ public class Event {
             throw  new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
         }
         this.accrued += perPrice;
+        System.out.println("스레드 : " + Thread.currentThread().getName() + "accrued = " + accrued);
     }
 
     public void updateStatus(Status status) {
