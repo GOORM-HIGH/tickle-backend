@@ -172,12 +172,7 @@ jobs:
             fi
 
             # 재기동
-            nohup java -XX:-MaxFDLimit \
-              -Xms8g -Xmx12g \
-              -XX:+UseG1GC \
-              -XX:MaxGCPauseMillis=100 \
-              -Djava.net.preferIPv4Stack=true \
-              -jar "$APP_DIR/app.jar" \
+            nohup java -XX:-MaxFDLimit -Xms8g -Xmx12g -jar "$APP_DIR/app.jar" \
               --spring.profiles.active=prod \
               --spring.config.location="file:$APP_DIR/application.yml" \
             > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
