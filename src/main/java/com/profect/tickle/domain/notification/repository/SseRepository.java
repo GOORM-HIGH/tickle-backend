@@ -123,48 +123,4 @@ public class SseRepository {
             map.pollFirstEntry();
         }
     }
-
-    // 전체 활성 SSE 연결 개수 조회
-    public int getTotalConnectionCount() {
-        return emittersById.size();
-    }
-
-    // 특정 회원의 활성 SSE 연결 개수 조회
-    public int getConnectionCount(long memberId) {
-        Set<String> ids = emitterIdsByMember.get(memberId);
-        return ids != null ? ids.size() : 0;
-    }
-
-    // 활성 회원 수 조회 (최소 1개 이상 연결이 있는 회원)
-    public int getActiveMemberCount() {
-        return emitterIdsByMember.size();
-    }
-
-    // 회원별 연결 개수 상세 정보
-    public Map<Long, Integer> getConnectionCountsByMember() {
-        Map<Long, Integer> result = new HashMap<>();
-        emitterIdsByMember.forEach((memberId, ids) ->
-                result.put(memberId, ids.size()));
-        return result;
-    }
-
-    // 연결 상태 요약 정보
-    public ConnectionStats getConnectionStats() {
-        return ConnectionStats.builder()
-                .totalConnections(getTotalConnectionCount())
-                .activeMembers(getActiveMemberCount())
-                .avgConnectionsPerMember(
-                        getActiveMemberCount() > 0 ?
-                                (double) getTotalConnectionCount() / getActiveMemberCount() : 0.0
-                )
-                .build();
-    }
-
-    // 연결 통계 DTO
-    @Builder
-    public static class ConnectionStats {
-        public final int totalConnections;
-        public final int activeMembers;
-        public final double avgConnectionsPerMember;
-    }
 }
