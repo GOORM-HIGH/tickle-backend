@@ -41,11 +41,20 @@ public class ChatMessageService {
     private final FileService fileService;
     private final SimpMessagingTemplate simpMessagingTemplate; // WebSocket 템플릿
     private final ChatMessageValidator chatMessageValidator; // 메시지 검증 전용
+    
+    // 🆕 성능 최적화 서비스들
+    private final UnreadCountOptimizer unreadCountOptimizer;
+    private final MessageConcurrencyService messageConcurrencyService;
 
     /**
-     * 메시지 전송 (JPA 사용)
+     * 메시지 전송 (성능 최적화 버전)
+     * 
+     * 최적화 포인트:
+     * 1. 즉시 응답 반환 (사용자 경험 향상)
+     * 2. 비동기 DB 저장 (배치 처리)
+     * 3. Redis 기반 읽지 않은 메시지 개수 관리
+     * 4. 동시성 제어로 데이터 일관성 보장
      */
-    @Transactional
     public ChatMessageResponseDto sendMessage(Long chatRoomId, Long senderId, ChatMessageSendRequestDto requestDto) {
         log.info("메시지 전송 요청: chatRoomId={}, senderId={}, type={}",
                 chatRoomId, senderId, requestDto.getMessageType());
@@ -59,7 +68,8 @@ public class ChatMessageService {
         }
 
         // 2. 발신자 존재 확인
-        Member sender = memberRepository.findById(senderId).orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        Member sender = memberRepository.findById(senderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 3. 채팅방 참여 여부 확인
         boolean isParticipant = chatParticipantsRepository.existsByChatRoomAndMemberAndStatusTrue(chatRoom, sender);
@@ -67,12 +77,12 @@ public class ChatMessageService {
             throw new BusinessException(ErrorCode.CHAT_NOT_PARTICIPANT);
         }
 
-        // 4. 메시지 검증 (SRP 준수: 검증 로직을 별도 클래스로 분리)
+        // 4. 메시지 검증
         chatMessageValidator.validateMessage(requestDto);
 
-        // 5. 메시지 엔티티 생성
+        // 5. 메시지 엔티티 생성 (ID는 나중에 생성됨)
         Chat message = Chat.builder()
-                .chatRoomId(chatRoomId)
+                .chatRoomId(chatRoomId)  // chatRoomId 설정
                 .member(sender)
                 .messageType(requestDto.getMessageType())
                 .content(requestDto.getContent())
@@ -86,21 +96,26 @@ public class ChatMessageService {
                 .isEdited(false)
                 .build();
 
-        // 6. 메시지 저장
-        Chat savedMessage = chatRepository.save(message);
-        log.info("메시지 저장 완료: messageId={}", savedMessage.getId());
-
-        // 7. 채팅방 업데이트 시간 갱신
-        updateChatRoomTimestamp(chatRoom);
-
-        // 8. DTO 변환 및 반환 (개선된 Factory 패턴 사용)
+        // 6. 🚀 성능 최적화: 즉시 응답 생성 (DB 저장 전)
         ChatMessageResponseDto.ChatMessageContext context = 
-                new ChatMessageResponseDto.ChatMessageContext(savedMessage, sender.getNickname(), true);
+                new ChatMessageResponseDto.ChatMessageContext(message, sender.getNickname(), true);
         ChatMessageResponseDto response = ChatMessageResponseDto.fromContext(context);
 
-        log.info("메시지 전송 완료: messageId={}, senderId={}, senderNickname={}, actualNickname={}", 
-                savedMessage.getId(), savedMessage.getMember().getId(), 
-                response.getSenderNickname(), sender.getNickname());
+        // 7. 🚀 비동기 처리: 메시지 저장 및 읽지 않은 개수 업데이트
+        messageConcurrencyService.sendMessage(message)
+                .thenRun(() -> {
+                    // 채팅방 타임스탬프 업데이트
+                    updateChatRoomTimestamp(chatRoom);
+                    log.info("메시지 비동기 처리 완료: chatRoomId={}, senderId={}", chatRoomId, senderId);
+                })
+                .exceptionally(throwable -> {
+                    log.error("메시지 비동기 처리 실패: chatRoomId={}, senderId={}, error={}", 
+                            chatRoomId, senderId, throwable.getMessage(), throwable);
+                    return null;
+                });
+
+        log.info("메시지 전송 완료 (최적화): chatRoomId={}, senderId={}, senderNickname={}", 
+                chatRoomId, senderId, sender.getNickname());
 
         return response;
     }
@@ -245,10 +260,15 @@ public class ChatMessageService {
     }
 
     /**
-     * 읽지않은 메시지 개수 조회 (MyBatis 사용)
+     * 읽지않은 메시지 개수 조회 (Redis 최적화 버전)
+     * 
+     * 최적화 포인트:
+     * 1. Redis에서 실시간 카운트 조회 (DB 조회 없음)
+     * 2. 메모리 기반 빠른 응답
+     * 3. 캐시 미스 시에만 DB 조회
      */
     public int getUnreadCount(Long chatRoomId, Long memberId, Long lastReadMessageId) {
-        log.info("읽지않은 메시지 개수 조회: chatRoomId={}, memberId={}, lastReadMessageId={}", 
+        log.info("읽지않은 메시지 개수 조회 (Redis 최적화): chatRoomId={}, memberId={}, lastReadMessageId={}", 
                 chatRoomId, memberId, lastReadMessageId);
 
         try {
@@ -267,11 +287,21 @@ public class ChatMessageService {
                 return 0; // 참여하지 않으면 읽지 않은 메시지 0개
             }
 
-            // 4. MyBatis로 읽지 않은 메시지 개수 조회
-            int unreadCount = chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
+            // 4. 🚀 Redis에서 읽지 않은 메시지 개수 조회 (최적화)
+            int unreadCount = unreadCountOptimizer.getUnreadCount(chatRoomId, memberId);
+            
+            // 5. Redis에 데이터가 없으면 DB에서 조회 후 Redis에 저장
+            if (unreadCount == 0) {
+                int dbUnreadCount = chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
+                if (dbUnreadCount > 0) {
+                    // Redis에 저장
+                    unreadCountOptimizer.incrementUnreadCount(chatRoomId, memberId, dbUnreadCount);
+                    unreadCount = dbUnreadCount;
+                }
+            }
 
-            log.info("읽지않은 메시지 개수 조회 결과: chatRoomId={}, memberId={}, lastReadMessageId={}, unreadCount={}", 
-                    chatRoomId, memberId, lastReadMessageId, unreadCount);
+            log.info("읽지않은 메시지 개수 조회 결과 (Redis 최적화): chatRoomId={}, memberId={}, unreadCount={}", 
+                    chatRoomId, memberId, unreadCount);
 
             return unreadCount;
 
