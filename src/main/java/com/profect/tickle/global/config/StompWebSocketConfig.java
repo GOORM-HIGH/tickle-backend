@@ -26,10 +26,10 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // 메시지 브로커 최적화
+        // 메시지 브로커 최적화 (대규모 연결 대응)
         config.enableSimpleBroker("/topic", "/queue")
               .setTaskScheduler(heartBeatScheduler())
-              .setHeartbeatValue(new long[]{10000, 10000}); // 10초 하트비트
+              .setHeartbeatValue(new long[]{30000, 30000}); // 30초 하트비트 (부하 감소)
         
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
@@ -40,9 +40,9 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS()
-                .setStreamBytesLimit(512 * 1024) // 512KB 스트림 제한
-                .setHttpMessageCacheSize(1000)   // 메시지 캐시 크기
-                .setDisconnectDelay(30 * 1000);  // 30초 연결 유지
+                .setStreamBytesLimit(256 * 1024) // 256KB 스트림 제한 (메모리 절약)
+                .setHttpMessageCacheSize(500)    // 메시지 캐시 크기 감소
+                .setDisconnectDelay(60 * 1000);  // 60초 연결 유지 (안정성 향상)
     }
 
     @Override
@@ -55,26 +55,26 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        // 스레드 풀 최적화
-        registration.taskExecutor().corePoolSize(50)
-                   .maxPoolSize(200)
-                   .queueCapacity(1000);
+        // 스레드 풀 최적화 (대규모 연결 대응)
+        registration.taskExecutor().corePoolSize(100)
+                   .maxPoolSize(500)
+                   .queueCapacity(2000);
         
         registration.interceptors(stompJwtChannelInterceptor);
     }
 
     @Override
     public void configureClientOutboundChannel(ChannelRegistration registration) {
-        // 송신 채널 스레드 풀 최적화
-        registration.taskExecutor().corePoolSize(50)
-                   .maxPoolSize(200)
-                   .queueCapacity(1000);
+        // 송신 채널 스레드 풀 최적화 (대규모 연결 대응)
+        registration.taskExecutor().corePoolSize(100)
+                   .maxPoolSize(500)
+                   .queueCapacity(2000);
     }
 
     @Bean
     public TaskScheduler heartBeatScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(10);
+        scheduler.setPoolSize(20); // 하트비트 스레드 증가
         scheduler.setThreadNamePrefix("websocket-heartbeat-");
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
         scheduler.setAwaitTerminationSeconds(20);
