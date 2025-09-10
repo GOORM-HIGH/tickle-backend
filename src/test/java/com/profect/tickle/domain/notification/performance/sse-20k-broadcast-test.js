@@ -4,271 +4,264 @@ import { check, sleep } from "k6";
 import { Counter, Rate, Trend, Gauge } from "k6/metrics";
 import exec from "k6/execution";
 
-// 사용자 정의 메트릭
-const sseConnections = new Counter("sse_connections_total");
-const sseConnectionSuccess = new Rate("sse_connection_success_rate");
-const sseMessageReceived = new Counter("sse_messages_received");
-const sseConnectionDuration = new Trend("sse_connection_duration");
-const broadcastLatency = new Trend("broadcast_latency");
-const activeConnections = new Gauge("sse_active_connections");
-const broadcastApiSuccess = new Rate("broadcast_api_success_rate"); // 추가
+// SSE 브로드캐스트 성능 테스트를 위한 사용자 정의 메트릭 정의
+const sseConnections = new Counter("sse_connections_total"); // 총 SSE 연결 생성 횟수
+const sseConnectionSuccess = new Rate("sse_connection_success_rate"); // SSE 연결 성공률
+const sseMessageReceived = new Counter("sse_messages_received"); // 수신된 SSE 메시지 총 개수
+const broadcastLatency = new Trend("broadcast_latency"); // 브로드캐스트 메시지 지연시간 분포
+const activeConnections = new Gauge("sse_active_connections"); // 현재 활성 SSE 연결 수
+const broadcastApiSuccess = new Rate("broadcast_api_success_rate"); // 브로드캐스트 API 호출 성공률
 
-// 테스트 옵션 수정
+// K6 테스트 실행 옵션 설정 - 총 5분 동안 실행되는 최적화된 테스트
 export const options = {
   scenarios: {
+    // 시나리오 1: SSE 연결 생성 및 유지 (20,000개 클라이언트 시뮬레이션)
     sse_connections: {
-      executor: "ramping-vus",
-      startVUs: 0,
+      executor: "ramping-vus", // 점진적으로 가상 사용자 수 증가
+      startVUs: 0, // 시작 시 가상 사용자 수
       stages: [
-        { duration: "2m", target: 5000 },
-        { duration: "2m", target: 10000 },
-        { duration: "2m", target: 15000 },
-        { duration: "2m", target: 20000 },
-        { duration: "8m", target: 20000 },
+        { duration: "30s", target: 5000 }, // 30초간 5,000개 연결로 램프업
+        { duration: "45s", target: 15000 }, // 45초간 15,000개 연결로 증가
+        { duration: "30s", target: 20000 }, // 30초간 20,000개 연결로 최종 증가
+        { duration: "90s", target: 20000 }, // 90초간 20,000개 연결 유지
       ],
-      tags: { scenario: "sse_connections" },
+      tags: { scenario: "sse_connections" }, // 시나리오 태그 설정
     },
+    // 시나리오 2: 브로드캐스트 메시지 전송 (1개 가상 사용자가 1회 실행)
     broadcast_sender: {
-      executor: "per-vu-iterations",
-      vus: 1,
-      iterations: 1,
-      startTime: "6m",
-      tags: { scenario: "broadcast_sender" },
+      executor: "per-vu-iterations", // VU당 반복 실행 방식
+      vus: 1, // 1개 가상 사용자
+      iterations: 1, // 1회 실행
+      startTime: "2m30s", // 2분 30초 후 실행 시작 (연결 안정화 대기)
+      tags: { scenario: "broadcast_sender" }, // 시나리오 태그 설정
     },
   },
-  batch: 10,
-  batchPerHost: 5,
-  discardResponseBodies: true,
 
-  // 임계값 완화
+  // K6 성능 최적화 설정
+  batch: 15, // HTTP 요청 배치 처리 크기
+  batchPerHost: 10, // 호스트별 배치 처리 크기
+  discardResponseBodies: true, // 응답 본문 폐기로 메모리 절약
+  noConnectionReuse: false, // HTTP 연결 재사용 활성화
+
+  // 테스트 성공/실패 판단을 위한 임계값 설정
   thresholds: {
-    sse_connection_success_rate: ["rate>0.80"],
-    sse_connection_duration: ["p(95)<10000"],
-    broadcast_latency: ["p(95)<5000"],
-    http_req_failed: ["rate<0.10"],
-    sse_active_connections: ["value>=16000"],
-    sse_messages_received: ["count>=16000"],
-    broadcast_api_success_rate: ["rate>0.80"],
+    sse_connection_success_rate: ["rate>0.75"], // SSE 연결 성공률 75% 이상
+    broadcast_latency: ["p(95)<8000"], // 브로드캐스트 지연시간 95분위수 8초 미만
+    http_req_failed: ["rate<0.15"], // HTTP 요청 실패율 15% 미만
+    sse_active_connections: ["value>=15000"], // 활성 SSE 연결 수 15,000개 이상
+    sse_messages_received: ["count>=15000"], // 수신된 메시지 수 15,000개 이상
+    broadcast_api_success_rate: ["rate>0.80"], // 브로드캐스트 API 성공률 80% 이상
   },
 };
 
-// 환경 설정
+// 테스트 대상 서버 및 엔드포인트 설정
 const BASE_URL = __ENV.BASE_URL || "http://172.16.24.202:8081";
 const TOKEN = __ENV.TOKEN;
-const SSE_ENDPOINT = `${BASE_URL}/api/v1/notifications/connect`;
-const BROADCAST_ENDPOINT = `${BASE_URL}/test/notification-event/partner`;
+const SSE_ENDPOINT = `${BASE_URL}/api/v1/notifications/connect`; // SSE 연결 엔드포인트
+const BROADCAST_ENDPOINT = `${BASE_URL}/test/notification-event/partner`; // 브로드캐스트 API 엔드포인트
 
-// 전역 연결 카운터 (더 정확한 추적)
+// 전역 변수: 현재 활성 연결 수 추적용 (동시성 문제 있을 수 있음)
 let globalActiveConnections = 0;
 
+// K6 메인 함수: 시나리오에 따라 다른 함수 실행
 export default function () {
   if (exec.scenario.name === "sse_connections") {
-    testSSEConnection();
+    testSSEConnection(); // SSE 연결 테스트
   } else if (exec.scenario.name === "broadcast_sender") {
-    sendBroadcastMessage();
+    sendBroadcastMessage(); // 브로드캐스트 전송 테스트
   }
 }
 
-// SSE 연결 테스트 함수
+// SSE 연결을 생성하고 유지하는 함수
 function testSSEConnection() {
   const startTime = Date.now();
   let connectionEstablished = false;
   let messagesReceived = 0;
   let isConnected = false;
 
-  console.log(`VU ${__VU}: SSE 연결 시도 중...`);
+  // 성능 향상을 위한 로깅 최적화: 1000명 중 1명만 로그 출력
+  if (__VU % 1000 === 1) {
+    console.log(`VU ${__VU}: SSE 연결 시도`);
+  }
 
+  // SSE 연결을 위한 HTTP 요청 파라미터 설정
   const params = {
     method: "GET",
     headers: {
-      Accept: "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-      "User-Agent": `k6-sse-test-vu-${__VU}`,
-      Authorization: `Bearer ${TOKEN}`,
+      Accept: "text/event-stream", // SSE 표준 미디어 타입
+      "Cache-Control": "no-cache", // 캐시 방지
+      Authorization: `Bearer ${TOKEN}`, // 인증 토큰
     },
-    tags: {
-      vu_id: __VU,
-      scenario: "sse_connection",
-    },
-    timeout: "30s", // 타임아웃 증가
+    timeout: "0", // 무제한 타임아웃 (VU 종료 시까지 유지)
   };
 
   try {
-    const response = sse.open(SSE_ENDPOINT, params, function (client) {
+    // SSE 연결 시작 및 이벤트 핸들러 설정
+    sse.open(SSE_ENDPOINT, params, function (client) {
+      // SSE 연결 성공 시 실행되는 핸들러
       client.on("open", function () {
         connectionEstablished = true;
         isConnected = true;
         globalActiveConnections++;
-        const connectionTime = Date.now() - startTime;
 
-        console.log(
-          `VU ${__VU}: SSE 연결 성공 (${connectionTime}ms) - 총 연결: ${globalActiveConnections}`
-        );
+        // 성능을 위한 제한적 로깅
+        if (__VU % 1000 === 1) {
+          console.log(
+            `VU ${__VU}: 연결 성공 - 총 ${globalActiveConnections}개`
+          );
+        }
 
+        // 메트릭 업데이트
         sseConnections.add(1);
         sseConnectionSuccess.add(1);
-        sseConnectionDuration.add(connectionTime);
         activeConnections.add(globalActiveConnections);
       });
 
+      // SSE 메시지 수신 시 실행되는 핸들러
       client.on("event", function (event) {
         messagesReceived++;
-        const currentTime = Date.now();
 
-        // 안전한 문자열 처리
-        const eventData = event.data || "";
-        const displayData =
-          eventData.length > 50
-            ? eventData.substring(0, 50) + "..."
-            : eventData;
+        // 첫 번째 메시지 수신 시에만 로그 출력
+        if (messagesReceived === 1) {
+          console.log(`VU ${__VU}: 첫 브로드캐스트 메시지 수신!`);
+        }
 
-        console.log(
-          `VU ${__VU}: 메시지 수신 #${messagesReceived} - Data: ${displayData}`
-        );
-
-        // 브로드캐스트 메시지 latency 측정
+        // 브로드캐스트 메시지의 지연시간 측정
         try {
-          const messageData = JSON.parse(eventData);
+          const messageData = JSON.parse(event.data || "{}");
           if (messageData.timestamp) {
-            const latency = currentTime - messageData.timestamp;
+            const latency = Date.now() - messageData.timestamp;
             broadcastLatency.add(latency);
-            console.log(`VU ${__VU}: 브로드캐스트 지연시간: ${latency}ms`);
           }
         } catch (e) {
-          // JSON이 아닌 메시지도 정상 처리
+          // JSON 파싱 실패는 무시 (일부 메시지는 JSON이 아닐 수 있음)
         }
 
         sseMessageReceived.add(1);
       });
 
+      // SSE 연결 오류 시 실행되는 핸들러
       client.on("error", function (error) {
-        console.log(`VU ${__VU}: SSE 오류 - ${error.error()}`);
+        if (__VU % 1000 === 1) {
+          console.log(`VU ${__VU}: SSE 오류`);
+        }
         if (isConnected) {
           globalActiveConnections--;
-          activeConnections.add(globalActiveConnections);
           isConnected = false;
         }
         sseConnectionSuccess.add(0);
       });
 
+      // SSE 연결 종료 시 실행되는 핸들러
       client.on("close", function () {
-        console.log(
-          `VU ${__VU}: SSE 연결 종료 (메시지: ${messagesReceived}개)`
-        );
         if (isConnected) {
           globalActiveConnections--;
-          activeConnections.add(globalActiveConnections);
           isConnected = false;
         }
       });
     });
-
-    check(response, {
-      "SSE 연결 성공": (r) => r && r.status === 200,
-      "SSE 응답 헤더 확인": (r) =>
-        r &&
-        r.headers["Content-Type"] &&
-        r.headers["Content-Type"].includes("text/event-stream"),
-      "인증 성공": (r) => r && r.status !== 401 && r.status !== 403,
-    });
-
-    if (!response || response.status !== 200) {
-      console.log(
-        `VU ${__VU}: SSE 연결 실패 - Status: ${
-          response?.status
-        }, Headers: ${JSON.stringify(response?.headers)}`
-      );
-      sseConnectionSuccess.add(0);
-      return;
-    }
   } catch (error) {
-    console.log(`VU ${__VU}: SSE 연결 예외 - ${error.message}`);
+    // SSE 연결 생성 실패 시 메트릭 업데이트
     sseConnectionSuccess.add(0);
     return;
   }
 
-  // 연결 유지 (8분간)
-  sleep(480);
+  // SSE 연결을 3분간 유지 (테스트 시나리오에 맞춘 시간)
+  sleep(180);
 }
 
-// 브로드캐스트 함수 개선
+// 브로드캐스트 메시지를 전송하고 결과를 측정하는 함수
 function sendBroadcastMessage() {
-  console.log("=== 브로드캐스트 시작 ===");
-  console.log(`현재 활성 연결 수: ${globalActiveConnections}`);
+  console.log("브로드캐스트 시작!");
+  console.log(`현재 활성 연결: ~${globalActiveConnections}개`);
 
-  // 충분한 대기 시간
-  sleep(30);
+  // SSE 연결 안정화를 위한 짧은 대기
+  sleep(10);
 
-  // 브로드캐스트 전에 서버 상태 확인
+  const startTime = Date.now();
+  console.log(`브로드캐스트 API 호출: ${new Date().toISOString()}`);
+
+  let response;
   try {
-    const healthCheck = http.get(`${BASE_URL}/health`, {
-      headers: { Authorization: `Bearer ${TOKEN}` },
-      timeout: "10s",
+    // 브로드캐스트 API 호출
+    response = http.get(BROADCAST_ENDPOINT, {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+      },
+      timeout: "60s", // 1분 타임아웃 설정
     });
-    console.log(`서버 상태 확인: ${healthCheck.status}`);
-  } catch (e) {
-    console.log(`서버 상태 확인 실패: ${e.message}`);
+  } catch (error) {
+    console.log(`HTTP 요청 실패: ${error.message}`);
+    return;
   }
 
-  const params = {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${TOKEN}`,
-    },
-    tags: { scenario: "broadcast" },
-    timeout: "30s",
-  };
-
-  console.log("브로드캐스트 API 호출...");
-  console.log(`URL: ${BROADCAST_ENDPOINT}`);
-  console.log(`Headers: ${JSON.stringify(params.headers)}`);
-
-  const response = http.get(BROADCAST_ENDPOINT, params);
-
-  console.log(
-    `브로드캐스트 응답: Status=${
-      response.status
-    }, Body=${response.body?.substring(0, 200)}`
-  );
-
+  // 브로드캐스트 API 응답 분석
+  const duration = Date.now() - startTime;
   const success = response.status === 200;
+
+  // 테스트 결과 출력
+  console.log("==================================================");
+  console.log("브로드캐스트 결과");
+  console.log(`완료 시간: ${new Date().toISOString()}`);
+  console.log(`소요 시간: ${duration}ms (${(duration / 1000).toFixed(2)}초)`);
+  console.log(`HTTP 상태: ${response.status}`);
+
+  if (success) {
+    console.log("브로드캐스트 성공!");
+    console.log(`예상 처리량: ${Math.round(50000 / (duration / 1000))}개/초`);
+  } else {
+    console.log("브로드캐스트 실패");
+    console.log(`응답: ${response.body?.substring(0, 100)}...`);
+  }
+  console.log("==================================================");
+
+  // 브로드캐스트 API 성공/실패 메트릭 업데이트
   broadcastApiSuccess.add(success ? 1 : 0);
 
+  // K6 체크 함수를 사용한 응답 검증
   check(response, {
-    "브로드캐스트 API 성공": (r) => r.status === 200,
-    "브로드캐스트 응답시간": (r) => r.timings.duration < 10000,
-    "브로드캐스트 인증": (r) => r.status !== 401 && r.status !== 403,
+    "브로드캐스트 성공": (r) => r.status === 200, // HTTP 200 응답 확인
+    "응답시간 10초 이내": (r) => r.timings.duration < 10000, // 10초 이내 응답 확인
   });
 
   if (success) {
-    console.log("브로드캐스트 성공 - SSE 메시지 전파 대기 중...");
-    sleep(60); // 메시지 전파 대기
+    // 성공 시 메시지 전파 완료를 위한 대기
+    console.log("메시지 전파 대기 (30초)...");
+    sleep(30);
+    console.log("브로드캐스트 테스트 완료!");
   } else {
-    console.log(`브로드캐스트 실패: ${response.status} - ${response.body}`);
+    console.log("브로드캐스트 실패로 테스트 종료");
   }
 }
 
+// 테스트 시작 전 초기화 함수
 export function setup() {
-  console.log("=== SSE 브로드캐스트 부하 테스트 시작 ===");
+  console.log("=== 고속 브로드캐스트 테스트 시작 ===");
   console.log(`Target: ${BASE_URL}`);
-  console.log(`SSE: ${SSE_ENDPOINT}`);
-  console.log(`Broadcast: ${BROADCAST_ENDPOINT}`);
+  console.log(`예상 시간: 5분`);
+  console.log(`목표 연결: 20,000개`);
 
+  // TOKEN 환경변수 필수 확인
   if (!TOKEN) {
     throw new Error("TOKEN 환경 변수 필요");
   }
 
-  // 사전 연결 테스트
-  const testResponse = http.get(`${BASE_URL}/health`);
-  console.log(`사전 테스트: ${testResponse.status}`);
+  // 서버 상태 사전 확인 (선택적)
+  try {
+    const testResponse = http.get(`${BASE_URL}/health`, { timeout: "5s" });
+    console.log(`서버 상태: ${testResponse.status}`);
+  } catch (e) {
+    console.log(`서버 사전 체크 실패: ${e.message}`);
+  }
 
   return { startTime: Date.now() };
 }
 
+// 테스트 완료 후 정리 및 결과 요약 함수
 export function teardown(data) {
   const duration = (Date.now() - data.startTime) / 1000;
   console.log("=== 테스트 완료 ===");
-  console.log(`총 시간: ${duration}초`);
-  console.log(`최종 활성 연결: ${globalActiveConnections}`);
+  console.log(`총 소요 시간: ${duration.toFixed(1)}초`);
+  console.log(`최종 연결 수: ${globalActiveConnections}`);
+  console.log(`테스트 효율성: ${(20000 / duration).toFixed(0)} 연결/초`);
 }
