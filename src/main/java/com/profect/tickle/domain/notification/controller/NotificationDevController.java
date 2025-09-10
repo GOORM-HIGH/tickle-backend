@@ -28,7 +28,7 @@ public class NotificationDevController {
     private final SseRepository sseRepository;
 
     @GetMapping("/partner")
-    public ResultResponse<Void> publishPartnerPerformanceEvent() {
+    public ResponseEntity<String> publishPartnerPerformanceEvent() {
         log.info("브로드캐스트 요청이 수신되었습니다.");
         // 테스트용 더미 데이터 (Instant는 ISO-8601 full format에 Z 포함)
         PerformanceServiceDto dto = new PerformanceServiceDto(
@@ -54,6 +54,6 @@ public class NotificationDevController {
         eventPublisher.publishEvent(new PartnerPerformancePublishedEvent(dto));
 
         log.info("브로드캐스트 요청이 처리되었습니다.");
-        return ResultResponse.ok(ResultCode.MEMBER_SIGN_OUT_SUCCES);
+        return ResponseEntity.ok("브로드캐스트 요청이 처리되었습니다.");
     }
 }
