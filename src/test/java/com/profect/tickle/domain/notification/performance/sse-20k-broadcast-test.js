@@ -2,6 +2,7 @@ import sse from "k6/x/sse";
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Rate, Trend, Gauge } from "k6/metrics";
+import exec from "k6/execution";
 
 // 사용자 정의 메트릭
 const sseConnections = new Counter("sse_connections_total");
@@ -54,9 +55,10 @@ const SSE_ENDPOINT = `${BASE_URL}/api/v1/notifications/connect`;
 const BROADCAST_ENDPOINT = `${BASE_URL}/test/notification-event/partner`;
 
 export default function () {
-  if (__SCENARIO === "sse_connections") {
+  // __SCENARIO 대신 exec.scenario.name 사용
+  if (exec.scenario.name === "sse_connections") {
     testSSEConnection();
-  } else if (__SCENARIO === "broadcast_sender") {
+  } else if (exec.scenario.name === "broadcast_sender") {
     sendBroadcastMessage();
   }
 }
