@@ -12,9 +12,10 @@ import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.event.service.event.EventService;
-import com.profect.tickle.domain.event.service.message.publisher.EventPublisher;
 import com.profect.tickle.domain.event.service.lock.PessimisticEventApplyExecutor;
-import com.profect.tickle.domain.event.service.message.dto.TicketLockMessage;
+import com.profect.tickle.domain.event.service.message.publisher.EventPublisher;
+import com.profect.tickle.domain.event.stream.dto.EventMessage;
+import com.profect.tickle.domain.event.stream.producer.EventProducer;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
 import com.profect.tickle.domain.point.entity.PointTarget;
@@ -59,6 +60,7 @@ public class EventServiceImpl implements EventService {
     private final PerformanceRepository performanceRepository;
     private final StatusProvider statusProvider;
     private final EventPublisher eventPublisher;
+    private final EventProducer producer;
 
 
     @Override
@@ -105,12 +107,7 @@ public class EventServiceImpl implements EventService {
     public void applyTicketEvent(Long eventId) {
         Long memberId = SecurityUtil.getSignInMemberId();
 
-        TicketLockMessage msg = new TicketLockMessage(
-                eventId,
-                memberId
-        );
-
-        eventPublisher.publish(msg);
+        producer.appendToStream(new EventMessage(eventId, memberId));
     }
 
     @Override
