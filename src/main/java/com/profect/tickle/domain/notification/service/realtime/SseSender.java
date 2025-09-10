@@ -7,6 +7,7 @@ import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.util.JsonUtils;
+import com.profect.tickle.global.util.SerialExecutor;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -22,7 +23,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.UUID;
@@ -368,31 +368,5 @@ public class SseSender implements RealtimeSender {
 
     private void removeLane(String emitterId) {
         lanes.remove(emitterId);
-    }
-
-    static final class SerialExecutor implements Executor {
-        private final Executor backend;
-        private final ArrayDeque<Runnable> tasks = new ArrayDeque<>();
-        private Runnable active;
-
-        SerialExecutor(Executor backend) {
-            this.backend = backend;
-        }
-
-        @Override
-        public synchronized void execute(Runnable r) {
-            tasks.add(() -> {
-                try {
-                    r.run();
-                } finally {
-                    scheduleNext();
-                }
-            });
-            if (active == null) scheduleNext();
-        }
-
-        private synchronized void scheduleNext() {
-            if ((active = tasks.poll()) != null) backend.execute(active);
-        }
     }
 }
