@@ -12,7 +12,7 @@ public class EventStatusScheduler {
 
     private final EventMapper eventMapper;
 
-    @Scheduled(cron = "0 * * * * *") // 매 분 0초
+    //@Scheduled(cron = "0 * * * * *") // 매 분 0초
     @Transactional
     public void syncEventStatuses() {
         int toOngoing = eventMapper.markEventsAsOngoing();
