@@ -37,7 +37,6 @@ public class EventSubscriber {
             String lockName = "ticket-lock:" + msg.getEventId();
             RLock lock = redissonClient.getLock(lockName);
 
-            // 최대 5초 대기, 자동 해제 10초
             lock.lockAsync(10, TimeUnit.SECONDS).thenRunAsync(() -> {
                 try {
                     // 핵심 로직 적용

@@ -4,6 +4,8 @@ import com.profect.tickle.domain.event.dto.EventDecision;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
+import com.profect.tickle.domain.reservation.repository.SeatRepository;
+import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.StatusIds;
@@ -19,32 +21,43 @@ public class EventCoreLockService {
 
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
+    private final SeatRepository seatRepository;
     private final StatusProvider statusProvider;
+    private final ReservationService reservationService;
 
+    //TODO: 임계영역에 대해서 동시성을 보장하면 원하는 결과가 나올겁니다?
+    //TODO: 영한님의 고급 1편을 보세요. 자바 코드에 대한 동시성을 찾아보세요
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public EventDecision applyCore(Long eventId, Long memberId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
+        Long statusId = event.getStatus().getId();
 
-        //TODO: 임계영역에 대해서 동시성을 보장하면 원하는 결과가 나올겁니다?
-        //TODO: 영한님의 고급 1편을 보세요. 자바 코드에 대한 동시성을 찾아보세요
-        if (!StatusIds.Event.IN_PROGRESS.equals(event.getStatus().getId())) {
+        if (!StatusIds.Event.IN_PROGRESS.equals(statusId)) {
             throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
         }
 
-        short perPrice = event.getPerPrice();
-        int memberPoint = memberRepository.tryDeductPoint(memberId, perPrice);
-        if (memberPoint == 0) throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        // 2) 포인트 차감
+        short delta = event.getPerPrice();
+        var deducted = memberRepository.tryDeductPointReturning(memberId, delta);
+        if (deducted.isEmpty()) throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
 
-        event.accumulate(perPrice);
+        // 3) 누적 + 종료 전환(원자)
+        var rows = eventRepository.accrueAndMaybeComplete(
+                eventId, delta,
+                StatusIds.Event.IN_PROGRESS,
+                StatusIds.Event.COMPLETED);
+        if (rows.isEmpty())
+            throw new BusinessException(ErrorCode.EVENT_ALREADY_COMPLETED);
 
-        boolean winner = event.getAccrued() >= event.getGoalPrice();
+        var r = rows.get(0);
+        boolean completed = r.getStatusId().equals(StatusIds.Event.COMPLETED);
         Long seatId = null;
-        if (winner) {
-            event.updateStatus(statusProvider.provide(StatusIds.Event.COMPLETED));
-            seatId = event.getSeat().getId();
-        }
 
-        return new EventDecision(event.getId(), memberId, perPrice, winner, event.getAccrued(), seatId);
+        // 4) 좌석 발급 (종료시에만 시도)
+        if (completed) {
+            seatId = reservationService.assignSeatForWinner(eventId, memberId);
+        }
+        return new EventDecision(eventId, memberId, delta, completed, r.getEventAccrued(), seatId);
     }
 }
