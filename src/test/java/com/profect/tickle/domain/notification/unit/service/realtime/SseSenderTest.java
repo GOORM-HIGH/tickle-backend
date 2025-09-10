@@ -8,6 +8,9 @@ import com.profect.tickle.domain.notification.service.realtime.SseSender;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.util.JsonUtils;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,13 +31,10 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SseSenderTest {
-
 
     @Mock
     SseRepository sseRepository;
@@ -44,6 +44,9 @@ class SseSenderTest {
 
     @Mock
     ObjectMapper objectMapper;
+
+    @Mock
+    MeterRegistry meterRegistry;
 
     // 실제 구현을 주입해서 사용
     Clock clock;
@@ -61,8 +64,22 @@ class SseSenderTest {
         clock = Clock.fixed(Instant.parse("2025-01-01T00:00:00Z"), ZoneOffset.UTC);
         uuidSupplier = () -> UUID.fromString("00000000-0000-0000-0000-000000000000");
         directExecutor = Runnable::run;
+
+        // MeterRegistry Mock 메트릭 관련 자동 응답 셋업
+        Counter.Builder mockCounterBuilder = mock(Counter.Builder.class);
+        Gauge.Builder mockGaugeBuilder = mock(Gauge.Builder.class);
+        Counter mockCounter = mock(Counter.class);
+        Gauge mockGauge = mock(Gauge.class);
+
+        when(Counter.builder(anyString())).thenReturn(mockCounterBuilder);
+        when(mockCounterBuilder.description(anyString())).thenReturn(mockCounterBuilder);
+        when(mockCounterBuilder.register(any(MeterRegistry.class))).thenReturn(mockCounter);
+        when(Gauge.builder(anyString(), any())).thenReturn(mockGaugeBuilder);
+        when(mockGaugeBuilder.description(anyString())).thenReturn(mockGaugeBuilder);
+        when(mockGaugeBuilder.register(any(MeterRegistry.class))).thenReturn(mockGauge);
+
         sseSender = new SseSender(objectMapper, clock, uuidSupplier, directExecutor,
-                notificationProperty, sseRepository);
+                notificationProperty, sseRepository, meterRegistry);
     }
 
     @Test

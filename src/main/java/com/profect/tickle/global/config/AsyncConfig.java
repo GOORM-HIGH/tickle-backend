@@ -2,6 +2,7 @@ package com.profect.tickle.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.VirtualThreadTaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -13,7 +14,7 @@ public class AsyncConfig {
 
     @Bean(name = "mailExecutor")
     public Executor mailExecutor() {
-        var ex = new ThreadPoolTaskExecutor();
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
         ex.setCorePoolSize(2);           // 최소 스레드
         ex.setMaxPoolSize(10);           // 최대 스레드
         ex.setQueueCapacity(200);        // 대기열 크기
@@ -29,13 +30,6 @@ public class AsyncConfig {
 
     @Bean(name = "sseExecutor")
     public Executor sseExecutor() {
-        var ex = new ThreadPoolTaskExecutor();
-        ex.setCorePoolSize(2);
-        ex.setMaxPoolSize(8);
-        ex.setQueueCapacity(1000);
-        ex.setThreadNamePrefix("sse-");
-        ex.setWaitForTasksToCompleteOnShutdown(true);
-        ex.initialize();
-        return ex;
+        return new VirtualThreadTaskExecutor("sse-virtual-");
     }
 }
