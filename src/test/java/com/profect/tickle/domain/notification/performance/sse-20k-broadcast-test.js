@@ -4,7 +4,7 @@ import { check, sleep } from "k6";
 import { Counter, Rate, Trend, Gauge } from "k6/metrics";
 import exec from "k6/execution";
 
-// SSE 브로드캐스트 성능 테스트를 위한 사용자 정의 메트릭 정의
+// 커스텀 메트릭 정의
 const sseConnections = new Counter("sse_connections_total"); // 총 SSE 연결 생성 횟수
 const sseConnectionSuccess = new Rate("sse_connection_success_rate"); // SSE 연결 성공률
 const sseMessageReceived = new Counter("sse_messages_received"); // 수신된 SSE 메시지 총 개수
@@ -43,13 +43,12 @@ export const options = {
   discardResponseBodies: true, // 응답 본문 폐기로 메모리 절약
   noConnectionReuse: false, // HTTP 연결 재사용 활성화
 
-  // 테스트 성공/실패 판단을 위한 임계값 설정
+  // 임계값 설정
   thresholds: {
-    sse_connection_success_rate: ["rate>0.75"], // SSE 연결 성공률 75% 이상
+    sse_connection_success_rate: ["rate>=1.00"], // SSE 연결 성공률 100% 이상
     broadcast_latency: ["p(95)<8000"], // 브로드캐스트 지연시간 95분위수 8초 미만
     http_req_failed: ["rate<0.15"], // HTTP 요청 실패율 15% 미만
-    sse_active_connections: ["value>=15000"], // 활성 SSE 연결 수 15,000개 이상
-    sse_messages_received: ["count>=15000"], // 수신된 메시지 수 15,000개 이상
+    sse_messages_received: ["count>=40000"], // 수신된 메시지 = 40,000개
     broadcast_api_success_rate: ["rate>0.80"], // 브로드캐스트 API 성공률 80% 이상
   },
 };
@@ -218,12 +217,6 @@ function sendBroadcastMessage() {
   // 브로드캐스트 API 성공/실패 메트릭 업데이트
   broadcastApiSuccess.add(success ? 1 : 0);
 
-  // K6 체크 함수를 사용한 응답 검증
-  check(response, {
-    "브로드캐스트 성공": (r) => r.status === 200, // HTTP 200 응답 확인
-    "응답시간 10초 이내": (r) => r.timings.duration < 10000, // 10초 이내 응답 확인
-  });
-
   if (success) {
     // 성공 시 메시지 전파 완료를 위한 대기
     console.log("메시지 전파 대기 (30초)...");
@@ -236,7 +229,7 @@ function sendBroadcastMessage() {
 
 // 테스트 시작 전 초기화 함수
 export function setup() {
-  console.log("=== 고속 브로드캐스트 테스트 시작 ===");
+  console.log("=== 브로드캐스트 테스트 시작 ===");
   console.log(`Target: ${BASE_URL}`);
   console.log(`예상 시간: 5분`);
   console.log(`목표 연결: 20,000개`);
@@ -245,23 +238,5 @@ export function setup() {
   if (!TOKEN) {
     throw new Error("TOKEN 환경 변수 필요");
   }
-
-  // 서버 상태 사전 확인 (선택적)
-  try {
-    const testResponse = http.get(`${BASE_URL}/health`, { timeout: "5s" });
-    console.log(`서버 상태: ${testResponse.status}`);
-  } catch (e) {
-    console.log(`서버 사전 체크 실패: ${e.message}`);
-  }
-
   return { startTime: Date.now() };
-}
-
-// 테스트 완료 후 정리 및 결과 요약 함수
-export function teardown(data) {
-  const duration = (Date.now() - data.startTime) / 1000;
-  console.log("=== 테스트 완료 ===");
-  console.log(`총 소요 시간: ${duration.toFixed(1)}초`);
-  console.log(`최종 연결 수: ${globalActiveConnections}`);
-  console.log(`테스트 효율성: ${(20000 / duration).toFixed(0)} 연결/초`);
 }
