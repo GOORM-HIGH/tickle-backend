@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.notification.repository;
 
+import lombok.Builder;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 

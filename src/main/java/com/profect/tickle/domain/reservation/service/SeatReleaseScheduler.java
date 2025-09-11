@@ -12,8 +12,9 @@ public class SeatReleaseScheduler {
 
     private final SeatPreemptionReleaser releaser;
 
-    @Scheduled(cron = "*/10 * * * * *")
-    public void releaseExpiredSeats() {
-        releaser.releaseExpiredPreemptions();
-    }
+    // TODO: 주석 제거
+//    @Scheduled(cron = "*/10 * * * * *")
+//    public void releaseExpiredSeats() {
+//        releaser.releaseExpiredPreemptions();
+//    }
 }
