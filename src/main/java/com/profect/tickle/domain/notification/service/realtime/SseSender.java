@@ -47,7 +47,6 @@ public class SseSender implements RealtimeSender {
     private final Clock clock;
     private final Supplier<UUID> uuidSupplier;
     private final Executor sseExecutor;
-
     private final ConcurrentMap<String, SerialExecutor> lanes = new ConcurrentHashMap<>();
     private final AtomicLong lastEventId = new AtomicLong(0);
 
@@ -124,7 +123,7 @@ public class SseSender implements RealtimeSender {
         UUID uuid = uuidSupplier.get();
         String emitterId = memberId + "_" + connectedAt.toEpochMilli() + "_" + uuid;
 
-        log.info("SSE connect - memberId={}, emitterId={}", memberId, emitterId);
+        log.info("SSE 연결 - 회원ID={}, 송신자ID={}", memberId, emitterId);
 
         // 연결 생성 메트릭 증가
         connectionsCreated.increment();
@@ -142,7 +141,7 @@ public class SseSender implements RealtimeSender {
                     .id(Long.toString(eventId))
                     .data("connection was completed", MediaType.APPLICATION_JSON));
         } catch (IOException e) {
-            log.error("initial send failed - {}, {}", emitterId, e.getMessage());
+            log.error("초기 전송 실패 - {}, {}", emitterId, e.getMessage());
             disconnectEmitterWithError(memberId, emitterId, e);
             return emitter;
         }
@@ -151,6 +150,7 @@ public class SseSender implements RealtimeSender {
         if (lastEventIdHeader != null && !lastEventIdHeader.isBlank()) {
             laneOf(emitterId).execute(() -> resend(memberId, emitterId, emitter, lastEventIdHeader));
         }
+
         return emitter;
     }
 
@@ -159,7 +159,6 @@ public class SseSender implements RealtimeSender {
         // 1) 이벤트 생성 + 직렬화 (항상 수행)
         long eventId = nextEventId();
         String json;
-
         try {
             json = JsonUtils.toJson(objectMapper, payload);
         } catch (Exception e) {
@@ -175,7 +174,7 @@ public class SseSender implements RealtimeSender {
         // 3) 활성 emitter 스냅샷 조회
         Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
         if (targets.isEmpty()) {
-            log.debug("no active SSE emitters; cached event for replay. memberId={}, eventId={}", memberId, eventId);
+            log.debug("활성¸ SSE 송신자 없음; 재생을 위해 이벤트 캐시됨. 회원ID={}, 이벤트ID={}", memberId, eventId);
             return;
         }
 
@@ -189,7 +188,7 @@ public class SseSender implements RealtimeSender {
                             .data(json, MediaType.APPLICATION_JSON));
                     messagesSent.increment();
                 } catch (IOException ex) {
-                    log.warn("send failed - memberId={}, emitterId={}, err={}", memberId, emitterId, ex.toString());
+                    log.warn("전송 실패 - 회원ID={}, 송신자ID={}, 오류={}", memberId, emitterId, ex.toString());
                     messagesFailed.increment();
                     disconnectEmitterWithError(memberId, emitterId, ex);
                     removeLane(emitterId);
@@ -220,7 +219,7 @@ public class SseSender implements RealtimeSender {
                         // 브로드캐스트 메시지 전송 성공
                         messagesSent.increment();
                     } catch (IOException exception) {
-                        log.warn("sendAll failed - memberId={}, emitterId={}, err={}",
+                        log.warn("전체 전송 실패 - 회원ID={}, 송신자ID={}, 오류={}",
                                 memberId, emitterId, exception.toString());
                         // 브로드캐스트 메시지 전송 실패
                         messagesFailed.increment();
@@ -234,21 +233,21 @@ public class SseSender implements RealtimeSender {
 
     private void setEmitter(long memberId, SseEmitter emitter, String emitterId) {
         emitter.onCompletion(() -> {
-            log.info("onCompletion - {}", emitterId);
+            log.info("연결 완료 - {}", emitterId);
             sseRepository.remove(memberId, emitterId);
             removeLane(emitterId);
             connectionsCompleted.increment();
         });
 
         emitter.onTimeout(() -> {
-            log.warn("onTimeout - {}", emitterId);
+            log.warn("연결 시간초과 - {}", emitterId);
             sseRepository.remove(memberId, emitterId);
             removeLane(emitterId);
             connectionsTimeout.increment();
         });
 
         emitter.onError(e -> {
-            log.warn("onError - {}: {}", emitterId, e.toString());
+            log.warn("연결 오류 - {}: {}", emitterId, e.toString());
             disconnectEmitterWithError(memberId, emitterId, e);
             connectionsError.increment();
         });
@@ -260,14 +259,14 @@ public class SseSender implements RealtimeSender {
         try {
             last = Long.parseLong(lastEventIdHeader);
         } catch (NumberFormatException ex) {
-            log.warn("Invalid Last-Event-ID: {}", lastEventIdHeader);
+            log.warn("잘못된 마지막 이벤트ID: {}", lastEventIdHeader);
             return;
         }
 
         NavigableMap<Long, String> later = sseRepository.eventsAfter(memberId, last);
         if (later.isEmpty()) {
             if (emitterId != null) {
-                log.debug("replay skipped (no later events) - memberId={}, emitterId={}, lastEventId={}", memberId, emitterId, last);
+                log.debug("재생 건너뜀 (이후 이벤트 없음) - 회원ID={}, 송신자ID={}, 마지막이벤트ID={}", memberId, emitterId, last);
             }
             return;
         }
@@ -286,7 +285,7 @@ public class SseSender implements RealtimeSender {
         }
 
         if (emitterId != null) {
-            log.debug("replay summarized - memberId={}, emitterId={}, lastEventId={}, latestId={}, missed={}",
+            log.debug("재생 요약 - 회원ID={}, 송신자ID={}, 마지막이벤트ID={}, 최신ID={}, 누락개수={}",
                     memberId, emitterId, last, latestId, missed);
         }
     }
@@ -295,7 +294,7 @@ public class SseSender implements RealtimeSender {
     public void disconnectAll(long memberId) {
         Map<String, SseEmitter> targets = Map.copyOf(sseRepository.getAllWithIds(memberId));
         if (targets.isEmpty()) {
-            log.debug("disconnectAll: no emitters for memberId={}", memberId);
+            log.debug("전체 연결해제: 회원ID={} 송신자 없음", memberId);
             return;
         }
 
@@ -307,23 +306,23 @@ public class SseSender implements RealtimeSender {
                 }
                 e.complete();
             } catch (Exception ex) {
-                log.debug("disconnectAll: complete failed (memberId={}, emitterId={}) - {}", memberId, emitterId, ex.toString());
+                log.debug("전체 연결해제: 완료 실패 (회원ID={}, 송신자ID={}) - {}", memberId, emitterId, ex.toString());
             } finally {
                 removeLane(emitterId);
             }
         });
-
         sseRepository.removeAll(memberId);
-        log.info("SSE disconnected all emitters - memberId={}, count={}", memberId, targets.size());
+        log.info("SSE 모든 송신자 연결해제 - 회원ID={}, 개수={}", memberId, targets.size());
     }
 
     @Override
     public void disconnectEmitter(long memberId, String emitterId) {
         SseEmitter e = sseRepository.getByEmitterId(emitterId);
         if (e == null) {
-            log.warn("disconnectEmitter: not found - memberId={}, emitterId={}", memberId, emitterId);
+            log.warn("송신자 연결해제: 찾을 수 없음 - 회원ID={}, 송신자ID={}", memberId, emitterId);
             return;
         }
+
         try {
             try {
                 e.send(SseEmitter.event().name("bye").data("closing"));
@@ -341,9 +340,10 @@ public class SseSender implements RealtimeSender {
     public void disconnectEmitterWithError(long memberId, String emitterId, Throwable cause) {
         SseEmitter e = sseRepository.getByEmitterId(emitterId);
         if (e == null) {
-            log.warn("disconnectEmitterWithError: not found - memberId={}, emitterId={}", memberId, emitterId);
+            log.warn("오류로 송신자 연결해제: 찾을 수 없음 - 회원ID={}, 송신자ID={}", memberId, emitterId);
             return;
         }
+
         try {
             e.completeWithError(cause);
         } catch (Exception ignored) {
