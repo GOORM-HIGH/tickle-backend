@@ -113,7 +113,7 @@ function testSSEConnection() {
     // SSE 연결 시작 및 이벤트 핸들러 설정
     sse.open(SSE_ENDPOINT, params, function (client) {
       // SSE 연결 성공 시 실행되는 핸들러
-      client.on("sse-connect", function () {
+      client.on("open", function () {
         connectionEstablished = true;
         isConnected = true;
         globalActiveConnections++;
@@ -134,14 +134,15 @@ function testSSEConnection() {
         activeConnections.add(globalActiveConnections);
       });
 
-      // SSE 메시지 수신 시 실행되는 핸들러
-      client.on("notification", function (event) {
+      function handleSSEMessage(event) {
         messagesReceived++;
         const receiveTime = Date.now();
 
         // 첫 번째 메시지 수신 시에만 로그 출력
         if (messagesReceived === 1) {
-          console.log(`VU ${__VU}: 첫 브로드캐스트 메시지 수신!`);
+          console.log(
+            `VU ${__VU}: 메시지 수신! 타입: ${event.type || "unknown"}`
+          );
         }
 
         // 브로드캐스트 메시지의 지연시간 측정 (NotificationEnvelope의 createdAt 활용)
@@ -161,7 +162,7 @@ function testSSEConnection() {
 
               // 디버깅을 위한 제한적 로깅 (처음 3개 메시지만)
               if (messagesReceived <= 3 && __VU % 5000 === 1) {
-                console.log(`VU ${__VU}: Latency calculated: ${latency}ms`);
+                console.log(`VU ${__VU}: Latency: ${latency}ms`);
               }
             }
           } else {
@@ -173,17 +174,31 @@ function testSSEConnection() {
         } catch (e) {
           // JSON 파싱 실패 시 디버깅 로그
           if (messagesReceived <= 3 && __VU % 5000 === 1) {
-            console.log(`VU ${__VU}: JSON parsing failed: ${e.message}`);
+            console.log(`VU ${__VU}: 파싱 실패: ${e.message}`);
           }
         }
 
         sseMessageReceived.add(1);
-      });
+      }
+
+      client.on("message", handleSSEMessage);
+      client.on("notification", handleSSEMessage);
+      client.on("sse-connect", handleSSEMessage);
+      client.on("data", handleSSEMessage);
+      client.on("event", handleSSEMessage);
+
+      try {
+        if (client.onmessage !== undefined) {
+          client.onmessage = handleSSEMessage;
+        }
+      } catch (e) {
+        // 지원하지 않으면 무시
+      }
 
       // SSE 연결 오류 시 실행되는 핸들러
       client.on("error", function (error) {
         if (__VU % 1000 === 1) {
-          console.log(`VU ${__VU}: SSE 오류`);
+          console.log(`VU ${__VU}: SSE 오류: ${error}`);
         }
         if (isConnected) {
           globalActiveConnections--;
@@ -206,7 +221,7 @@ function testSSEConnection() {
     return;
   }
 
-  // SSE 연결을 3분간 유지 (테스트 시나리오에 맞춘 시간)
+  // SSE 연결을 3분간 유지
   sleep(180);
 }
 
@@ -295,94 +310,4 @@ export function setup() {
   }
 
   return { startTime: testStartTime };
-}
-
-// 테스트 완료 후 정리 및 시간 분석 함수
-export function teardown(data) {
-  const testEndTime = Date.now();
-
-  // 전체 테스트 시간 계산
-  const totalTestTime = (testEndTime - testStartTime) / 1000;
-
-  // SSE 연결 소요 시간 계산
-  const sseConnectionTime =
-    sseConnectionCompleteTime > 0
-      ? (sseConnectionCompleteTime - sseConnectionStartTime) / 1000
-      : 0;
-
-  // 브로드캐스트 소요 시간 계산
-  const broadcastDuration =
-    broadcastCompleteTime > 0 && broadcastStartTime > 0
-      ? (broadcastCompleteTime - broadcastStartTime) / 1000
-      : 0;
-
-  // SSE 연결 완료 후 브로드캐스트 완료까지 시간
-  const postConnectionTime =
-    broadcastCompleteTime > 0 && sseConnectionCompleteTime > 0
-      ? (broadcastCompleteTime - sseConnectionCompleteTime) / 1000
-      : 0;
-
-  console.log("=== 📊 테스트 시간 분석 ===");
-  console.log(`🕒 전체 테스트 시간: ${totalTestTime.toFixed(1)}초`);
-
-  if (sseConnectionTime > 0) {
-    console.log(`🔌 SSE 연결 완료 시간: ${sseConnectionTime.toFixed(1)}초`);
-  }
-
-  if (broadcastDuration > 0) {
-    console.log(
-      `📡 브로드캐스트 총 소요 시간: ${broadcastDuration.toFixed(1)}초`
-    );
-  }
-
-  if (postConnectionTime > 0) {
-    console.log(
-      `⏱️  SSE 완료 후 브로드캐스트 완료: ${postConnectionTime.toFixed(1)}초`
-    );
-  }
-
-  console.log("=== 📈 성능 지표 ===");
-
-  if (sseConnectionTime > 0) {
-    console.log(
-      `연결 생성 속도: ${(20000 / sseConnectionTime).toFixed(0)} 연결/초`
-    );
-  }
-
-  console.log(`최종 활성 연결: ${globalActiveConnections}개`);
-  console.log(`테스트 효율성: ${(20000 / totalTestTime).toFixed(0)} 연결/초`);
-
-  // 시간대별 분석
-  if (sseConnectionTime > 0 && broadcastDuration > 0) {
-    console.log("=== ⏰ 시간대별 분석 ===");
-    console.log(
-      `시작 → SSE 완료: ${sseConnectionTime.toFixed(1)}초 (${(
-        (sseConnectionTime / totalTestTime) *
-        100
-      ).toFixed(1)}%)`
-    );
-
-    if (postConnectionTime > 0) {
-      console.log(
-        `SSE 완료 → 브로드캐스트 완료: ${postConnectionTime.toFixed(1)}초 (${(
-          (postConnectionTime / totalTestTime) *
-          100
-        ).toFixed(1)}%)`
-      );
-    }
-
-    console.log(
-      `전체 대비 브로드캐스트 시간: ${(
-        (broadcastDuration / totalTestTime) *
-        100
-      ).toFixed(1)}%`
-    );
-  }
-
-  console.log("=== 🎯 Virtual Thread 성과 요약 ===");
-  console.log("✅ 20,000개 동시 SSE 연결 성공");
-  console.log("✅ TaskRejectedException 완전 해결");
-  console.log("✅ 대규모 동시성 처리 성공");
-  console.log("✅ 메모리 효율성 극대화");
-  console.log("✅ createdAt 기반 정확한 지연시간 측정");
 }
