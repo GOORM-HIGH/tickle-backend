@@ -4,6 +4,7 @@ import com.profect.tickle.domain.chat.entity.Chat;
 import com.profect.tickle.domain.chat.repository.ChatRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class MessageConcurrencyService {
 
     private final ChatRepository chatRepository;
-    private final UnreadCountOptimizer unreadCountOptimizer;
+    
+    // Redis 기반 최적화는 필요시 추가
     
     // 메시지 배치 처리를 위한 큐
     private final List<Chat> messageBatch = new ArrayList<>();
@@ -85,12 +87,7 @@ public class MessageConcurrencyService {
             // 1. 메시지를 배치 큐에 추가
             addToBatch(message);
             
-            // 2. 읽지 않은 메시지 개수 증가 (Redis)
-            unreadCountOptimizer.incrementUnreadCount(
-                message.getChatRoomId(), 
-                message.getMember().getId(), 
-                1
-            );
+            // 2. 읽지 않은 메시지 개수는 DB에서 직접 조회
             
             log.debug("메시지 순서 보장 처리 완료: messageId={}, roomId={}, memberId={}", 
                     message.getId(), message.getChatRoomId(), message.getMember().getId());

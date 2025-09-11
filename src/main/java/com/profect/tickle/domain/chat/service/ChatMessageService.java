@@ -20,6 +20,7 @@ import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,9 +43,9 @@ public class ChatMessageService {
     private final SimpMessagingTemplate simpMessagingTemplate; // WebSocket 템플릿
     private final ChatMessageValidator chatMessageValidator; // 메시지 검증 전용
     
-    // 🆕 성능 최적화 서비스들
-    private final UnreadCountOptimizer unreadCountOptimizer;
-    private final MessageConcurrencyService messageConcurrencyService;
+    // 🆕 성능 최적화 서비스들 (선택적 주입)
+    @Autowired(required = false)
+    private MessageConcurrencyService messageConcurrencyService;
 
     /**
      * 메시지 전송 (성능 최적화 버전)
@@ -287,20 +288,10 @@ public class ChatMessageService {
                 return 0; // 참여하지 않으면 읽지 않은 메시지 0개
             }
 
-            // 4. 🚀 Redis에서 읽지 않은 메시지 개수 조회 (최적화)
-            int unreadCount = unreadCountOptimizer.getUnreadCount(chatRoomId, memberId);
-            
-            // 5. Redis에 데이터가 없으면 DB에서 조회 후 Redis에 저장
-            if (unreadCount == 0) {
-                int dbUnreadCount = chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
-                if (dbUnreadCount > 0) {
-                    // Redis에 저장
-                    unreadCountOptimizer.incrementUnreadCount(chatRoomId, memberId, dbUnreadCount);
-                    unreadCount = dbUnreadCount;
-                }
-            }
+            // 4. 읽지 않은 메시지 개수 조회 (DB 직접 조회)
+            int unreadCount = chatMessageMapper.countUnreadMessages(chatRoomId, memberId, lastReadMessageId);
 
-            log.info("읽지않은 메시지 개수 조회 결과 (Redis 최적화): chatRoomId={}, memberId={}, unreadCount={}", 
+            log.info("읽지않은 메시지 개수 조회 결과: chatRoomId={}, memberId={}, unreadCount={}", 
                     chatRoomId, memberId, unreadCount);
 
             return unreadCount;
