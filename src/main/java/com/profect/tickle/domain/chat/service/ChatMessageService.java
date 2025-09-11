@@ -13,7 +13,7 @@ import com.profect.tickle.domain.chat.mapper.ChatMessageMapper;
 import com.profect.tickle.domain.chat.repository.ChatParticipantsRepository;
 import com.profect.tickle.domain.chat.repository.ChatRepository;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
-import com.profect.tickle.domain.file.service.FileService;
+// import com.profect.tickle.domain.file.service.FileService; // 사용하지 않음
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -39,7 +39,7 @@ public class ChatMessageService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
     private final ChatMessageMapper chatMessageMapper; // MyBatis
-    private final FileService fileService;
+    // private final FileService fileService; // 사용하지 않음
     private final SimpMessagingTemplate simpMessagingTemplate; // WebSocket 템플릿
     private final ChatMessageValidator chatMessageValidator; // 메시지 검증 전용
     
@@ -251,7 +251,7 @@ public class ChatMessageService {
         log.info("마지막 메시지 조회: chatRoomId={}, memberId={}", chatRoomId, currentMemberId);
 
         // 채팅방 존재 여부 확인
-        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+        chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         // MyBatis 매퍼 호출

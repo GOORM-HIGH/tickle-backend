@@ -10,7 +10,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * 비동기 처리 설정 (채팅 성능 최적화용)
+ * 비동기 처리 설정
  */
 @Configuration
 @EnableAsync
@@ -37,6 +37,7 @@ public class AsyncConfig {
         return new VirtualThreadTaskExecutor("sse-virtual-");
     }
 
+    // ===== 채팅 성능 최적화용 추가 스레드 풀 =====
     /**
      * 메시지 처리 전용 스레드 풀 (채팅 성능 최적화용)
      */
@@ -87,5 +88,4 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
-
 }

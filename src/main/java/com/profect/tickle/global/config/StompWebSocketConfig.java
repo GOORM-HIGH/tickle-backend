@@ -29,7 +29,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // 메시지 브로커 최적화 (대규모 연결 대응)
         config.enableSimpleBroker("/topic", "/queue")
               .setTaskScheduler(heartBeatScheduler())
-              .setHeartbeatValue(new long[]{30000, 30000}); // 30초 하트비트 (부하 감소)
+              .setHeartbeatValue(new long[]{60000, 60000}); // 60초 하트비트 (부하 대폭 감소)
         
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
