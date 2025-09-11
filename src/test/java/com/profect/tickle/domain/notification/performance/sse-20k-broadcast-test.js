@@ -59,10 +59,7 @@ const TOKEN = __ENV.TOKEN;
 const SSE_ENDPOINT = `${BASE_URL}/api/v1/notifications/connect`; // SSE 연결 엔드포인트
 const BROADCAST_ENDPOINT = `${BASE_URL}/test/notification-event/partner`; // 브로드캐스트 API 엔드포인트
 
-// 전역 변수: 현재 활성 연결 수 추적용 (동시성 문제 있을 수 있음)
-let globalActiveConnections = 0;
-
-// 시간 추적용 전역 변수 추가
+// 시간 추적용 전역 변수
 let testStartTime = 0;
 let sseConnectionStartTime = 0;
 let sseConnectionCompleteTime = 0;
@@ -116,7 +113,9 @@ function testSSEConnection() {
       client.on("open", function () {
         connectionEstablished = true;
         isConnected = true;
-        globalActiveConnections++;
+
+        // Gauge 메트릭으로 활성 연결 수 증가
+        activeConnections.add(1);
 
         // SSE 연결 완료 시간 업데이트 (마지막 연결까지)
         sseConnectionCompleteTime = Date.now();
@@ -124,14 +123,13 @@ function testSSEConnection() {
         // 성능을 위한 제한적 로깅
         if (__VU % 1000 === 1) {
           console.log(
-            `VU ${__VU}: 연결 성공 - 총 ${globalActiveConnections}개`
+            `VU ${__VU}: 연결 성공 (활성 연결 수는 테스트 결과에서 확인)`
           );
         }
 
         // 메트릭 업데이트
         sseConnections.add(1);
         sseConnectionSuccess.add(1);
-        activeConnections.add(globalActiveConnections);
       });
 
       function handleSSEMessage(event) {
@@ -145,7 +143,7 @@ function testSSEConnection() {
           );
         }
 
-        // 브로드캐스트 메시지의 지연시간 측정 (NotificationEnvelope의 createdAt 활용)
+        // 브로드캐스트 메시지의 지연시간 측정
         try {
           const messageData = JSON.parse(event.data || "{}");
 
@@ -192,7 +190,6 @@ function testSSEConnection() {
           client.onmessage = handleSSEMessage;
         }
       } catch (e) {
-        // 지원하지 않으면 무시
       }
 
       // SSE 연결 오류 시 실행되는 핸들러
@@ -201,7 +198,7 @@ function testSSEConnection() {
           console.log(`VU ${__VU}: SSE 오류: ${error}`);
         }
         if (isConnected) {
-          globalActiveConnections--;
+          activeConnections.add(-1); // 활성 연결 수 감소
           isConnected = false;
         }
         sseConnectionSuccess.add(0);
@@ -210,7 +207,7 @@ function testSSEConnection() {
       // SSE 연결 종료 시 실행되는 핸들러
       client.on("close", function () {
         if (isConnected) {
-          globalActiveConnections--;
+          activeConnections.add(-1); // 활성 연결 수 감소
           isConnected = false;
         }
       });
@@ -233,7 +230,6 @@ function sendBroadcastMessage() {
   console.log(
     `브로드캐스트 시작 시간: ${new Date(broadcastStartTime).toISOString()}`
   );
-  console.log(`현재 활성 연결: ~${globalActiveConnections}개`);
 
   // SSE 연결 안정화를 위한 짧은 대기
   sleep(10);
