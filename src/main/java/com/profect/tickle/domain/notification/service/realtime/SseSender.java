@@ -200,13 +200,12 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void sendAll(NotificationEnvelope<?> payload) {
-        // 브로드캐스트는 per-user 캐시를 만들지 않고, 현재 연결된 emitter에만 발송
         long eventId = nextEventId();
         String json = JsonUtils.toJson(objectMapper, payload);
 
         Map<Long, Map<String, SseEmitter>> snapshot = sseRepository.getAllWithIdsGroupedByMember();
         if (snapshot.isEmpty()) {
-            log.debug("sendAll: no active SSE emitters; nothing to deliver.");
+            log.debug("연결된 회원이 없습니다.");
             return;
         }
 
@@ -220,12 +219,12 @@ public class SseSender implements RealtimeSender {
                                 .data(json, MediaType.APPLICATION_JSON));
                         // 브로드캐스트 메시지 전송 성공
                         messagesSent.increment();
-                    } catch (IOException ex) {
+                    } catch (IOException exception) {
                         log.warn("sendAll failed - memberId={}, emitterId={}, err={}",
-                                memberId, emitterId, ex.toString());
+                                memberId, emitterId, exception.toString());
                         // 브로드캐스트 메시지 전송 실패
                         messagesFailed.increment();
-                        disconnectEmitterWithError(memberId, emitterId, ex);
+                        disconnectEmitterWithError(memberId, emitterId, exception);
                         removeLane(emitterId);
                     }
                 });
