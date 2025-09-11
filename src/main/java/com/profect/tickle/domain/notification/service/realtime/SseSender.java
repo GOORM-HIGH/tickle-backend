@@ -23,13 +23,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -39,6 +34,7 @@ import java.util.function.Supplier;
 public class SseSender implements RealtimeSender {
 
     // properties
+    private static final int CHUNK_SIZE = 500;
     private static final int MAX_REPLAY_PER_MEMBER = 50;
     private static final long REPLAY_TTL_MS = TimeUnit.MINUTES.toMillis(10);
 
@@ -62,59 +58,6 @@ public class SseSender implements RealtimeSender {
     private Counter connectionsError;       // SSE 연결 에러 발생 총 횟수
     private Counter messagesSent;           // SSE 메시지 전송 성공 총 횟수
     private Counter messagesFailed;         // SSE 메시지 전송 실패 총 횟수
-
-    @PostConstruct
-    private void initMetrics() {
-        // Counter 메트릭 초기화
-        this.connectionsCreated = Counter.builder("sse_connections_created_total")
-                .description("Total number of SSE connections created")
-                .register(meterRegistry);
-
-        this.connectionsCompleted = Counter.builder("sse_connections_completed_total")
-                .description("Total number of SSE connections completed normally")
-                .register(meterRegistry);
-
-        this.connectionsTimeout = Counter.builder("sse_connections_timeout_total")
-                .description("Total number of SSE connections timed out")
-                .register(meterRegistry);
-
-        this.connectionsError = Counter.builder("sse_connections_error_total")
-                .description("Total number of SSE connections ended with error")
-                .register(meterRegistry);
-
-        this.messagesSent = Counter.builder("sse_messages_sent_total")
-                .description("Total number of SSE messages sent successfully")
-                .register(meterRegistry);
-
-        this.messagesFailed = Counter.builder("sse_messages_failed_total")
-                .description("Total number of SSE messages failed to send")
-                .register(meterRegistry);
-
-        Gauge.builder("sse_connections_total", () -> {
-                    return sseRepository.getAllWithIdsGroupedByMember()
-                            .values()
-                            .stream()
-                            .mapToLong(Map::size)
-                            .sum();
-                })
-                .description("Current number of active SSE connections")
-                .register(meterRegistry);
-
-        Gauge.builder("sse_connections_members", () -> {
-                    return sseRepository.getAllWithIdsGroupedByMember().size();
-                })
-                .description("Current number of active members with SSE connections")
-                .register(meterRegistry);
-
-        Gauge.builder("sse_connections_avg_per_member", () -> {
-                    Map<Long, Map<String, SseEmitter>> grouped = sseRepository.getAllWithIdsGroupedByMember();
-                    long totalConnections = grouped.values().stream().mapToLong(Map::size).sum();
-                    long activeMembers = grouped.size();
-                    return activeMembers > 0 ? (double) totalConnections / activeMembers : 0.0;
-                })
-                .description("Average SSE connections per member")
-                .register(meterRegistry);
-    }
 
     @Override
     public SseEmitter connect(@NotNull Long memberId, @Nullable String lastEventIdHeader) {
@@ -199,58 +142,45 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void sendAll(NotificationEnvelope<?> payload) {
+        // 브로드캐스트 처리 시간 측정 시작
+        long startTime = clock.millis();
+
+        // 브로드캐스트용 고유 이벤트 ID 생성 및 페이로드 JSON 직렬화
         long eventId = nextEventId();
         String json = JsonUtils.toJson(objectMapper, payload);
 
+        // 현재 시점의 모든 회원별 SSE 연결 상태 스냅샷 조회
         Map<Long, Map<String, SseEmitter>> snapshot = sseRepository.getAllWithIdsGroupedByMember();
+
+        // 활성 연결이 없는 경우 브로드캐스트 중단
         if (snapshot.isEmpty()) {
-            log.debug("연결된 회원이 없습니다.");
+            log.debug("브로드캐스트 건너뜀: 활성 연결 없음");
             return;
         }
 
-        snapshot.forEach((memberId, emitters) -> {
-            emitters.forEach((emitterId, emitter) -> {
-                laneOf(emitterId).execute(() -> {
-                    try {
-                        emitter.send(SseEmitter.event()
-                                .name("notification")
-                                .id(Long.toString(eventId))
-                                .data(json, MediaType.APPLICATION_JSON));
-                        // 브로드캐스트 메시지 전송 성공
-                        messagesSent.increment();
-                    } catch (IOException exception) {
-                        log.warn("전체 전송 실패 - 회원ID={}, 송신자ID={}, 오류={}",
-                                memberId, emitterId, exception.toString());
-                        // 브로드캐스트 메시지 전송 실패
-                        messagesFailed.increment();
-                        disconnectEmitterWithError(memberId, emitterId, exception);
-                        removeLane(emitterId);
-                    }
-                });
-            });
-        });
-    }
+        // 브로드캐스트 시작 로그 출력 (이벤트 ID, 대상 회원 수, 총 연결 수)
+        log.info("브로드캐스트 시작 - 이벤트ID={}, 회원수={}, 총연결수={}",
+                eventId, snapshot.size(),
+                snapshot.values().stream().mapToLong(Map::size).sum());
 
-    private void setEmitter(long memberId, SseEmitter emitter, String emitterId) {
-        emitter.onCompletion(() -> {
-            log.info("연결 완료 - {}", emitterId);
-            sseRepository.remove(memberId, emitterId);
-            removeLane(emitterId);
-            connectionsCompleted.increment();
-        });
+        // 회원 ID 목록을 추출하여 병렬 처리용 청크로 분할
+        List<Long> memberIdList = new ArrayList<>(snapshot.keySet());
+        List<List<Long>> memberChunkList = createChunks(memberIdList);
 
-        emitter.onTimeout(() -> {
-            log.warn("연결 시간초과 - {}", emitterId);
-            sseRepository.remove(memberId, emitterId);
-            removeLane(emitterId);
-            connectionsTimeout.increment();
-        });
+        // 각 청크를 Virtual Thread에서 병렬로 처리하기 위한 CompletableFuture 생성
+        List<CompletableFuture<Void>> futureList = memberChunkList.stream()
+                .map(chunk -> CompletableFuture.runAsync(() -> {
+                    processChunk(chunk, snapshot, eventId, json);
+                }, sseExecutor))
+                .toList();
 
-        emitter.onError(e -> {
-            log.warn("연결 오류 - {}: {}", emitterId, e.toString());
-            disconnectEmitterWithError(memberId, emitterId, e);
-            connectionsError.increment();
-        });
+        // 모든 청크의 병렬 처리 완료까지 대기
+        CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
+
+        // 브로드캐스트 완료 시간 측정 및 처리 결과 로그 출력
+        long endTime = clock.millis();
+        long duration = endTime - startTime;
+        log.info("브로드캐스트 완료 - 소요시간={}ms, 대상연결수={}", duration, snapshot.values().stream().mapToLong(Map::size).sum());
     }
 
     @Override
@@ -351,6 +281,135 @@ public class SseSender implements RealtimeSender {
             sseRepository.remove(memberId, emitterId);
             removeLane(emitterId);
         }
+    }
+
+    @PostConstruct
+    private void initMetrics() {
+        // Counter 메트릭 초기화
+        this.connectionsCreated = Counter.builder("sse_connections_created_total")
+                .description("생성된 SSE 연결 총 개수")
+                .register(meterRegistry);
+
+        this.connectionsCompleted = Counter.builder("sse_connections_completed_total")
+                .description("정상적으로 완료된 SSE 연결 총 개수")
+                .register(meterRegistry);
+
+        this.connectionsTimeout = Counter.builder("sse_connections_timeout_total")
+                .description("시간 초과된 SSE 연결 총 개수")
+                .register(meterRegistry);
+
+        this.connectionsError = Counter.builder("sse_connections_error_total")
+                .description("오류로 종료된 SSE 연결 총 개수")
+                .register(meterRegistry);
+
+        this.messagesSent = Counter.builder("sse_messages_sent_total")
+                .description("성공적으로 전송된 SSE 메시지 총 개수")
+                .register(meterRegistry);
+
+        this.messagesFailed = Counter.builder("sse_messages_failed_total")
+                .description("전송에 실패한 SSE 메시지 총 개수")
+                .register(meterRegistry);
+
+        Gauge.builder("sse_connections_total", () -> {
+                    return sseRepository.getAllWithIdsGroupedByMember()
+                            .values()
+                            .stream()
+                            .mapToLong(Map::size)
+                            .sum();
+                })
+                .description("현재 활성 SSE 연결 수")
+                .register(meterRegistry);
+
+        Gauge.builder("sse_connections_members", () -> {
+                    return sseRepository.getAllWithIdsGroupedByMember().size();
+                })
+                .description("SSE 연결을 가진 현재 활성 회원 수")
+                .register(meterRegistry);
+
+        Gauge.builder("sse_connections_avg_per_member", () -> {
+                    Map<Long, Map<String, SseEmitter>> grouped = sseRepository.getAllWithIdsGroupedByMember();
+                    long totalConnections = grouped.values().stream().mapToLong(Map::size).sum();
+                    long activeMembers = grouped.size();
+                    return activeMembers > 0 ? (double) totalConnections / activeMembers : 0.0;
+                })
+                .description("회원당 평균 SSE 연결 수")
+                .register(meterRegistry);
+    }
+
+    private void processChunk(List<Long> memberChunk,
+                              Map<Long, Map<String, SseEmitter>> snapshot,
+                              long eventId,
+                              String json) {
+        String threadName = Thread.currentThread().getName();
+
+        log.debug("청크 처리 시작 - 스레드={}, 회원수={}", threadName, memberChunk.size());
+
+        for (Long memberId : memberChunk) {
+            Map<String, SseEmitter> emitters = snapshot.get(memberId);
+            if (emitters != null && !emitters.isEmpty()) {
+                processMemberConnections(memberId, emitters, eventId, json);
+            }
+        }
+
+        log.debug("청크 처리 완료 - 스레드={}", threadName);
+    }
+
+    private void processMemberConnections(Long memberId,
+                                          Map<String, SseEmitter> emitters,
+                                          long eventId,
+                                          String json) {
+        for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
+            String emitterId = entry.getKey();
+            SseEmitter emitter = entry.getValue();
+
+            laneOf(emitterId).execute(() -> {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("notification")
+                            .id(Long.toString(eventId))
+                            .data(json, MediaType.APPLICATION_JSON));
+                    messagesSent.increment();
+
+                } catch (IOException ex) {
+                    log.warn("브로드캐스트 전송 실패 - 회원ID={}, 송신자ID={}",
+                            memberId, emitterId);
+                    messagesFailed.increment();
+                    disconnectEmitterWithError(memberId, emitterId, ex);
+                    removeLane(emitterId);
+                }
+            });
+        }
+    }
+
+    private <T> List<List<T>> createChunks(List<T> list) {
+        List<List<T>> chunkList = new ArrayList<>();
+        for (int i = 0; i < list.size(); i += CHUNK_SIZE) {
+            int end = Math.min(i + CHUNK_SIZE, list.size());
+            chunkList.add(list.subList(i, end));
+        }
+        return chunkList;
+    }
+
+    private void setEmitter(long memberId, SseEmitter emitter, String emitterId) {
+        emitter.onCompletion(() -> {
+            log.info("연결 완료 - {}", emitterId);
+            sseRepository.remove(memberId, emitterId);
+            removeLane(emitterId);
+            connectionsCompleted.increment();
+        });
+
+        emitter.onTimeout(() -> {
+            log.warn("연결 시간초과 - {}", emitterId);
+            sseRepository.remove(memberId, emitterId);
+            removeLane(emitterId);
+            connectionsTimeout.increment();
+        });
+
+        emitter.onError(e -> {
+            log.warn("연결 오류 - {}: {}", emitterId, e.toString());
+            disconnectEmitterWithError(memberId, emitterId, e);
+            connectionsError.increment();
+        });
     }
 
     private SerialExecutor laneOf(String emitterId) {
