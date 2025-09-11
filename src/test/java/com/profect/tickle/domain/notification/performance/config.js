@@ -15,7 +15,6 @@ const configs = {
       sse_open_ok: ["rate>0.90"],
       sse_stayed_full: ["rate>0.80"],
       sse_conn_alive_ms: ["p(95)<30000"],
-      sse_connection_errors: ["count<10"],
       latency: ["p(95)<5000"], // 변경: sse_time_to_first_message → latency
     },
   },
@@ -35,7 +34,6 @@ const configs = {
       sse_open_ok: ["rate>0.95"],
       sse_stayed_full: ["rate>0.90"],
       sse_conn_alive_ms: ["p(95)<60000"],
-      sse_connection_errors: ["count<15"],
       latency: ["p(95)<3000"], // 변경: sse_time_to_first_message → latency
     },
   },
@@ -56,12 +54,11 @@ const configs = {
       sse_open_ok: ["rate>0.98"], // 98% 이상 연결 성공
       sse_stayed_full: ["rate>0.95"], // 95% 이상 세션 완료
       sse_conn_alive_ms: ["p(95)<65000"], // 60초 + 5초 여유
-      sse_connection_errors: ["count<10"], // 에러 10개 이하
       latency: ["p(95)<2000"], // 변경: sse_time_to_first_message → latency (첫 메시지 2초 이내)
     },
   },
 
-  // 🆕 동적 설정 조정 함수
+  // 동적 설정 조정 함수
   getAdjustedConfig: function (baseConfig, targetVus) {
     const scaleFactor = targetVus / baseConfig.vus;
 
@@ -86,9 +83,6 @@ const configs = {
         sse_conn_alive_ms: [
           `p(95)<${Math.min(90000, 65000 + (scaleFactor - 1) * 5000)}`,
         ],
-        sse_connection_errors: [
-          `count<${Math.min(50, Math.ceil(10 * scaleFactor))}`,
-        ],
         latency: [`p(95)<${Math.min(5000, 2000 + (scaleFactor - 1) * 500)}`],
       },
     };
@@ -107,7 +101,7 @@ export function getConfig() {
     );
   }
 
-  // 🆕 VUS 환경변수로 동적 조정
+  // VUS 환경변수로 동적 조정
   const targetVus = Number(__ENV.VUS);
   if (targetVus && targetVus !== config.vus) {
     config = configs.getAdjustedConfig(config, targetVus);

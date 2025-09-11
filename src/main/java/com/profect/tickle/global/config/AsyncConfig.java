@@ -2,18 +2,23 @@ package com.profect.tickle.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.VirtualThreadTaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
 
+/**
+ * 비동기 처리 설정
+ */
 @Configuration
 @EnableAsync
 public class AsyncConfig {
 
     @Bean(name = "mailExecutor")
     public Executor mailExecutor() {
-        var ex = new ThreadPoolTaskExecutor();
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
         ex.setCorePoolSize(2);           // 최소 스레드
         ex.setMaxPoolSize(10);           // 최대 스레드
         ex.setQueueCapacity(200);        // 대기열 크기
@@ -29,13 +34,58 @@ public class AsyncConfig {
 
     @Bean(name = "sseExecutor")
     public Executor sseExecutor() {
-        var ex = new ThreadPoolTaskExecutor();
-        ex.setCorePoolSize(2);
-        ex.setMaxPoolSize(8);
-        ex.setQueueCapacity(1000);
-        ex.setThreadNamePrefix("sse-");
-        ex.setWaitForTasksToCompleteOnShutdown(true);
-        ex.initialize();
-        return ex;
+        return new VirtualThreadTaskExecutor("sse-virtual-");
+    }
+
+    // ===== 채팅 성능 최적화용 추가 스레드 풀 =====
+    /**
+     * 메시지 처리 전용 스레드 풀 (채팅 성능 최적화용)
+     */
+    @Bean("messageTaskExecutor")
+    public Executor messageTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(20);
+        executor.setMaxPoolSize(100);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("message-async-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * 파일 업로드 전용 스레드 풀 (채팅 성능 최적화용)
+     */
+    @Bean("fileTaskExecutor")
+    public Executor fileTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(50);
+        executor.setQueueCapacity(500);
+        executor.setThreadNamePrefix("file-async-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * 알림 처리 전용 스레드 풀
+     */
+    @Bean("notificationTaskExecutor")
+    public Executor notificationTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(15);
+        executor.setMaxPoolSize(75);
+        executor.setQueueCapacity(750);
+        executor.setThreadNamePrefix("notification-async-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        return executor;
     }
 }

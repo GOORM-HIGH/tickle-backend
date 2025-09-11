@@ -28,7 +28,8 @@ public class NotificationDevController {
     private final SseRepository sseRepository;
 
     @GetMapping("/partner")
-    public ResultResponse<Void> publishPartnerPerformanceEvent() {
+    public ResponseEntity<String> publishPartnerPerformanceEvent() {
+        log.info("브로드캐스트 요청이 수신되었습니다.");
         // 테스트용 더미 데이터 (Instant는 ISO-8601 full format에 Z 포함)
         PerformanceServiceDto dto = new PerformanceServiceDto(
                 1L,
@@ -52,42 +53,7 @@ public class NotificationDevController {
 
         eventPublisher.publishEvent(new PartnerPerformancePublishedEvent(dto));
 
-        return ResultResponse.ok(ResultCode.MEMBER_SIGN_OUT_SUCCES);
-    }
-
-    @GetMapping("/status")
-    public ResponseEntity<SseStatusResponse> getSseStatus() {
-        SseRepository.ConnectionStats stats = sseRepository.getConnectionStats();
-
-        return ResponseEntity.ok(SseStatusResponse.builder()
-                .totalConnections(stats.totalConnections)
-                .activeMembers(stats.activeMembers)
-                .avgConnectionsPerMember(stats.avgConnectionsPerMember)
-                .timestamp(Instant.now())
-                .build());
-    }
-
-    /**
-     * 회원별 연결 개수 상세
-     */
-    @GetMapping("/connections")
-    public ResponseEntity<Map<Long, Integer>> getConnectionsByMember() {
-        return ResponseEntity.ok(sseRepository.getConnectionCountsByMember());
-    }
-
-    /**
-     * 특정 회원의 연결 개수
-     */
-    @GetMapping("/connections/{memberId}")
-    public ResponseEntity<Integer> getMemberConnectionCount(@PathVariable Long memberId) {
-        return ResponseEntity.ok(sseRepository.getConnectionCount(memberId));
-    }
-
-    @Builder
-    public static class SseStatusResponse {
-        public final int totalConnections;
-        public final int activeMembers;
-        public final double avgConnectionsPerMember;
-        public final Instant timestamp;
+        log.info("브로드캐스트 요청이 처리되었습니다.");
+        return ResponseEntity.ok("브로드캐스트 요청이 처리되었습니다.");
     }
 }
