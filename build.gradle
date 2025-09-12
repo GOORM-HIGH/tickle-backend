@@ -85,7 +85,7 @@ dependencies {
     implementation "org.redisson:redisson:3.23.5"
     
     // ===== RabbitMQ Dependencies =====
-    /*implementation 'org.springframework.boot:spring-boot-starter-amqp'*/
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'
