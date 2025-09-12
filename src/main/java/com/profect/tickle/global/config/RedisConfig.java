@@ -1,3 +1,4 @@
+/*
 package com.profect.tickle.global.config;
 
 import org.springframework.cache.CacheManager;
@@ -14,6 +15,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 
+*/
 /**
  * Redis 설정 (캐싱 최적화용)
  * 
@@ -22,15 +24,18 @@ import java.time.Duration;
  * 2. 채팅방 참여자 정보 캐싱
  * 3. 최근 메시지 캐싱
  * 4. DB 부하 감소로 처리량 향상
- */
+ *//*
+
 @Configuration
 @EnableCaching
 @EnableRedisRepositories(basePackages = "com.profect.tickle.domain.redis") // Redis 전용 패키지만 스캔
 public class RedisConfig {
 
-    /**
+    */
+/**
      * RedisTemplate 설정
-     */
+     *//*
+
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -48,9 +53,11 @@ public class RedisConfig {
         return template;
     }
 
-    /**
+    */
+/**
      * CacheManager 설정
-     */
+     *//*
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
@@ -61,3 +68,4 @@ public class RedisConfig {
                 .build();
     }
 }
+*/

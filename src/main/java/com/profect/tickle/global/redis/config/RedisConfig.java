@@ -6,14 +6,19 @@ import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.time.Duration;
 
 @Configuration
 public class RedisConfig {
@@ -62,6 +67,7 @@ public class RedisConfig {
         // 기본적으로 직렬화를 수행합니다.
         redisTemplate.setDefaultSerializer(new StringRedisSerializer());
 
+        redisTemplate.afterPropertiesSet();
         return redisTemplate;
     }
 
@@ -103,5 +109,18 @@ public class RedisConfig {
     @Bean
     public RTopic ticketTopic(RedissonClient redissonClient) {
         return redissonClient.getTopic("ticketEvent", new JsonJacksonCodec());
+    }
+
+    /**
+     * CacheManager 설정
+     */
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(10));  // 10분 TTL
+
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(config)
+                .build();
     }
 }

@@ -41,7 +41,6 @@ public class AsyncConfig {
     public Executor eventExecutor() {
         return new VirtualThreadTaskExecutor("ticket-worker-");
     }
-}
 
     // ===== 채팅 성능 최적화용 추가 스레드 풀 =====
     /**
