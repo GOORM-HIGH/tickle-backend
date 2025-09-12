@@ -14,26 +14,21 @@
     </select>
 
     <!-- 장르별 공연 조회  -->
-    <select id="findPerformancesByGenre" resultType="PerformanceDto">
+    <select id="findPerformancesByGenreCursor" resultType="PerformanceDto" parameterType="map">
         SELECT
-            p.performance_id   AS performanceId,
-            p.performance_title AS title,
-            p.performance_date  AS date,
-            p.performance_img   AS img
+        p.performance_id AS performanceId,
+        p.performance_title AS title,
+        p.performance_date AS date,
+        p.performance_img AS img
         FROM performance p
         WHERE p.genre_id = #{genreId}
-          AND p.performance_deleted_at IS NULL
-          AND p.status_id IN (1,2)
-        ORDER BY p.performance_date ASC
-            LIMIT #{limit} OFFSET #{offset}
-    </select>
-
-    <select id="countPerformancesByGenre" resultType="int">
-        SELECT COUNT(*)
-        FROM performance p
-        WHERE p.genre_id = #{genreId}
-          AND p.performance_deleted_at IS NULL
-          AND p.status_id IN (1,2)
+        AND p.performance_deleted_at IS NULL
+        AND p.status_id IN (1,2)
+        <if test="cursor != null">
+            AND (p.performance_date, p.performance_id) &gt; (#{cursor.lastDate}, #{cursor.lastId})
+        </if>
+        ORDER BY p.performance_date ASC, p.performance_id ASC
+        LIMIT #{limit}
     </select>
 
     <!--  장르별 인기랭킹 top10  -->
@@ -108,6 +103,7 @@
         FROM performance p
         WHERE p.performance_start_date > #{now}
           AND p.performance_deleted_at IS NULL
+          AND p.status_id IN (1,2)
         ORDER BY p.performance_start_date ASC,
             p.performance_date ASC
             LIMIT 4
@@ -117,24 +113,37 @@
         <bind name="kw" value="keyword == null ? '' : keyword.trim()" />
         <bind name="tsquery" value="kw.replaceAll(' ', ' &amp; ')" />
 
-
         SELECT
-        p.performance_id AS performanceId,
+        p.performance_id    AS performanceId,
         p.performance_title AS title,
-        p.performance_date AS date,
-        p.performance_img AS img
+        p.performance_date  AS date,
+        p.performance_img   AS img
         FROM performance p
         WHERE p.performance_deleted_at IS NULL
         AND p.status_id IN (1, 2)
-        AND p.performance_title_vector @@ to_tsquery('simple', unaccent(lower(#{tsquery})))
         AND p.performance_date &gt;= current_date
         AND p.performance_date &lt; current_date + interval '12 months'
+        <choose>
+            <!-- 1~2글자: trigram LIKE -->
+            <when test="kw.length() &lt;= 2">
+                AND immutable_unaccent(lower(p.performance_title))
+                LIKE '%' || immutable_unaccent(lower(#{kw})) || '%'
+            </when>
+
+            <!-- 3글자 이상: FTS -->
+            <otherwise>
+                AND p.performance_title_vector
+                @@ to_tsquery('simple', unaccent(lower(#{tsquery})))
+            </otherwise>
+        </choose>
+
         <if test="cursorDate != null and cursorId != null">
             AND (
-            p.performance_date &gt; #{cursorDate}
-            OR (p.performance_date = #{cursorDate} AND p.performance_id &gt; #{cursorId})
+            p.performance_date > #{cursorDate}
+            OR (p.performance_date = #{cursorDate} AND p.performance_id > #{cursorId})
             )
         </if>
+
         ORDER BY p.performance_date ASC, p.performance_id ASC
         LIMIT #{limit}
     </select>
@@ -149,13 +158,21 @@
         FROM performance p
         WHERE p.performance_deleted_at IS NULL
         AND p.status_id IN (1, 2)
-        AND p.performance_title_vector @@ to_tsquery('simple', unaccent(lower(#{tsquery})))
         AND p.performance_date &gt;= current_date
         AND p.performance_date &lt; current_date + interval '12 months'
-        LIMIT 10001
+        <choose>
+            <when test="kw.length() &lt;= 2">
+                AND immutable_unaccent(lower(p.performance_title))
+                LIKE '%' || immutable_unaccent(lower(#{kw})) || '%'
+            </when>
+            <otherwise>
+                AND p.performance_title_vector
+                @@ to_tsquery('simple', unaccent(lower(#{tsquery})))
+            </otherwise>
+        </choose>
+        LIMIT 3001
         ) AS limited
     </select>
-
 
 
     <!--  관련공연 조회  -->

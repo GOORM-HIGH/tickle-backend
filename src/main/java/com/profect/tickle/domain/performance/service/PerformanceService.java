@@ -67,23 +67,22 @@ public class PerformanceService {
         return performanceMapper.findAllGenres();
     }
 
-    public PagingResponse<PerformanceDto> getPerformancesByGenre(Long genreId, int page, int size) {
-        validateGenreId(genreId);
-        var pr = PageRequest.of(page, size);
+    public CursorPageResponse<PerformanceDto> findPerformancesByGenreCursor(Long genreId, Cursor cursor, int limit) {
+        // limit + 1 조회해서 다음 페이지 존재 여부 확인
+        List<PerformanceDto> performances = performanceMapper.findPerformancesByGenreCursor(genreId, cursor, limit + 1);
 
-        long total = performanceMapper.countPerformancesByGenre(genreId);
-        if (total == 0) {
-            return emptyResponse(pr, total);
+        boolean hasNext = performances.size() > limit;
+        if (hasNext) {
+            performances.remove(performances.size() - 1);
         }
 
-        int totalPages = PageRequest.calcTotalPages(total, pr.size());
-        if (pr.page() >= totalPages) {
-            return emptyResponse(pr, total);
+        Cursor nextCursor = null;
+        if (!performances.isEmpty()) {
+            PerformanceDto last = performances.get(performances.size() - 1);
+            nextCursor = new Cursor(last.getDate(), last.getPerformanceId());
         }
 
-        List<PerformanceDto> content =
-                performanceMapper.findPerformancesByGenre(genreId, pr.offset(), pr.size());
-        return PagingResponse.from(content, pr.page(), pr.size(), total);
+        return new CursorPageResponse<>(performances, nextCursor, hasNext);
     }
 
     public List<PerformanceDto> getTop10ByGenre(Long genreId) {
@@ -118,11 +117,9 @@ public class PerformanceService {
             String keyword, int size,
             Instant cursorDate, Long cursorId
     ) {
-        long totalCount = performanceMapper.countPerformancesByKeyword(keyword);
-        long cappedTotalCount = Math.min(totalCount, 10001);
         int pageSize = Math.min(Math.max(size, 1), 100);
 
-        // LIMIT + 1 전략으로 hasNext 확인
+        // LIMIT + 1 전략으로 hasNext 확인 (count 호출 제거)
         List<PerformanceDto> rows = performanceMapper.searchPerformancesByKeyword(
                 keyword, pageSize + 1, cursorDate, cursorId
         );
@@ -135,12 +132,12 @@ public class PerformanceService {
             PerformanceDto last = items.get(items.size() - 1);
             next = new Cursor(last.getDate(), last.getPerformanceId());
         }
-
-        return new CursorPageResponse<>(items, next, hasNext,cappedTotalCount);
+        return new CursorPageResponse<>(items, next, hasNext);
     }
 
-    // 첫 페이지에서만 호출
-    public Long countByKeyword(String keyword) {
+    // 필요할 때만 호출되는 정확 카운트 (캐시 권장)
+    // @Cacheable(cacheNames = "perfSearchCount", key = "#keyword", unless = "#result > 100000")
+    public long countByKeyword(String keyword) {
         return performanceMapper.countPerformancesByKeyword(keyword);
     }
 
