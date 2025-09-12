@@ -44,8 +44,6 @@ dependencies {
     // ===== Database =====
     implementation 'org.postgresql:postgresql:42.5.4'
     testImplementation 'com.h2database:h2'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis:3.5.5'
-    implementation "org.redisson:redisson:3.23.5"
 
 
     // ===== MyBatis=====
@@ -84,9 +82,10 @@ dependencies {
     // ===== Redis Dependencies =====
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation "org.redisson:redisson:3.23.5"
     
     // ===== RabbitMQ Dependencies =====
-    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    /*implementation 'org.springframework.boot:spring-boot-starter-amqp'*/
 
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'

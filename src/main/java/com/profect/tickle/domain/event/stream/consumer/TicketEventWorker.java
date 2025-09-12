@@ -4,6 +4,7 @@ package com.profect.tickle.domain.event.stream.consumer;
 import com.profect.tickle.domain.event.dto.EventDecision;
 import com.profect.tickle.domain.event.service.event.EventCoreLockService;
 import com.profect.tickle.domain.event.service.event.PostActionsService;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.AutoClaimResult;
@@ -166,5 +167,16 @@ public class TicketEventWorker {
     }
     private static void sleepQuiet(long ms) {
         try { Thread.sleep(ms); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+    }
+
+    @PreDestroy
+    public void stop() {
+        log.info("Stopping TicketEventWorker...");
+
+        // 만약 eventExecutor가 ThreadPoolExecutor라면 shutdown 시켜야 함
+        if (eventExecutor instanceof java.util.concurrent.ExecutorService es) {
+            es.shutdownNow(); // 혹은 graceful: es.shutdown()
+            log.info("TicketEventWorker executor shut down.");
+        }
     }
 }
