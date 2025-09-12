@@ -37,6 +37,12 @@ public class AsyncConfig {
         return new VirtualThreadTaskExecutor("sse-virtual-");
     }
 
+    @Bean(name = "eventExecutor")
+    public Executor eventExecutor() {
+        return new VirtualThreadTaskExecutor("ticket-worker-");
+    }
+}
+
     // ===== 채팅 성능 최적화용 추가 스레드 풀 =====
     /**
      * 메시지 처리 전용 스레드 풀 (채팅 성능 최적화용)

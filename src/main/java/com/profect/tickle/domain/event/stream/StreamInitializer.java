@@ -2,9 +2,11 @@ package com.profect.tickle.domain.event.stream;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RKeys;
 import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.StreamMessageId;
+import org.redisson.api.stream.StreamAddArgs;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.springframework.stereotype.Component;
 
@@ -23,23 +25,45 @@ public class StreamInitializer {
     @PostConstruct
     public void init() {
         RStream<String, Object> stream = redisson.getStream(STREAM_KEY, streamFieldMapCodec);
+        RKeys keys = redisson.getKeys();
 
-        // 이미 그룹이 있으면 패스
-        boolean hasGroup = stream.listGroups().stream()
-                .anyMatch(g -> GROUP.equals(g.getName()));
-        if (hasGroup) return;
+        // 1) 스트림 키가 없으면 먼저 "만든다"
+        StreamMessageId bootstrapId = null;
+        if (keys.countExists(STREAM_KEY) == 0) {
+            bootstrapId = stream.add(
+                    StreamAddArgs.<String, Object>entries(
+                            Map.of("_bootstrap", "1")
+                    )
+            );
+        }
 
-        // 1) 스트림이 없을 수도 있으니 임시 메시지로 생성해둠
-        StreamMessageId tmpId = stream.add(
-                org.redisson.api.stream.StreamAddArgs.entries(
-                        java.util.Collections.singletonMap("_bootstrap", "1")
-                )
-        );
+        // 2) 그룹 존재 확인 (이제 안전하게 호출 가능)
+        boolean hasGroup = false;
+        try {
+            hasGroup = stream.listGroups().stream()
+                    .anyMatch(g -> GROUP.equals(g.getName()));
+        } catch (Exception ignore) {
+            // 키가 막 생겼거나 일시 오류면 없다고 보고 아래서 생성
+        }
 
-        // 2) XGROUP CREATE ... `$`
-        stream.createGroup(GROUP, StreamMessageId.NEWEST); // '$' 의미
+        // 3) 그룹 생성 (경쟁적으로 동시에 생성될 수 있으므로 BUSYGROUP는 무시)
+        if (!hasGroup) {
+            try {
+                stream.createGroup(GROUP, StreamMessageId.NEWEST); // '$' 의미
+            } catch (Exception e) {
+                // 이미 다른 인스턴스가 만들었다면 "BUSYGROUP" 류 예외가 올 수 있음 → 무시
+                String msg = String.valueOf(e.getMessage());
+                if (!msg.contains("BUSYGROUP")) {
+                    throw e;
+                }
+            }
+        }
 
-        // 3) 임시 메시지는 선택 삭제
-        stream.remove(tmpId);
+        // 4) 부트스트랩 메시지 제거
+        if (bootstrapId != null) {
+            try {
+                stream.remove(bootstrapId);
+            } catch (Exception ignore) { /* 없어도 무시 */ }
+        }
     }
 }
