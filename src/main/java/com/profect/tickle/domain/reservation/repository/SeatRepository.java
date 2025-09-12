@@ -15,6 +15,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SeatRepository extends JpaRepository<Seat, Long> {
 
+    interface SeatRow { Long getSeatId(); }
+
     @Query("SELECT s FROM Seat s " +
             "LEFT JOIN FETCH s.status " +
             "LEFT JOIN FETCH s.reservation " +
@@ -84,5 +86,22 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
          where s.id = :seatId
     """)
     Long findPerformanceIdBySeatId(@Param("seatId") Long seatId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+        UPDATE seat
+           SET member_id = :memberId,
+               status_id = :reserved,
+               seat_code = :seatCode
+         WHERE event_id = :eventId
+           AND member_id IS NULL
+           AND status_id = :available
+        RETURNING seat_id AS seatId
+        """, nativeQuery = true)
+    List<SeatRow> assignSeatOnce(@Param("eventId") Long eventId,
+                                 @Param("memberId") Long memberId,
+                                 @Param("reserved") Long reserved,
+                                 @Param("available") Long available,
+                                 @Param("seatCode") String seatCode);
 
 }

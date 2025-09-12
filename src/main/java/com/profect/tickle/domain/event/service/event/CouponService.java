@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.event.service;
+package com.profect.tickle.domain.event.service.event;
 
 import com.profect.tickle.domain.event.dto.response.CouponListResponseDto;
 import com.profect.tickle.domain.event.dto.response.CouponResponseDto;

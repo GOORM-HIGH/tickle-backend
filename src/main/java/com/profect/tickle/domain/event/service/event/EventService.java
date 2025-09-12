@@ -1,11 +1,10 @@
-package com.profect.tickle.domain.event.service;
+package com.profect.tickle.domain.event.service.event;
 
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.entity.EventType;
 import com.profect.tickle.global.paging.PagingResponse;
-import org.apache.commons.math3.analysis.function.Exp;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -15,7 +14,7 @@ public interface EventService {
 
     TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request);
 
-    TicketApplyResponseDto applyTicketEvent(Long eventId);
+     void applyTicketEvent(Long eventId);
 
     PagingResponse<EventListResponseDto> getEventList(EventType type, int page, int size);
 
