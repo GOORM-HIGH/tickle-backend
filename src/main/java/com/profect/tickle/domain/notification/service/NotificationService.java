@@ -100,6 +100,9 @@ public class NotificationService {
             String content,
             Instant createdAt
     ) throws Exception {
+        log.info("알림 전체 저장 시작");
+        long startTime = System.currentTimeMillis();
+
         if (memberIdList == null || memberIdList.isEmpty()) return 0L;
 
         final long statusId = StatusIds.Notification.UNREAD;
@@ -138,6 +141,8 @@ public class NotificationService {
                 out.flush();
             }
 
+            long endTime = System.currentTimeMillis();
+            log.info("알림 전체 저장 종료. 소요시간: {} ms", endTime - startTime);
             return memberIdList.size();
         } finally {
             DataSourceUtils.releaseConnection(conn, dataSource);

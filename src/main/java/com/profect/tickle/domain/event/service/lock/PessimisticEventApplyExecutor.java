@@ -1,7 +1,5 @@
 package com.profect.tickle.domain.event.service.lock;
 
-import com.profect.tickle.domain.event.dto.EventDecision;
-import com.profect.tickle.domain.event.dto.response.TicketApplyResponseDto;
 import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.repository.CouponRepository;
@@ -10,10 +8,7 @@ import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.point.entity.PointTarget;
-import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.reservation.entity.Seat;
-import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
@@ -22,6 +17,7 @@ import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RedissonClient;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,15 +33,6 @@ public class PessimisticEventApplyExecutor {
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
     private final StatusProvider statusProvider;
-    private final EventCoreLockService core;
-
-    public TicketApplyResponseDto applyTicketEventOnce(Long eventId) {
-        Long memberId = SecurityUtil.getSignInMemberId();
-
-        EventDecision dec = core.applyCore(eventId, memberId);
-
-        return TicketApplyResponseDto.from(dec.eventId(), dec.memberId(), dec.winner());
-    }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void issueCouponOnce(Long eventId) {
@@ -88,11 +75,6 @@ public class PessimisticEventApplyExecutor {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
     }
 
-    private Event getEvent(Long eventId) {
-        return eventRepository.findForUpdateById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
-    }
-
     private Seat getSeatOrThrow(Long eventSeatId) {
         return seatRepository.findById(eventSeatId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
@@ -112,7 +94,4 @@ public class PessimisticEventApplyExecutor {
             throw new BusinessException(ErrorCode.EVENT_NOT_IN_PROGRESS);
         }
     }
-
-
-
 }

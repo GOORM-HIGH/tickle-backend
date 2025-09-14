@@ -4,7 +4,7 @@ import { check, sleep } from "k6";
 import { Counter, Rate, Trend, Gauge } from "k6/metrics";
 import exec from "k6/execution";
 
-// SSE 브로드캐스트 성능 테스트를 위한 사용자 정의 메트릭 정의
+// 커스텀 메트릭 정의
 const sseConnections = new Counter("sse_connections_total"); // 총 SSE 연결 생성 횟수
 const sseConnectionSuccess = new Rate("sse_connection_success_rate"); // SSE 연결 성공률
 const sseMessageReceived = new Counter("sse_messages_received"); // 수신된 SSE 메시지 총 개수
@@ -43,13 +43,12 @@ export const options = {
   discardResponseBodies: true, // 응답 본문 폐기로 메모리 절약
   noConnectionReuse: false, // HTTP 연결 재사용 활성화
 
-  // 테스트 성공/실패 판단을 위한 임계값 설정
+  // 임계값 설정
   thresholds: {
-    sse_connection_success_rate: ["rate>0.75"], // SSE 연결 성공률 75% 이상
+    sse_connection_success_rate: ["rate>=1.00"], // SSE 연결 성공률 100% 이상
     broadcast_latency: ["p(95)<8000"], // 브로드캐스트 지연시간 95분위수 8초 미만
     http_req_failed: ["rate<0.15"], // HTTP 요청 실패율 15% 미만
-    sse_active_connections: ["value>=15000"], // 활성 SSE 연결 수 15,000개 이상
-    sse_messages_received: ["count>=15000"], // 수신된 메시지 수 15,000개 이상
+    sse_messages_received: ["count>=40000"], // 수신된 메시지 = 40,000개
     broadcast_api_success_rate: ["rate>0.80"], // 브로드캐스트 API 성공률 80% 이상
   },
 };
@@ -60,8 +59,12 @@ const TOKEN = __ENV.TOKEN;
 const SSE_ENDPOINT = `${BASE_URL}/api/v1/notifications/connect`; // SSE 연결 엔드포인트
 const BROADCAST_ENDPOINT = `${BASE_URL}/test/notification-event/partner`; // 브로드캐스트 API 엔드포인트
 
-// 전역 변수: 현재 활성 연결 수 추적용 (동시성 문제 있을 수 있음)
-let globalActiveConnections = 0;
+// 시간 추적용 전역 변수
+let testStartTime = 0;
+let sseConnectionStartTime = 0;
+let sseConnectionCompleteTime = 0;
+let broadcastStartTime = 0;
+let broadcastCompleteTime = 0;
 
 // K6 메인 함수: 시나리오에 따라 다른 함수 실행
 export default function () {
@@ -74,6 +77,14 @@ export default function () {
 
 // SSE 연결을 생성하고 유지하는 함수
 function testSSEConnection() {
+  // SSE 연결 시작 시간 기록 (첫 번째 VU만)
+  if (__VU === 1 && sseConnectionStartTime === 0) {
+    sseConnectionStartTime = Date.now();
+    console.log(
+      `SSE 연결 시작: ${new Date(sseConnectionStartTime).toISOString()}`
+    );
+  }
+
   const startTime = Date.now();
   let connectionEstablished = false;
   let messagesReceived = 0;
@@ -102,51 +113,92 @@ function testSSEConnection() {
       client.on("open", function () {
         connectionEstablished = true;
         isConnected = true;
-        globalActiveConnections++;
+
+        // Gauge 메트릭으로 활성 연결 수 증가
+        activeConnections.add(1);
+
+        // SSE 연결 완료 시간 업데이트 (마지막 연결까지)
+        sseConnectionCompleteTime = Date.now();
 
         // 성능을 위한 제한적 로깅
         if (__VU % 1000 === 1) {
           console.log(
-            `VU ${__VU}: 연결 성공 - 총 ${globalActiveConnections}개`
+            `VU ${__VU}: 연결 성공 (활성 연결 수는 테스트 결과에서 확인)`
           );
         }
 
         // 메트릭 업데이트
         sseConnections.add(1);
         sseConnectionSuccess.add(1);
-        activeConnections.add(globalActiveConnections);
       });
 
-      // SSE 메시지 수신 시 실행되는 핸들러
-      client.on("event", function (event) {
+      function handleSSEMessage(event) {
         messagesReceived++;
+        const receiveTime = Date.now();
 
         // 첫 번째 메시지 수신 시에만 로그 출력
         if (messagesReceived === 1) {
-          console.log(`VU ${__VU}: 첫 브로드캐스트 메시지 수신!`);
+          console.log(
+            `VU ${__VU}: 메시지 수신! 타입: ${event.type || "unknown"}`
+          );
         }
 
         // 브로드캐스트 메시지의 지연시간 측정
         try {
           const messageData = JSON.parse(event.data || "{}");
-          if (messageData.timestamp) {
-            const latency = Date.now() - messageData.timestamp;
-            broadcastLatency.add(latency);
+
+          // createdAt 필드를 사용한 지연시간 계산
+          if (messageData.createdAt) {
+            // ISO 8601 문자열을 밀리초로 변환
+            const createdAtMs = new Date(messageData.createdAt).getTime();
+            const latency = receiveTime - createdAtMs;
+
+            // 음수 지연시간 방지 (시계 동기화 이슈 대응)
+            if (latency >= 0 && latency < 60000) {
+              // 60초 이내의 합리적인 지연시간만 측정
+              broadcastLatency.add(latency);
+
+              // 디버깅을 위한 제한적 로깅 (처음 3개 메시지만)
+              if (messagesReceived <= 3 && __VU % 5000 === 1) {
+                console.log(`VU ${__VU}: Latency: ${latency}ms`);
+              }
+            }
+          } else {
+            // createdAt이 없는 경우를 위한 디버깅 로그
+            if (messagesReceived <= 3 && __VU % 5000 === 1) {
+              console.log(`VU ${__VU}: No createdAt found in message`);
+            }
           }
         } catch (e) {
-          // JSON 파싱 실패는 무시 (일부 메시지는 JSON이 아닐 수 있음)
+          // JSON 파싱 실패 시 디버깅 로그
+          if (messagesReceived <= 3 && __VU % 5000 === 1) {
+            console.log(`VU ${__VU}: 파싱 실패: ${e.message}`);
+          }
         }
 
         sseMessageReceived.add(1);
-      });
+      }
+
+      client.on("message", handleSSEMessage);
+      client.on("notification", handleSSEMessage);
+      client.on("sse-connect", handleSSEMessage);
+      client.on("data", handleSSEMessage);
+      client.on("event", handleSSEMessage);
+
+      try {
+        if (client.onmessage !== undefined) {
+          client.onmessage = handleSSEMessage;
+        }
+      } catch (e) {
+      }
 
       // SSE 연결 오류 시 실행되는 핸들러
       client.on("error", function (error) {
         if (__VU % 1000 === 1) {
-          console.log(`VU ${__VU}: SSE 오류`);
+          console.log(`VU ${__VU}: SSE 오류: ${error}`);
         }
         if (isConnected) {
-          globalActiveConnections--;
+          activeConnections.add(-1); // 활성 연결 수 감소
           isConnected = false;
         }
         sseConnectionSuccess.add(0);
@@ -155,7 +207,7 @@ function testSSEConnection() {
       // SSE 연결 종료 시 실행되는 핸들러
       client.on("close", function () {
         if (isConnected) {
-          globalActiveConnections--;
+          activeConnections.add(-1); // 활성 연결 수 감소
           isConnected = false;
         }
       });
@@ -166,20 +218,24 @@ function testSSEConnection() {
     return;
   }
 
-  // SSE 연결을 3분간 유지 (테스트 시나리오에 맞춘 시간)
+  // SSE 연결을 3분간 유지
   sleep(180);
 }
 
 // 브로드캐스트 메시지를 전송하고 결과를 측정하는 함수
 function sendBroadcastMessage() {
+  broadcastStartTime = Date.now();
+
   console.log("브로드캐스트 시작!");
-  console.log(`현재 활성 연결: ~${globalActiveConnections}개`);
+  console.log(
+    `브로드캐스트 시작 시간: ${new Date(broadcastStartTime).toISOString()}`
+  );
 
   // SSE 연결 안정화를 위한 짧은 대기
   sleep(10);
 
-  const startTime = Date.now();
-  console.log(`브로드캐스트 API 호출: ${new Date().toISOString()}`);
+  const apiStartTime = Date.now();
+  console.log(`브로드캐스트 API 호출: ${new Date(apiStartTime).toISOString()}`);
 
   let response;
   try {
@@ -196,7 +252,7 @@ function sendBroadcastMessage() {
   }
 
   // 브로드캐스트 API 응답 분석
-  const duration = Date.now() - startTime;
+  const duration = Date.now() - apiStartTime;
   const success = response.status === 200;
 
   // 테스트 결과 출력
@@ -218,25 +274,28 @@ function sendBroadcastMessage() {
   // 브로드캐스트 API 성공/실패 메트릭 업데이트
   broadcastApiSuccess.add(success ? 1 : 0);
 
-  // K6 체크 함수를 사용한 응답 검증
-  check(response, {
-    "브로드캐스트 성공": (r) => r.status === 200, // HTTP 200 응답 확인
-    "응답시간 10초 이내": (r) => r.timings.duration < 10000, // 10초 이내 응답 확인
-  });
-
   if (success) {
     // 성공 시 메시지 전파 완료를 위한 대기
     console.log("메시지 전파 대기 (30초)...");
     sleep(30);
+
+    broadcastCompleteTime = Date.now();
     console.log("브로드캐스트 테스트 완료!");
+    console.log(
+      `브로드캐스트 완료 시간: ${new Date(broadcastCompleteTime).toISOString()}`
+    );
   } else {
+    broadcastCompleteTime = Date.now(); // 실패해도 완료 시간 기록
     console.log("브로드캐스트 실패로 테스트 종료");
   }
 }
 
 // 테스트 시작 전 초기화 함수
 export function setup() {
-  console.log("=== 고속 브로드캐스트 테스트 시작 ===");
+  testStartTime = Date.now();
+
+  console.log("=== 브로드캐스트 테스트 시작 ===");
+  console.log(`시작 시간: ${new Date(testStartTime).toISOString()}`);
   console.log(`Target: ${BASE_URL}`);
   console.log(`예상 시간: 5분`);
   console.log(`목표 연결: 20,000개`);
@@ -246,22 +305,5 @@ export function setup() {
     throw new Error("TOKEN 환경 변수 필요");
   }
 
-  // 서버 상태 사전 확인 (선택적)
-  try {
-    const testResponse = http.get(`${BASE_URL}/health`, { timeout: "5s" });
-    console.log(`서버 상태: ${testResponse.status}`);
-  } catch (e) {
-    console.log(`서버 사전 체크 실패: ${e.message}`);
-  }
-
-  return { startTime: Date.now() };
-}
-
-// 테스트 완료 후 정리 및 결과 요약 함수
-export function teardown(data) {
-  const duration = (Date.now() - data.startTime) / 1000;
-  console.log("=== 테스트 완료 ===");
-  console.log(`총 소요 시간: ${duration.toFixed(1)}초`);
-  console.log(`최종 연결 수: ${globalActiveConnections}`);
-  console.log(`테스트 효율성: ${(20000 / duration).toFixed(0)} 연결/초`);
+  return { startTime: testStartTime };
 }

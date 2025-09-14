@@ -4,8 +4,8 @@ import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.entity.EventType;
-import com.profect.tickle.domain.event.service.CouponService;
-import com.profect.tickle.domain.event.service.EventService;
+import com.profect.tickle.domain.event.service.event.CouponService;
+import com.profect.tickle.domain.event.service.event.EventService;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
@@ -18,8 +18,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/event")
@@ -70,9 +68,9 @@ public class EventController {
                             content = @Content(schema = @Schema(implementation = TicketApplyResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "포인트 부족, 중복 응모 등 예외 발생")})
     @PostMapping("/ticket/{eventId}")
-    public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
-        TicketApplyResponseDto response = eventService.applyTicketEvent(eventId);
-        return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, response);
+    public ResultResponse<String> applyTicketEvent(@PathVariable Long eventId) {
+        eventService.applyTicketEvent(eventId);
+        return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, "당첨 됐게 안됐게");
     }
 
     @Operation(summary = "쿠폰 이벤트 응모", description = "유저가 쿠폰 이벤트에 응모하여 쿠폰을 발급받습니다.",

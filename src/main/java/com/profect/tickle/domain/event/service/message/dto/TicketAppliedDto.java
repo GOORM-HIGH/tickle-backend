@@ -1,8 +1,10 @@
+/*
 package com.profect.tickle.domain.event.service.lock;
 
 import com.profect.tickle.domain.point.entity.PointTarget;
 
-public record TicketApplied(
+public record TicketAppliedDto(
+        Long eventId,
         Long memberId,
         Long seatId,
         short perPrice,
@@ -11,3 +13,4 @@ public record TicketApplied(
         boolean isWinner
 ) {
 }
+*/

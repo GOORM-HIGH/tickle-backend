@@ -1,3 +1,4 @@
+/*
 package com.profect.tickle.domain.event.service.lock;
 
 import com.profect.tickle.domain.event.dto.response.TicketApplyResponseDto;
@@ -87,3 +88,4 @@ public class EventApplyExecutor {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 }
+*/
