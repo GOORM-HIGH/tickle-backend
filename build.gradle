@@ -84,6 +84,9 @@ dependencies {
     
     // ===== RabbitMQ Dependencies =====
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    
+    // ===== Kafka Dependencies =====
+    implementation 'org.springframework.kafka:spring-kafka'
 
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'
