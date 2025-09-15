@@ -40,6 +40,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     testImplementation 'org.springframework.security:spring-security-test'
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
 
     // ===== Database =====
     implementation 'org.postgresql:postgresql:42.5.4'

@@ -20,10 +20,12 @@ import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.retry.annotation.EnableRetry;
 
 import java.time.Duration;
 
 @Configuration
+@EnableRetry
 public class RedisConfig {
 
     @Value("${spring.redis.host}")
