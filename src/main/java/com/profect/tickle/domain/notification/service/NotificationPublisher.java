@@ -14,6 +14,7 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Map;
 
 @Service
@@ -84,7 +85,7 @@ public class NotificationPublisher {
             // 실패 정보와 함께 저장할 데이터 구성
             Map<String, Object> failedData = Map.of(
                     "message", messageJson,
-                    "failedAt", java.time.Instant.now().toString(),
+                    "failedAt", Instant.now().toString(),
                     "errorMessage", ex.getMessage(),
                     "retryCount", 3  // 최대 재시도 횟수
             );
@@ -102,7 +103,8 @@ public class NotificationPublisher {
 
     // 실패한 알림 목록 조회 (관리용)
     public long getFailedNotificationCount() {
-        return redisTemplate.opsForList().size(FAILED_NOTIFICATIONS_KEY);
+        Long size = redisTemplate.opsForList().size(FAILED_NOTIFICATIONS_KEY);
+        return size != null ? size : 0L;
     }
 
     // 실패한 알림 목록 조회 (최신 N개)
