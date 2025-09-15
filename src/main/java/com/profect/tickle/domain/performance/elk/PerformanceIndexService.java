@@ -26,11 +26,11 @@ public class PerformanceIndexService {
         if (p.getDeletedAt() != null) { // 삭제면 ES에도 삭제시각 필드 세팅
             doc.put("performance_deleted_at", p.getDeletedAt());
         }
-        elasticsearchClient.index(i -> i.index("performances_vv2").id(String.valueOf(p.getId())).document(doc));
+        elasticsearchClient.index(i -> i.index("performances_v1").id(String.valueOf(p.getId())).document(doc));
     }
 
     public void markDeleted(Long id, Instant deletedAt) throws IOException {
-        elasticsearchClient.update(u -> u.index("performances_vv2").id(String.valueOf(id))
+        elasticsearchClient.update(u -> u.index("performances_v1").id(String.valueOf(id))
                 .doc(Map.of("performance_deleted_at", deletedAt)), Map.class);
     }
 }

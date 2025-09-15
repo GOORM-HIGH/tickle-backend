@@ -35,7 +35,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PerformanceSearchEsService {
     private final ElasticsearchClient elasticsearchClient;
-    private static final String INDEX = "performances_vv2";
+    private static final String INDEX = "performances_v1";
 
     public CursorPageResponse<PerformanceDto> search(
             String keyword, int size, Instant cursorDate, Long cursorId
