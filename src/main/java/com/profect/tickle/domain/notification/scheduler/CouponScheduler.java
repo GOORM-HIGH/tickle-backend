@@ -1,7 +1,8 @@
 package com.profect.tickle.domain.notification.scheduler;
 
 import com.profect.tickle.domain.event.dto.response.ExpiringSoonCouponResponseDto;
-import com.profect.tickle.domain.event.service.EventService;
+import com.profect.tickle.domain.event.service.event.CouponService;
+import com.profect.tickle.domain.event.service.event.EventService;
 import com.profect.tickle.domain.notification.event.coupon.event.CouponAlmostExpiredEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

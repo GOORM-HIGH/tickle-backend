@@ -1,6 +1,6 @@
 package com.profect.tickle.domain.reservation.service;
 
-import com.profect.tickle.domain.event.service.CouponService;
+import com.profect.tickle.domain.event.service.event.CouponService;
 import com.profect.tickle.domain.member.entity.CouponReceived;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
@@ -115,6 +115,29 @@ public class ReservationService {
             return ReservationCompletionResponseDto.failure(e.getMessage());
         }
     }
+
+    @Transactional
+    public Long assignSeatForWinner(Long eventId, Long memberId) {
+        String seatCode = generateSeatCode(); // 기존 메서드 활용
+
+        var rows = seatRepository.assignSeatOnce(
+                eventId,
+                memberId,
+                StatusIds.Seat.RESERVED,
+                StatusIds.Seat.AVAILABLE,
+                seatCode
+        );
+
+        if (rows.isEmpty()) {
+            log.info("Event {}: member {} 좌석 발급 실패 (경쟁에서 탈락)", eventId, memberId);
+            return null; // 다른 트랜잭션이 이미 선점함
+        }
+
+        Long seatId = rows.get(0).getSeatId();
+        log.info("Event {}: member {} 좌석 {} 발급 성공", eventId, memberId, seatId);
+        return seatId;
+    }
+
 
     private void validatePointSufficiency(int finalAmount, Member member) {
         int currentPoints = member.getPointBalance();

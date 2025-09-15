@@ -42,8 +42,7 @@ public class PerformanceEventListener {
         log.info("[이벤트 감지] 제휴 공연 게시: \"{}\"", event.performance().title());
 
         // 1) 템플릿 조회
-        NotificationTemplate template = notificationTemplateService
-                .getNotificationTemplateById(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED.getId());
+        NotificationTemplate template = notificationTemplateService.getNotificationTemplateById(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED.getId());
 
         // 2) 내용 생성
         String link = "https://tickle.kr/performances/" + event.performance().id();
