@@ -2,6 +2,7 @@ package com.profect.tickle.domain.notification.service.realtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profect.tickle.domain.notification.dto.NotificationEnvelope;
+import com.profect.tickle.domain.notification.entity.NotificationKind;
 import com.profect.tickle.domain.notification.property.NotificationProperty;
 import com.profect.tickle.domain.notification.repository.SseRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -13,15 +14,20 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.stream.*;
+import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
@@ -33,12 +39,10 @@ import java.util.function.Supplier;
 @Slf4j
 public class SseSender implements RealtimeSender {
 
-    // properties
     private static final int CHUNK_SIZE = 500;
     private static final int MAX_REPLAY_PER_MEMBER = 50;
     private static final long REPLAY_TTL_MS = TimeUnit.MINUTES.toMillis(10);
 
-    // utils
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final Supplier<UUID> uuidSupplier;
@@ -46,37 +50,151 @@ public class SseSender implements RealtimeSender {
     private final ConcurrentMap<String, SerialExecutor> lanes = new ConcurrentHashMap<>();
     private final AtomicLong lastEventId = new AtomicLong(0);
 
-    // repositories / properties
     private final NotificationProperty notificationProperty;
     private final SseRepository sseRepository;
     private final MeterRegistry meterRegistry;
 
-    // metrics
-    private Counter connectionsCreated;     // SSE 연결 생성 총 횟수
-    private Counter connectionsCompleted;   // SSE 연결 정상 완료 총 횟수
-    private Counter connectionsTimeout;     // SSE 연결 타임아웃 총 횟수
-    private Counter connectionsError;       // SSE 연결 에러 발생 총 횟수
-    private Counter messagesSent;           // SSE 메시지 전송 성공 총 횟수
-    private Counter messagesFailed;         // SSE 메시지 전송 실패 총 횟수
+    private final StreamOperations<String, String, Object> streamOperations;
+
+    @Value("#{@notificationStreamKey}")
+    private String notificationStreamKey;
+
+    private static final String CONSUMER_GROUP = "sse-notification-processors";
+    private static final String CONSUMER_NAME = "sse-sender";
+
+    private Counter connectionsCreated;
+    private Counter connectionsCompleted;
+    private Counter connectionsTimeout;
+    private Counter connectionsError;
+    private Counter messagesSent;
+    private Counter messagesFailed;
+
+    @PostConstruct
+    private void init() {
+        initMetrics();
+        initStreamConsumer();
+    }
+
+    private void initStreamConsumer() {
+        try {
+            try {
+                streamOperations.createGroup(notificationStreamKey, CONSUMER_GROUP);
+                log.info("소비자 그룹 생성: stream={}, group={}", notificationStreamKey, CONSUMER_GROUP);
+            } catch (Exception e) {
+                log.debug("소비자 그룹이 이미 존재함: {}", e.getMessage());
+            }
+
+            startStreamConsumer();
+
+        } catch (Exception e) {
+            log.error("Stream 소비자 초기화 실패", e);
+        }
+    }
+
+    private void startStreamConsumer() {
+        CompletableFuture.runAsync(() -> {
+            while (true) {
+                try {
+                    List<MapRecord<String, String, Object>> records = streamOperations.read(
+                            Consumer.from(CONSUMER_GROUP, CONSUMER_NAME),
+                            StreamReadOptions.empty().count(10).block(Duration.ofSeconds(2)),
+                            StreamOffset.create(notificationStreamKey, ReadOffset.lastConsumed())
+                    );
+
+                    for (MapRecord<String, String, Object> record : records) {
+                        handleStreamNotification(record);
+                    }
+
+                } catch (Exception e) {
+                    log.error("Stream 메시지 소비 중 오류", e);
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }, sseExecutor);
+    }
+
+    private void handleStreamNotification(MapRecord<String, String, Object> record) {
+        try {
+            Map<String, Object> recordValue = record.getValue();
+            log.debug("Stream 알림 수신: recordId={}, type={}", record.getId(), recordValue.get("type"));
+
+            NotificationEnvelope<Object> message = convertToNotificationEnvelope(recordValue);
+
+            if (message.data() instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) message.data();
+                String targetType = (String) data.get("targetType");
+
+                switch (targetType != null ? targetType : "BROADCAST") {
+                    case "BROADCAST" -> sendAll(message);
+                    case "USER" -> {
+                        Object userIdObj = data.get("userId");
+                        if (userIdObj != null) {
+                            long memberId = Long.parseLong(userIdObj.toString());
+                            send(memberId, message);
+                        }
+                    }
+                    case "USERS" -> {
+                        @SuppressWarnings("unchecked")
+                        List<Long> memberIds = (List<Long>) data.get("memberIds");
+                        if (memberIds != null) {
+                            memberIds.forEach(memberId -> send(memberId, message));
+                        }
+                    }
+                    default -> sendAll(message);
+                }
+            } else {
+                sendAll(message);
+            }
+
+            streamOperations.acknowledge(notificationStreamKey, CONSUMER_GROUP, record.getId());
+            log.debug("메시지 처리 완료: recordId={}", record.getId());
+
+        } catch (Exception e) {
+            log.error("Stream 메시지 처리 실패: recordId={}", record.getId(), e);
+        }
+    }
+
+    private NotificationEnvelope<Object> convertToNotificationEnvelope(Map<String, Object> recordValue) {
+        try {
+            return new NotificationEnvelope<>(
+                    NotificationKind.valueOf((String) recordValue.get("type")),
+                    (String) recordValue.get("subject"),
+                    (String) recordValue.get("content"),
+                    Instant.parse((String) recordValue.get("createdAt")),
+                    (String) recordValue.get("link"),
+                    recordValue.get("data")
+            );
+        } catch (Exception e) {
+            log.error("NotificationEnvelope 변환 실패", e);
+            throw e;
+        }
+    }
+
+    @PreDestroy
+    private void cleanup() {
+        log.info("SSE Stream 소비자 종료");
+    }
 
     @Override
     public SseEmitter connect(@NotNull Long memberId, @Nullable String lastEventIdHeader) {
-        // 연결마다 고유 emitterId 생성
         Instant connectedAt = clock.instant();
         UUID uuid = uuidSupplier.get();
         String emitterId = memberId + "_" + connectedAt.toEpochMilli() + "_" + uuid;
 
         log.info("SSE 연결 - 회원ID={}, 송신자ID={}", memberId, emitterId);
 
-        // 연결 생성 메트릭 증가
         connectionsCreated.increment();
 
-        // emitter 생성
         SseEmitter emitter = new SseEmitter(notificationProperty.sseTimeout().toMillis());
         setEmitter(memberId, emitter, emitterId);
         sseRepository.save(memberId, emitterId, emitter);
 
-        // 초기 핑(Last-Event-ID 체인 시작)
         try {
             long eventId = nextEventId();
             emitter.send(SseEmitter.event()
@@ -89,7 +207,6 @@ public class SseSender implements RealtimeSender {
             return emitter;
         }
 
-        // 유실 이벤트 복원: 같은 emitter lane에 넣어 순서 보장
         if (lastEventIdHeader != null && !lastEventIdHeader.isBlank()) {
             laneOf(emitterId).execute(() -> resend(memberId, emitterId, emitter, lastEventIdHeader));
         }
@@ -99,7 +216,6 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void send(long memberId, NotificationEnvelope<?> payload) {
-        // 1) 이벤트 생성 + 직렬화 (항상 수행)
         long eventId = nextEventId();
         String json;
         try {
@@ -110,18 +226,15 @@ public class SseSender implements RealtimeSender {
             throw new BusinessException(ErrorCode.REALTIME_NOTIFICATION_SEND_FAILED);
         }
 
-        // 2) 유실 캐시 저장 + TTL 정리 (항상 수행)
         sseRepository.saveEvent(memberId, eventId, json);
         sseRepository.trimEvents(memberId, MAX_REPLAY_PER_MEMBER, eventId - REPLAY_TTL_MS);
 
-        // 3) 활성 emitter 스냅샷 조회
         Map<String, SseEmitter> targets = sseRepository.getAllWithIds(memberId);
         if (targets.isEmpty()) {
-            log.debug("활성¸ SSE 송신자 없음; 재생을 위해 이벤트 캐시됨. 회원ID={}, 이벤트ID={}", memberId, eventId);
+            log.debug("활성 SSE 송신자 없음; 재생을 위해 이벤트 캐시됨. 회원ID={}, 이벤트ID={}", memberId, eventId);
             return;
         }
 
-        // 4) 전송 (같은 emitter 내에서는 직렬화된 순서 유지)
         targets.forEach((emitterId, emitter) -> {
             laneOf(emitterId).execute(() -> {
                 try {
@@ -130,6 +243,7 @@ public class SseSender implements RealtimeSender {
                             .id(Long.toString(eventId))
                             .data(json, MediaType.APPLICATION_JSON));
                     messagesSent.increment();
+
                 } catch (IOException ex) {
                     log.warn("전송 실패 - 회원ID={}, 송신자ID={}, 오류={}", memberId, emitterId, ex.toString());
                     messagesFailed.increment();
@@ -142,42 +256,33 @@ public class SseSender implements RealtimeSender {
 
     @Override
     public void sendAll(NotificationEnvelope<?> payload) {
-        // 브로드캐스트 처리 시간 측정 시작
         long startTime = clock.millis();
 
-        // 브로드캐스트용 고유 이벤트 ID 생성 및 페이로드 JSON 직렬화
         long eventId = nextEventId();
         String json = JsonUtils.toJson(objectMapper, payload);
 
-        // 현재 시점의 모든 회원별 SSE 연결 상태 스냅샷 조회
         Map<Long, Map<String, SseEmitter>> snapshot = sseRepository.getAllWithIdsGroupedByMember();
 
-        // 활성 연결이 없는 경우 브로드캐스트 중단
         if (snapshot.isEmpty()) {
             log.debug("브로드캐스트 건너뜀: 활성 연결 없음");
             return;
         }
 
-        // 브로드캐스트 시작 로그 출력 (이벤트 ID, 대상 회원 수, 총 연결 수)
         log.info("브로드캐스트 시작 - 이벤트ID={}, 회원수={}, 총연결수={}",
                 eventId, snapshot.size(),
                 snapshot.values().stream().mapToLong(Map::size).sum());
 
-        // 회원 ID 목록을 추출하여 병렬 처리용 청크로 분할
         List<Long> memberIdList = new ArrayList<>(snapshot.keySet());
         List<List<Long>> memberChunkList = createChunks(memberIdList);
 
-        // 각 청크를 Virtual Thread에서 병렬로 처리하기 위한 CompletableFuture 생성
         List<CompletableFuture<Void>> futureList = memberChunkList.stream()
                 .map(chunk -> CompletableFuture.runAsync(() -> {
                     processChunk(chunk, snapshot, eventId, json);
                 }, sseExecutor))
                 .toList();
 
-        // 모든 청크의 병렬 처리 완료까지 대기
         CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
 
-        // 브로드캐스트 완료 시간 측정 및 처리 결과 로그 출력
         long endTime = clock.millis();
         long duration = endTime - startTime;
         log.info("브로드캐스트 완료 - 소요시간={}ms, 대상연결수={}", duration, snapshot.values().stream().mapToLong(Map::size).sum());
@@ -211,7 +316,6 @@ public class SseSender implements RealtimeSender {
                     .id(Long.toString(latestId))
                     .data(payload, MediaType.APPLICATION_JSON));
         } catch (IOException ignored) {
-            // 재전송 중 끊기면 콜백에서 처리
         }
 
         if (emitterId != null) {
@@ -283,9 +387,7 @@ public class SseSender implements RealtimeSender {
         }
     }
 
-    @PostConstruct
     private void initMetrics() {
-        // Counter 메트릭 초기화
         this.connectionsCreated = Counter.builder("sse_connections_created_total")
                 .description("생성된 SSE 연결 총 개수")
                 .register(meterRegistry);
