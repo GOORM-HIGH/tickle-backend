@@ -1,10 +1,12 @@
 package com.profect.tickle.global.redis.config;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.redisson.Redisson;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
+import org.redisson.config.SingleServerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +14,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -34,7 +39,25 @@ public class RedisConfig {
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
-        config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port);
+
+        config.setCodec(new org.redisson.client.codec.StringCodec());
+
+        SingleServerConfig s = config.useSingleServer()
+                .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
+                .setConnectionMinimumIdleSize(8)
+                .setConnectionPoolSize(32)
+                .setSubscriptionConnectionMinimumIdleSize(2)
+                .setSubscriptionConnectionPoolSize(8)
+                .setIdleConnectionTimeout(10_000)
+                .setConnectTimeout(10_000)
+                .setTimeout(3_000)
+                .setRetryAttempts(3)
+                .setRetryInterval(1_000)
+                .setKeepAlive(true);
+
+        config.setThreads(12);
+        config.setNettyThreads(12);
+
         return Redisson.create(config);
     }
 
@@ -42,7 +65,6 @@ public class RedisConfig {
     public RedisConnectionFactory redisConnectionFactory() {
         return new LettuceConnectionFactory(host, port);
     }
-
     /**
      * Redis 데이터 처리를 위한 템플릿을 구성합니다.
      * 해당 구성된 RedisTemplate을 통해서 데이터 통신으로 처리되는 대한 직렬화를 수행합니다.
