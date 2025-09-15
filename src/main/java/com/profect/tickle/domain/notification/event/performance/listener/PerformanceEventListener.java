@@ -64,7 +64,7 @@ public class PerformanceEventListener {
         notificationService.saveAll(memberIdList, template.getId(), subject, content, now);
 
         // 4) SSE 브로드캐스트
-        NotificationEnvelope<Void> payload = new NotificationEnvelope<>(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED, subject, content, now, link, null);
+        NotificationEnvelope<Void> payload = new NotificationEnvelope<>(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED, null, subject, content, now, link, null);
         realtimeSender.sendAll(payload);
     }
 
@@ -96,6 +96,7 @@ public class PerformanceEventListener {
                 // 실시간 알림 전송
                 NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                         NotificationKind.PERFORMANCE_MODIFIED,
+                        reservation.getMemberId(),
                         subject,
                         content,
                         now,

@@ -60,6 +60,7 @@ public class ReservationEventListener {
         // 실시간 알림 전송
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                 NotificationKind.RESERVATION_SUCCESS,
+                event.reservation().getMemberId(),
                 subject,
                 content,
                 now,

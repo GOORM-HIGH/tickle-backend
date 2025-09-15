@@ -47,6 +47,7 @@ public class CouponEventListener {
             // 4) 실시간 통신 페이로드
             NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                     NotificationKind.COUPON_ALMOST_EXPIRED,
+                    event.memberId(),
                     subject,
                     content,
                     Instant.now(clock),

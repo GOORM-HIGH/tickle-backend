@@ -11,20 +11,14 @@ public interface RealtimeSender {
     SseEmitter connect(@NotNull Long memberId, @Nullable String lastEventId);
 
     //유저의 모든 emitter(여러 탭)로 브로드캐스트
-    void send(long memberId, NotificationEnvelope<?> payload);
+    boolean send(long memberId, NotificationEnvelope<?> payload);
 
     // 모든 유저(접속 여부 상관X)로 브로드캐스트
-    void sendAll(NotificationEnvelope<?> payload);
-
-    // 유저별 이벤트 캐시에서 lastEventId 이후만 재전송
-    void resend(long memberId, @Nullable String emitterId, SseEmitter emitter, String lastEventIdHeader);
+    boolean sendAll(NotificationEnvelope<?> payload);
 
     // 유저의 모든 emitter를 정상 종료
     void disconnectAll(long memberId);
 
     // 특정 emitter만 정상 종료
     void disconnectEmitter(long memberId, String emitterId);
-
-    // 특정 emitter를 에러로 종료
-    void disconnectEmitterWithError(long memberId, String emitterId, Throwable cause);
 }
