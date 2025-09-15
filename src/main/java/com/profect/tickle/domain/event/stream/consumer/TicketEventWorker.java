@@ -12,7 +12,7 @@ import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.StreamMessageId;
 import org.redisson.api.stream.StreamReadGroupArgs;
-import org.redisson.codec.TypedJsonJacksonCodec;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -40,30 +40,23 @@ public class TicketEventWorker {
     private static final int    CLAIM_PAGE      = 64;     // autoClaim page size
 
     // ====== 주입 ======
-    private final Executor eventExecutor;                // VirtualThreadTaskExecutor("ticket-worker-")
+    private final Executor eventExecutor;   // VirtualThreadTaskExecutor("ticket-worker-")
     private final RedissonClient redisson;
-    private final TypedJsonJacksonCodec streamFieldMapCodec;
     private final EventCoreLockService core;
     private final PostActionsService   postActions;
-    //private final IdempotencyService idem; // 한 사람이 여러 번 참여 가능하므로 미사용
 
     @EventListener(ApplicationStartedEvent.class)
     public void start() {
-        // 컨슈머 루프 N개 가동 (각 루프는 가상 스레드로 실행)
         for (int i = 0; i < POOL_SIZE; i++) {
             final String consumer = CONSUMER_PREFIX + i;
             eventExecutor.execute(() -> workLoop(consumer));
         }
-        // PEL 재처리 루프도 가상 스레드로
         eventExecutor.execute(this::reclaimLoop);
     }
 
-    /* private final ExecutorService pool =
-            Executors.newFixedThreadPool(POOL_SIZE,
-                    new CustomizableThreadFactory("ticket-worker-"));*/
-
     private void workLoop(String consumerName) {
-        RStream<String, Object> stream = redisson.getStream(STREAM_KEY, streamFieldMapCodec);
+        // ✅ StringCodec으로 명시
+        RStream<String, String> stream = redisson.getStream(STREAM_KEY, StringCodec.INSTANCE);
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
@@ -72,7 +65,7 @@ public class TicketEventWorker {
                         .count(BATCH)
                         .timeout(Duration.ofMillis(BLOCK_MS));
 
-                Map<StreamMessageId, Map<String, Object>> batch =
+                Map<StreamMessageId, Map<String, String>> batch =
                         stream.readGroup(GROUP, consumerName, args);
 
                 if (batch == null || batch.isEmpty()) {
@@ -81,7 +74,7 @@ public class TicketEventWorker {
 
                 for (var e : batch.entrySet()) {
                     StreamMessageId id = e.getKey();
-                    Map<String, Object> fields = e.getValue();
+                    Map<String, String> fields = e.getValue();
 
                     Long eventId  = asLong(fields.get("eventId"));
                     Long memberId = asLong(fields.get("memberId"));
@@ -110,12 +103,13 @@ public class TicketEventWorker {
 
     /** PEL(autoClaim) 기반 재처리 */
     private void reclaimLoop() {
-        RStream<String, Object> stream = redisson.getStream(STREAM_KEY, streamFieldMapCodec);
+        // ✅ StringCodec으로 명시
+        RStream<String, String> stream = redisson.getStream(STREAM_KEY, StringCodec.INSTANCE);
         StreamMessageId start = StreamMessageId.MIN;
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                AutoClaimResult<String, Object> res = stream.autoClaim(
+                AutoClaimResult<String, String> res = stream.autoClaim(
                         GROUP,
                         CONSUMER_PREFIX + "reclaimer",
                         CLAIM_IDLE_MS, TimeUnit.MILLISECONDS,
@@ -123,7 +117,7 @@ public class TicketEventWorker {
                         CLAIM_PAGE
                 );
 
-                Map<StreamMessageId, Map<String, Object>> claimed = res.getMessages();
+                Map<StreamMessageId, Map<String, String>> claimed = res.getMessages();
                 start = res.getNextId();
 
                 if (claimed.isEmpty()) {
@@ -133,7 +127,7 @@ public class TicketEventWorker {
 
                 for (var e : claimed.entrySet()) {
                     StreamMessageId id = e.getKey();
-                    Map<String, Object> fields = e.getValue();
+                    Map<String, String> fields = e.getValue();
 
                     Long eventId  = asLong(fields.get("eventId"));
                     Long memberId = asLong(fields.get("memberId"));
@@ -147,7 +141,6 @@ public class TicketEventWorker {
                         stream.ack(GROUP, id);
 
                     } catch (Exception ex) {
-                        // 비즈니스 에러면 계속 대기시켜도 되지만, 장애의식해서 로그만 남기고 재시도 시킴
                         log.error("reclaim failed id={} e={}", id, ex.toString(), ex);
                     }
                 }
@@ -158,13 +151,7 @@ public class TicketEventWorker {
             }
         }
     }
-
-    // utils
-    private static Long asLong(Object v) {
-        if (v instanceof Long l) return l;
-        if (v instanceof Integer i) return i.longValue();
-        return (v == null) ? null : Long.valueOf(v.toString());
-    }
+    
     private static void sleepQuiet(long ms) {
         try { Thread.sleep(ms); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
     }
@@ -172,11 +159,15 @@ public class TicketEventWorker {
     @PreDestroy
     public void stop() {
         log.info("Stopping TicketEventWorker...");
-
-        // 만약 eventExecutor가 ThreadPoolExecutor라면 shutdown 시켜야 함
         if (eventExecutor instanceof java.util.concurrent.ExecutorService es) {
-            es.shutdownNow(); // 혹은 graceful: es.shutdown()
+            es.shutdownNow(); // 또는 graceful 종료: es.shutdown()
             log.info("TicketEventWorker executor shut down.");
         }
+    }
+    // utils
+    private static Long asLong(Object v) {
+        if (v instanceof Long l) return l;
+        if (v instanceof Integer i) return i.longValue();
+        return (v == null) ? null : Long.valueOf(v.toString());
     }
 }
