@@ -64,6 +64,8 @@ public class RabbitMQConfig {
         factory.setConcurrentConsumers(10); // 동시 컨슈머 수
         factory.setMaxConcurrentConsumers(50); // 최대 동시 컨슈머 수
         factory.setPrefetchCount(10); // 미리 가져올 메시지 수
+        factory.setAutoStartup(false);
+
         return factory;
     }
 

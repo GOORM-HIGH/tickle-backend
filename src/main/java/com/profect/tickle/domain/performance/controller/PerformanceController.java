@@ -3,8 +3,10 @@ package com.profect.tickle.domain.performance.controller;
 import com.profect.tickle.domain.performance.dto.request.PerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.request.UpdatePerformanceRequestDto;
 import com.profect.tickle.domain.performance.dto.response.*;
+import com.profect.tickle.domain.performance.elk.PerformanceSearchEsService;
 import com.profect.tickle.domain.performance.mapper.PerformanceMapper;
 import com.profect.tickle.domain.performance.service.PerformanceService;
+import com.profect.tickle.global.paging.Cursor;
 import com.profect.tickle.global.paging.CursorPageResponse;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
@@ -19,9 +21,12 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "공연", description = "공연 API")
 @RestController
@@ -31,6 +36,8 @@ public class PerformanceController {
 
     private final PerformanceService performanceService;
     private final PerformanceMapper performanceMapper;
+    private final PerformanceSearchEsService performanceSearchEsService;
+
 
     @Operation(summary = "장르 목록 조회", description = "모든 공연 장르를 조회합니다.")
     @GetMapping("/genre")
@@ -41,13 +48,17 @@ public class PerformanceController {
 
     @Operation(summary = "장르별 공연 목록 조회", description = "장르별로 공연 목록을 8개씩 페이징해 조회합니다.")
     @GetMapping("/genre/{genreId}")
-    public ResultResponse<PagingResponse<PerformanceDto>> getPerformancesByGenre(
+    public CursorPageResponse<PerformanceDto> getPerformancesByGenre(
             @PathVariable Long genreId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant cursorDate,
+            @RequestParam(required = false) Long cursorId,
+            @RequestParam(defaultValue = "20") int limit
     ) {
-        PagingResponse<PerformanceDto> response = performanceService.getPerformancesByGenre(genreId, page, size);
-        return ResultResponse.of(ResultCode.PERFORMANCE_LIST_SUCCESS, response);
+        Cursor cursor = null;
+        if (cursorDate != null && cursorId != null) {
+            cursor = new Cursor(cursorDate, cursorId);
+        }
+        return performanceService.findPerformancesByGenreCursor(genreId, cursor, limit);
     }
 
     @Operation(summary = "장르별 공연 랭킹", description = "장르별 공연 랭킹 TOP10을 조회합니다.")
@@ -78,20 +89,42 @@ public class PerformanceController {
         return ResultResponse.of(ResultCode.PERFORMANCE_POPULAR_SUCCESS,popular);
     }
 
+//    @GetMapping("/search")
+//    public CursorPageResponse<PerformanceDto> search(
+//            @RequestParam String keyword,
+//            @RequestParam(defaultValue = "20") int size,
+//            @RequestParam(required = false)
+//            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant cursorDate,
+//            @RequestParam(required = false) Long cursorId
+//    ) {
+//        return performanceService.searchByKeyword(keyword,  size, cursorDate, cursorId);
+//    }
+//
+//    @GetMapping("/search/count")
+//    public Map<String, Object> count(@RequestParam String keyword) {
+//        long count = performanceService.countByKeyword(keyword);
+//        return Map.of(
+//                "keyword", keyword,
+//                "count", count,
+//                "generatedAt", OffsetDateTime.now().toString()
+//        );
+//    }
+
     @GetMapping("/search")
     public CursorPageResponse<PerformanceDto> search(
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant cursorDate,
-            @RequestParam(required = false) Long cursorId
-    ) {
-        return performanceService.searchByKeyword(keyword,  size, cursorDate, cursorId);
+            @RequestParam(defaultValue="20") int size,
+            @RequestParam(required=false)
+            @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) Instant cursorDate,
+            @RequestParam(required=false) Long cursorId
+    ) throws IOException {
+        return performanceSearchEsService.search(keyword, size, cursorDate, cursorId);
     }
 
     @GetMapping("/search/count")
-    public Long count(@RequestParam String keyword) {
-        return performanceService.countByKeyword(keyword);
+    public Map<String,Object> count(@RequestParam String keyword) throws IOException {
+        var fc = performanceSearchEsService.fastCount(keyword);
+        return Map.of("keyword", keyword, "count", fc.value(), "gte", fc.gte(), "display", fc.display());
     }
 
     @Operation(summary = "공연 추천", description = "해당 공연과 관련있는 공연을 추천정보를 조회합니다.")

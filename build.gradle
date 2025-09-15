@@ -111,6 +111,12 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     // 2) Micrometer → Prometheus 연동 레지스트리
     implementation "io.micrometer:micrometer-registry-prometheus"
+
+    //ES 설정
+    implementation "co.elastic.clients:elasticsearch-java:8.11.1"
+    implementation "org.apache.httpcomponents.client5:httpclient5:5.2"
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+
 }
 
 hibernate {
