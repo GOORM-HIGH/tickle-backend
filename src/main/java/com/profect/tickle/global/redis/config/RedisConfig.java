@@ -5,6 +5,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
+import org.redisson.config.SingleServerConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -39,7 +40,25 @@ public class RedisConfig {
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
-        config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port);
+
+        config.setCodec(new org.redisson.client.codec.StringCodec());
+
+        SingleServerConfig s = config.useSingleServer()
+                .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
+                .setConnectionMinimumIdleSize(8)
+                .setConnectionPoolSize(32)
+                .setSubscriptionConnectionMinimumIdleSize(2)
+                .setSubscriptionConnectionPoolSize(8)
+                .setIdleConnectionTimeout(10_000)
+                .setConnectTimeout(10_000)
+                .setTimeout(3_000)
+                .setRetryAttempts(3)
+                .setRetryInterval(1_000)
+                .setKeepAlive(true);
+
+        config.setThreads(12);
+        config.setNettyThreads(12);
+
         return Redisson.create(config);
     }
 
