@@ -10,10 +10,11 @@ import com.profect.tickle.domain.notification.event.performance.event.Performanc
 import com.profect.tickle.domain.notification.service.NotificationService;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.domain.notification.service.mail.MailSender;
-import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
+import com.profect.tickle.domain.notification.service.realtime.producer.MessageProducer;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationServiceDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,10 @@ public class PerformanceEventListener {
     private final NotificationService notificationService;
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
-    private final RealtimeSender realtimeSender;
+    //    private final RealtimeSender realtimeSender;
+    @Value("#{@notificationStreamKey}")
+    private String notificationStreamKey;
+    private final MessageProducer redisNotificationProducer;
     private final MemberService memberService;
 
     // 제휴 업체 공연 게시 시 알림 전송 (브로드캐스트)
@@ -65,7 +69,8 @@ public class PerformanceEventListener {
 
         // 4) SSE 브로드캐스트
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED, null, subject, content, now, link, null);
-        realtimeSender.sendAll(payload);
+        redisNotificationProducer.produce(notificationStreamKey, payload);
+//        realtimeSender.sendAll(payload);
     }
 
     // 공연 정보 수정 시 알림 전송
@@ -103,7 +108,8 @@ public class PerformanceEventListener {
                         "/performances/" + event.performance().id(),
                         null
                 );
-                realtimeSender.send(reservation.getMemberId(), payload);
+                redisNotificationProducer.produce(notificationStreamKey, payload);
+//                realtimeSender.send(reservation.getMemberId(), payload);
 
             } catch (Exception ex) {
                 log.warn("공연 수정 알림 전송 실패: memberId={}, err={}",

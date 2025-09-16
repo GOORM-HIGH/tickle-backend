@@ -9,8 +9,10 @@ import com.profect.tickle.domain.notification.service.NotificationService;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.domain.notification.service.mail.MailSender;
 import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
+import com.profect.tickle.domain.notification.service.realtime.producer.MessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +28,9 @@ public class ReservationEventListener {
     private final Clock clock;
 
     // services
+    @Value("#{@notificationStreamKey}")
+    private String notificationStreamKey;
+    private final MessageProducer redisNotificationProducer;
     private final NotificationService notificationService;
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
@@ -67,6 +72,7 @@ public class ReservationEventListener {
                 "https://tickle.kr/mypage/reservations",
                 null
         );
-        realtimeSender.send(event.reservation().getMemberId(), payload);
+        redisNotificationProducer.produce(notificationStreamKey, payload);
+//        realtimeSender.send(event.reservation().getMemberId(), payload);
     }
 }
