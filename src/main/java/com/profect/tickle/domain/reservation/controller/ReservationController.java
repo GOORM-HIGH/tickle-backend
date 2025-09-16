@@ -9,7 +9,6 @@ import com.profect.tickle.domain.reservation.dto.response.preemption.SeatPreempt
 import com.profect.tickle.domain.reservation.service.CachedSeatPreemptionService;
 import com.profect.tickle.domain.reservation.service.ReservationInfoService;
 import com.profect.tickle.domain.reservation.service.ReservationService;
-import com.profect.tickle.domain.reservation.service.SeatPreemptionService;
 import com.profect.tickle.domain.reservation.service.SeatService;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
@@ -35,7 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReservationController {
 
     private final SeatService seatService;
-//    private final SeatPreemptionService seatPreemptionService;
     private final CachedSeatPreemptionService cachedSeatPreemptionService;
     private final ReservationInfoService reservationInfoService;
     private final ReservationService reservationService;
