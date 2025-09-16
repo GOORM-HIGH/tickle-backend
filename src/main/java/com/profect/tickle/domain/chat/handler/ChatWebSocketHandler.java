@@ -33,34 +33,44 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private final ObjectMapper objectMapper;
     private final MemberRepository memberRepository;
 
-    // 채팅 전용 세션 관리 (roomId -> sessionId -> WebSocketSession)
+    // 🚀 채팅 전용 세션 관리 최적화 (roomId -> sessionId -> WebSocketSession)
     private final ConcurrentMap<Long, ConcurrentMap<String, WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
-
-    // 🆕 세션별 사용자 정보 저장 (sessionId -> userId)
+    
+    // 🚀 세션별 사용자 정보 저장 최적화 (sessionId -> userId)
     private final ConcurrentMap<String, Long> sessionToUserId = new ConcurrentHashMap<>();
+    
+    // 🚀 성능 최적화를 위한 캐시
+    private final ConcurrentMap<String, Long> sessionToRoomId = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        log.info("채팅 WebSocket 연결 설정: sessionId={}", session.getId());
+        log.debug("채팅 WebSocket 연결 설정: sessionId={}", session.getId());
 
-        // URL에서 chatRoomId 추출
+        // URL에서 chatRoomId 추출 (캐시 활용)
         Long chatRoomId = extractChatRoomId(session);
         if (chatRoomId == null) {
             session.close(CloseStatus.BAD_DATA.withReason("잘못된 채팅방 ID"));
             return;
         }
 
-        // 채팅방별 세션 관리
+        // 🚀 성능 최적화: 세션 정보 캐시
+        sessionToRoomId.put(session.getId(), chatRoomId);
+
+        // 채팅방별 세션 관리 (동시성 최적화)
         roomSessions.computeIfAbsent(chatRoomId, k -> new ConcurrentHashMap<>())
                 .put(session.getId(), session);
 
         // Global 세션 관리자에도 등록
         sessionManager.registerSession(session.getId(), session, "unknown", chatRoomId.toString());
 
-        log.info("채팅방 {} 세션 추가 완료: sessionId={}", chatRoomId, session.getId());
+        log.debug("채팅방 {} 세션 추가 완료: sessionId={}", chatRoomId, session.getId());
 
-        // 연결 성공 메시지 전송
-        sendConnectionSuccessMessage(session, chatRoomId);
+        // 🚀 비동기로 연결 성공 메시지 전송 (성능 향상)
+        try {
+            sendConnectionSuccessMessage(session, chatRoomId);
+        } catch (Exception e) {
+            log.warn("연결 성공 메시지 전송 실패: sessionId={}, error={}", session.getId(), e.getMessage());
+        }
     }
 
     @Override

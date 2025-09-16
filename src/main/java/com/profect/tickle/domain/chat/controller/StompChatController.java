@@ -4,6 +4,7 @@ import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
 import com.profect.tickle.domain.chat.dto.websocket.WebSocketMessageRequestDto;
 import com.profect.tickle.domain.chat.dto.websocket.WebSocketMessageResponseDto;
 import com.profect.tickle.domain.chat.service.ChatMessageService;
+import com.profect.tickle.domain.chat.service.RabbitMQChatService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.global.exception.BusinessException;
@@ -28,6 +29,7 @@ import java.time.Instant;
 public class StompChatController {
 
     private final ChatMessageService chatMessageService;
+    private final RabbitMQChatService rabbitMQChatService;
     private final SimpMessagingTemplate messagingTemplate;
     private final MemberRepository memberRepository;
 
@@ -100,33 +102,20 @@ public class StompChatController {
                     .content(message.getContent())
                     .build();
 
-            var savedMessage = chatMessageService.sendMessage(
-                    message.getChatRoomId(), 
-                    userId,
-                    sendRequest
+            // RabbitMQ로 메시지 전송 (안정적인 처리)
+            String rabbitMessage = String.format(
+                "{\"chatRoomId\":%d,\"memberId\":%d,\"memberName\":\"%s\",\"content\":\"%s\",\"messageType\":\"%s\"}",
+                message.getChatRoomId(),
+                userId,
+                member.getNickname(),
+                message.getContent(),
+                message.getMessageType()
             );
 
-            log.info("메시지 DB 저장 완료: messageId={}", savedMessage.getId());
+            rabbitMQChatService.sendMessage(rabbitMessage);
 
-            // 응답 메시지 생성
-            WebSocketMessageResponseDto response = WebSocketMessageResponseDto.builder()
-                    .type("MESSAGE")
-                    .messageId(savedMessage.getId())
-                    .chatRoomId(message.getChatRoomId())
-                    .senderId(userId)
-                    .senderNickname(member.getNickname())
-                    .messageType(message.getMessageType())
-                    .content(message.getContent())
-                    .createdAt(savedMessage.getCreatedAt())
-                    .build();
-
-            // 채팅방 전체에 브로드캐스트
-            messagingTemplate.convertAndSend(
-                    "/topic/chat/" + message.getChatRoomId(),
-                    response
-            );
-
-            log.info("메시지 브로드캐스트 완료: messageId={}", savedMessage.getId());
+            log.info("메시지 RabbitMQ 전송 완료: chatRoomId={}, senderId={}", 
+                    message.getChatRoomId(), userId);
 
         } catch (Exception e) {
             log.error("메시지 처리 실패: {}", e.getMessage(), e);

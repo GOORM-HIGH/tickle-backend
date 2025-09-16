@@ -7,6 +7,7 @@ import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.StreamMessageId;
 import org.redisson.api.stream.StreamAddArgs;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.springframework.stereotype.Component;
 
@@ -24,17 +25,13 @@ public class StreamInitializer {
 
     @PostConstruct
     public void init() {
-        RStream<String, Object> stream = redisson.getStream(STREAM_KEY, streamFieldMapCodec);
+        RStream<String, String> stream = redisson.getStream(STREAM_KEY, StringCodec.INSTANCE);
         RKeys keys = redisson.getKeys();
 
-        // 1) 스트림 키가 없으면 먼저 "만든다"
+        // 1) 스트림 키 보장
         StreamMessageId bootstrapId = null;
         if (keys.countExists(STREAM_KEY) == 0) {
-            bootstrapId = stream.add(
-                    StreamAddArgs.<String, Object>entries(
-                            Map.of("_bootstrap", "1")
-                    )
-            );
+            bootstrapId = stream.add(StreamAddArgs.entries(Map.of("_bootstrap", "1")));
         }
 
         // 2) 그룹 존재 확인 (이제 안전하게 호출 가능)

@@ -6,10 +6,11 @@ import java.time.Instant;
 
 public record NotificationEnvelope<T>(
         NotificationKind type,
+        Long receivedMemberId,
         String subject,
         String content,
         Instant createdAt,
-        String link,   // 옵션
-        T data         // 타입별 상세
+        String link,
+        T data
 ) {
 }

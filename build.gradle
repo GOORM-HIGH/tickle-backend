@@ -40,6 +40,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     testImplementation 'org.springframework.security:spring-security-test'
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
 
     // ===== Database =====
     implementation 'org.postgresql:postgresql:42.5.4'
@@ -86,6 +88,9 @@ dependencies {
     
     // ===== RabbitMQ Dependencies =====
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    
+    // ===== Kafka Dependencies ===== (제거됨 - RabbitMQ 단일 아키텍처 사용)
+    // implementation 'org.springframework.kafka:spring-kafka'
 
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'
@@ -117,6 +122,8 @@ dependencies {
     implementation "org.apache.httpcomponents.client5:httpclient5:5.2"
     implementation "com.fasterxml.jackson.core:jackson-databind"
 
+
+    implementation 'org.apache.commons:commons-pool2:2.12.0'  // ★ 추가
 }
 
 hibernate {
