@@ -25,7 +25,6 @@ public class CouponEventListener {
     @Value("#{@notificationStreamKey}")
     private String notificationStreamKey;
     private final MessageProducer redisNotificationProducer;
-    //    private final RealtimeSender realtimeSender;
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
     private final Clock clock;
@@ -61,7 +60,6 @@ public class CouponEventListener {
 
             // 5) SSE 전송
             redisNotificationProducer.produce(notificationStreamKey, payload);
-//            realtimeSender.send(event.memberId(), payload);
         } catch (Exception e) {
             log.error("CouponAlmostExpiredEvent 처리 중 오류", e);
         }

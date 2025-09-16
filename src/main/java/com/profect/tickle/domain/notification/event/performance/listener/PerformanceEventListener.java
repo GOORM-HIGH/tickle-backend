@@ -34,7 +34,6 @@ public class PerformanceEventListener {
     private final NotificationService notificationService;
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
-    //    private final RealtimeSender realtimeSender;
     @Value("#{@notificationStreamKey}")
     private String notificationStreamKey;
     private final MessageProducer redisNotificationProducer;
@@ -70,7 +69,6 @@ public class PerformanceEventListener {
         // 4) SSE 브로드캐스트
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(NotificationKind.PARTNER_PERFORMANCE_PUBLISHED, null, subject, content, now, link, null);
         redisNotificationProducer.produce(notificationStreamKey, payload);
-//        realtimeSender.sendAll(payload);
     }
 
     // 공연 정보 수정 시 알림 전송
@@ -96,7 +94,12 @@ public class PerformanceEventListener {
                 notificationService.saveNotification(reservation.getMemberEmail(), template, subject, content, now);
 
                 // 메일 전송
-                mailSender.sendText(new MailCreateServiceRequestDto(reservation.getMemberEmail(), subject, content));
+                try {
+                    mailSender.sendText(new MailCreateServiceRequestDto(reservation.getMemberEmail(), subject, content));
+                    log.info("메일 전송 성공");
+                } catch (Exception e) {
+                    log.warn("메일 전송 실패 - 다른 알림 채널은 정상 처리: {}", e.getMessage());
+                }
 
                 // 실시간 알림 전송
                 NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
@@ -109,7 +112,6 @@ public class PerformanceEventListener {
                         null
                 );
                 redisNotificationProducer.produce(notificationStreamKey, payload);
-//                realtimeSender.send(reservation.getMemberId(), payload);
 
             } catch (Exception ex) {
                 log.warn("공연 수정 알림 전송 실패: memberId={}, err={}",
