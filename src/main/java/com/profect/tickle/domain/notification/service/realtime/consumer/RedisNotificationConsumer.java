@@ -45,13 +45,25 @@ public class RedisNotificationConsumer implements MessageConsumer {
 
     private void initStreamConsumer() {
         try {
-            streamOperations.createGroup(notificationStreamKey, NotificationRedisConstants.CONSUMER_GROUP);
+            streamOperations.createGroup(
+                    notificationStreamKey,
+                    ReadOffset.from("0-0"),  // 스트림 처음부터 읽기
+                    NotificationRedisConstants.CONSUMER_GROUP
+            );
             log.info("Redis Stream 소비자 그룹 생성: stream={}, group={}",
                     notificationStreamKey, NotificationRedisConstants.CONSUMER_GROUP);
         } catch (Exception e) {
-            log.debug("소비자 그룹이 이미 존재함: {}", e.getMessage());
+            log.info("소비자 그룹 생성 시도 결과: {}", e.getMessage());
+
+            // Consumer Group이 이미 존재하는 경우는 정상
+            if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
+                log.info("소비자 그룹이 이미 존재함 - 정상 진행");
+            } else {
+                log.error("소비자 그룹 생성 실패", e);
+            }
         }
     }
+
 
     @Override
     public void start() {
