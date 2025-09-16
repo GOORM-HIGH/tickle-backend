@@ -47,15 +47,16 @@ public class SeatService {
     }
 
     public HallTypeAndSeatInfoResponseDto getSeatInfoByPerformance(Long performanceId) {
-        List<Seat> seats = seatRepository.findByPerformanceIdOrderBySeatNumber(performanceId);
+        // DTO 직접 조회 (Entity 로딩 없음)
+        List<SeatInfoResponseDto> seatInfos =
+                seatRepository.findSeatInfoByPerformanceId(performanceId);
 
-        List<SeatInfoResponseDto> seatInfos = seats.stream()
-                .map(this::convertToSeatStatusResponse)
-                .toList();
+        if (seatInfos.isEmpty()) {
+            throw new BusinessException(ErrorCode.PERFORMANCE_NOT_FOUND);
+        }
 
-        HallType hallType = findPerformanceById(performanceId)
-                .getHall()
-                .getType();
+        // HallType 별도 조회
+        HallType hallType = seatRepository.findHallTypeByPerformanceId(performanceId);
 
         return new HallTypeAndSeatInfoResponseDto(hallType, seatInfos);
     }

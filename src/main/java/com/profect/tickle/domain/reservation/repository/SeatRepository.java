@@ -1,7 +1,8 @@
 package com.profect.tickle.domain.reservation.repository;
 
+import com.profect.tickle.domain.performance.entity.HallType;
+import com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
-import com.profect.tickle.global.status.Status;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +17,33 @@ import org.springframework.stereotype.Repository;
 public interface SeatRepository extends JpaRepository<Seat, Long> {
 
     interface SeatRow { Long getSeatId(); }
+
+    // 기존 Entity 조회 메서드 제거하고 DTO 직접 조회로 교체
+    @Query("SELECT new com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto(" +
+            "s.id, s.seatNumber, s.seatGrade, s.seatPrice, s.status.id) " +
+            "FROM Seat s " +
+            "WHERE s.performance.id = :performanceId " +
+            "ORDER BY s.seatNumber")
+    List<SeatInfoResponseDto> findSeatInfoByPerformanceId(@Param("performanceId") Long performanceId);
+
+    // HallType 조회용
+    @Query("SELECT p.hall.type " +
+            "FROM Performance p " +
+            "WHERE p.id = :performanceId")
+    HallType findHallTypeByPerformanceId(@Param("performanceId") Long performanceId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+    SELECT s FROM Seat s 
+    WHERE s.id IN :seatIds 
+    AND s.performance.id = :performanceId
+    AND s.status.id = (SELECT st.id FROM Status st WHERE st.id = 11)
+    AND s.preemptionToken IS NULL
+    """)
+    List<Seat> findAvailableSeatsForPreemption(
+            @Param("seatIds") List<Long> seatIds,
+            @Param("performanceId") Long performanceId
+    );
 
     @Query("SELECT s FROM Seat s " +
             "LEFT JOIN FETCH s.status " +
