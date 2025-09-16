@@ -1,5 +1,6 @@
 package com.profect.tickle.global.redis.config;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.redisson.Redisson;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
@@ -14,7 +15,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StreamOperations;
@@ -35,6 +38,9 @@ public class RedisConfig {
     @Value("${spring.redis.port}")
     private int port;
 
+//    @Value("${spring.redis.password}")
+//    private String password;
+
     private static final String REDISSON_HOST_PREFIX = "redis://";
 
     @Bean
@@ -45,6 +51,7 @@ public class RedisConfig {
 
         SingleServerConfig s = config.useSingleServer()
                 .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
+//                .setPassword(password)
                 .setConnectionMinimumIdleSize(8)
                 .setConnectionPoolSize(32)
                 .setSubscriptionConnectionMinimumIdleSize(2)
@@ -64,7 +71,17 @@ public class RedisConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(host, port);
+        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
+        redisConfig.setHostName(host);
+        redisConfig.setPort(port);
+//        redisConfig.setPassword(password);
+
+        // Lettuce Pool 설정 (선택사항)
+        LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
+                .poolConfig(new GenericObjectPoolConfig<>())
+                .build();
+
+        return new LettuceConnectionFactory(redisConfig, clientConfig);
     }
 
     /**
