@@ -73,6 +73,7 @@ public enum ErrorCode {
     NOTIFICATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 알림에 접근할 권한이 없습니다."),
     NOTIFICATION_TEMPLATE_NOT_FOUND(HttpStatus.BAD_REQUEST, "알림 템플릿을 찾을 수 없습니다."),
     REALTIME_NOTIFICATION_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "실시간 메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요."),
+    MESSAGE_PRODUCE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "메시지 발행에 실패했습니다."),
 
     // 상태 관련
     STATUS_CACHE_INIT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "상태 캐시 초기화에 실패했습니다."),

@@ -8,9 +8,10 @@ import com.profect.tickle.domain.notification.event.reservation.event.Reservatio
 import com.profect.tickle.domain.notification.service.NotificationService;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.domain.notification.service.mail.MailSender;
-import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
+import com.profect.tickle.domain.notification.service.realtime.producer.MessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -26,10 +27,12 @@ public class ReservationEventListener {
     private final Clock clock;
 
     // services
+    @Value("#{@notificationStreamKey}")
+    private String notificationStreamKey;
+    private final MessageProducer redisNotificationProducer;
     private final NotificationService notificationService;
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
-    private final RealtimeSender realtimeSender;
 
     // 예매 성공 시 알림 전송
     @EventListener
@@ -55,17 +58,23 @@ public class ReservationEventListener {
         notificationService.saveNotification(event.reservation().getMemberEmail(), template, subject, content, now);
 
         // 메일 전송
-        mailSender.sendText(new MailCreateServiceRequestDto(event.reservation().getMemberEmail(), subject, content));
+        try {
+            mailSender.sendText(new MailCreateServiceRequestDto(event.reservation().getMemberEmail(), subject, content));
+            log.info("메일 전송 성공");
+        } catch (Exception e) {
+            log.warn("메일 전송 실패 - 다른 알림 채널은 정상 처리: {}", e.getMessage());
+        }
 
         // 실시간 알림 전송
         NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                 NotificationKind.RESERVATION_SUCCESS,
+                event.reservation().getMemberId(),
                 subject,
                 content,
                 now,
                 "https://tickle.kr/mypage/reservations",
                 null
         );
-        realtimeSender.send(event.reservation().getMemberId(), payload);
+        redisNotificationProducer.produce(notificationStreamKey, payload);
     }
 }

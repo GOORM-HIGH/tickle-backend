@@ -1,10 +1,13 @@
 package com.profect.tickle.global.redis.config;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.redisson.Redisson;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
+import org.redisson.config.SingleServerConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -13,16 +16,21 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.retry.annotation.EnableRetry;
 
 import java.time.Duration;
 
-@Configuration
 @EnableCaching
+@EnableRetry
 public class RedisConfig {
 
     @Value("${spring.redis.host}")
@@ -31,18 +39,50 @@ public class RedisConfig {
     @Value("${spring.redis.port}")
     private int port;
 
+//    @Value("${spring.redis.password}")
+//    private String password;
+
     private static final String REDISSON_HOST_PREFIX = "redis://";
 
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
-        config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port);
+
+        config.setCodec(new org.redisson.client.codec.StringCodec());
+
+        SingleServerConfig s = config.useSingleServer()
+                .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
+//                .setPassword(password)
+                .setConnectionMinimumIdleSize(8)
+                .setConnectionPoolSize(32)
+                .setSubscriptionConnectionMinimumIdleSize(2)
+                .setSubscriptionConnectionPoolSize(8)
+                .setIdleConnectionTimeout(10_000)
+                .setConnectTimeout(10_000)
+                .setTimeout(3_000)
+                .setRetryAttempts(3)
+                .setRetryInterval(1_000)
+                .setKeepAlive(true);
+
+        config.setThreads(12);
+        config.setNettyThreads(12);
+
         return Redisson.create(config);
     }
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(host, port);
+        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
+        redisConfig.setHostName(host);
+        redisConfig.setPort(port);
+//        redisConfig.setPassword(password);
+
+        // Lettuce Pool 설정 (선택사항)
+        LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
+                .poolConfig(new GenericObjectPoolConfig<>())
+                .build();
+
+        return new LettuceConnectionFactory(redisConfig, clientConfig);
     }
 
     /**
@@ -124,5 +164,31 @@ public class RedisConfig {
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .build();
+    }
+
+    @Bean("streamRedisTemplate")
+    public RedisTemplate<String, Object> streamRedisTemplate() {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory());
+
+        // Stream용으로는 JSON 직렬화 사용
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public StreamOperations<String, String, Object> streamOperations(
+            @Qualifier("streamRedisTemplate") RedisTemplate<String, Object> streamRedisTemplate) {
+        return streamRedisTemplate.opsForStream();
+    }
+
+    @Bean("notificationStreamKey")
+    public String notificationStreamKey() {
+        return "notification-stream";
     }
 }

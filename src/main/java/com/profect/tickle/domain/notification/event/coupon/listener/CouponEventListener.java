@@ -7,9 +7,10 @@ import com.profect.tickle.domain.notification.entity.NotificationTemplate;
 import com.profect.tickle.domain.notification.event.coupon.event.CouponAlmostExpiredEvent;
 import com.profect.tickle.domain.notification.service.NotificationTemplateService;
 import com.profect.tickle.domain.notification.service.mail.MailSender;
-import com.profect.tickle.domain.notification.service.realtime.RealtimeSender;
+import com.profect.tickle.domain.notification.service.realtime.producer.MessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +22,11 @@ import java.time.Instant;
 @Slf4j
 public class CouponEventListener {
 
+    @Value("#{@notificationStreamKey}")
+    private String notificationStreamKey;
+    private final MessageProducer redisNotificationProducer;
     private final NotificationTemplateService notificationTemplateService;
     private final MailSender mailSender;
-    private final RealtimeSender realtimeSender;
     private final Clock clock;
 
     // 쿠폰 만료 임박 이벤트 처리
@@ -47,6 +50,7 @@ public class CouponEventListener {
             // 4) 실시간 통신 페이로드
             NotificationEnvelope<Void> payload = new NotificationEnvelope<>(
                     NotificationKind.COUPON_ALMOST_EXPIRED,
+                    event.memberId(),
                     subject,
                     content,
                     Instant.now(clock),
@@ -55,7 +59,7 @@ public class CouponEventListener {
             );
 
             // 5) SSE 전송
-            realtimeSender.send(event.memberId(), payload);
+            redisNotificationProducer.produce(notificationStreamKey, payload);
         } catch (Exception e) {
             log.error("CouponAlmostExpiredEvent 처리 중 오류", e);
         }

@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.performance.mapper;
 
 import com.profect.tickle.domain.performance.dto.response.*;
+import com.profect.tickle.global.paging.Cursor;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.data.repository.query.Param;
 
@@ -14,13 +15,11 @@ public interface PerformanceMapper {
 
     List<GenreDto> findAllGenres();
 
-    List<PerformanceDto> findPerformancesByGenre(
+    List<PerformanceDto> findPerformancesByGenreCursor(
             @Param("genreId") Long genreId,
-            @Param("offset") int offset,
+            @Param("cursor") Cursor cursor,
             @Param("limit") int limit
     );
-
-    int countPerformancesByGenre(@Param("genreId") Long genreId);
 
     PerformanceDetailDto findDetailById(@Param("performanceId") Long performanceId);
 
