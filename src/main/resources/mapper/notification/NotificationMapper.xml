@@ -18,7 +18,7 @@
                 END AS isRead,
             n.notification_created_at AS createdAt
         FROM notification AS n
-        WHERE m.member_id = #{memberId}
+        WHERE n.notification_received_member_id = #{memberId}
         ORDER BY n.notification_created_at DESC
             LIMIT #{limit}
     </select>

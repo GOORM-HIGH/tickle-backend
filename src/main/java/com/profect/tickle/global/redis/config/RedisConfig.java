@@ -7,6 +7,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.SingleServerConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
@@ -15,17 +16,20 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.retry.annotation.EnableRetry;
 
 import java.time.Duration;
 
 @Configuration
+@EnableRetry
 public class RedisConfig {
 
     @Value("${spring.redis.host}")
@@ -33,6 +37,9 @@ public class RedisConfig {
 
     @Value("${spring.redis.port}")
     private int port;
+
+//    @Value("${spring.redis.password}")
+//    private String password;
 
     private static final String REDISSON_HOST_PREFIX = "redis://";
 
@@ -44,6 +51,7 @@ public class RedisConfig {
 
         SingleServerConfig s = config.useSingleServer()
                 .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
+//                .setPassword(password)
                 .setConnectionMinimumIdleSize(8)
                 .setConnectionPoolSize(32)
                 .setSubscriptionConnectionMinimumIdleSize(2)
@@ -63,8 +71,19 @@ public class RedisConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(host, port);
+        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
+        redisConfig.setHostName(host);
+        redisConfig.setPort(port);
+//        redisConfig.setPassword(password);
+
+        // Lettuce Pool 설정 (선택사항)
+        LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
+                .poolConfig(new GenericObjectPoolConfig<>())
+                .build();
+
+        return new LettuceConnectionFactory(redisConfig, clientConfig);
     }
+
     /**
      * Redis 데이터 처리를 위한 템플릿을 구성합니다.
      * 해당 구성된 RedisTemplate을 통해서 데이터 통신으로 처리되는 대한 직렬화를 수행합니다.
@@ -144,5 +163,31 @@ public class RedisConfig {
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .build();
+    }
+
+    @Bean("streamRedisTemplate")
+    public RedisTemplate<String, Object> streamRedisTemplate() {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory());
+
+        // Stream용으로는 JSON 직렬화 사용
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    @Bean
+    public StreamOperations<String, String, Object> streamOperations(
+            @Qualifier("streamRedisTemplate") RedisTemplate<String, Object> streamRedisTemplate) {
+        return streamRedisTemplate.opsForStream();
+    }
+
+    @Bean("notificationStreamKey")
+    public String notificationStreamKey() {
+        return "notification-stream";
     }
 }
