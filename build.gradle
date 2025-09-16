@@ -88,6 +88,9 @@ dependencies {
     
     // ===== RabbitMQ Dependencies =====
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    
+    // ===== Kafka Dependencies ===== (제거됨 - RabbitMQ 단일 아키텍처 사용)
+    // implementation 'org.springframework.kafka:spring-kafka'
 
     // ===== WebSocket =====
     implementation 'org.springframework:spring-websocket'
