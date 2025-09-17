@@ -4,6 +4,7 @@ import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.performance.entity.HallType;
 import com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
+import com.profect.tickle.global.status.Status;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
@@ -95,18 +96,6 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     """)
     int clearExpiredPreemptionsBulk(@Param("now") Instant now);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-    update Seat s
-       set s.member = :member,
-           s.status = :reservedStatus
-     where s.id = :seatId
-       and s.status = :reservedStatus
-       and (s.member is null or s.member = :member)
-""")
-    int tryReserveSeatWhenReserved(@Param("seatId") Long seatId,
-                                   @Param("member") Member member,
-                                   @Param("reservedStatus") Status reservedStatus);
 
     @Query("""
         select s.performance.id
