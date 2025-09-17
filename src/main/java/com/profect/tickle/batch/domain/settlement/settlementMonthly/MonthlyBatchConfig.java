@@ -80,7 +80,7 @@ public class MonthlyBatchConfig {
     @Bean
     public Step settlementMonthlyStep() {
         return new StepBuilder("settlementMonthlyStep", jobRepository)
-                .<SettlementMonthlyFindTargetDto, SettlementMonthly>chunk(10_000, txManager)
+                .<SettlementMonthlyFindTargetDto, SettlementMonthly>chunk(5_000, txManager)
                 .reader(settlementMonthlyReader(null, null))
                 .processor(settlementMonthlyProcessor())
                 .writer(settlementMonthlyWriter())
@@ -115,7 +115,7 @@ public class MonthlyBatchConfig {
                 .sqlSessionFactory(sqlSessionFactory)
                 .queryId("com.profect.tickle.batch.domain.settlement.mapper.SettlementMonthlyMapper.aggregateFromWeeklyToMonthly")
                 .parameterValues(params)
-                .pageSize(50_000)
+                .pageSize(5_000)
                 .maxItemCount(Integer.MAX_VALUE)
                 .build();
     }
