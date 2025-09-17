@@ -34,10 +34,10 @@ import java.time.Duration;
 @EnableRetry
 public class RedisConfig {
 
-    @Value("${spring.redis.host}")
+    @Value("${spring.data.redis.host}")
     private String host;
 
-    @Value("${spring.redis.port}")
+    @Value("${spring.data.redis.port}")
     private int port;
 
     @Value("${spring.redis.password}")
@@ -83,7 +83,12 @@ public class RedisConfig {
                 .poolConfig(new GenericObjectPoolConfig<>())
                 .build();
 
-        return new LettuceConnectionFactory(redisConfig, clientConfig);
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(
+                redisConfig, clientConfig);
+
+        factory.afterPropertiesSet();
+
+        return factory;
     }
 
     /**
