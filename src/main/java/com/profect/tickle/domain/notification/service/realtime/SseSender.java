@@ -284,7 +284,6 @@ public class SseSender implements RealtimeSender {
                             .data(json, MediaType.APPLICATION_JSON));
                     messagesSent.increment();
                     memberSuccess = true;
-                    break;
                 } catch (IOException ex) {
                     // onError 콜백이 자동 처리
                 }
