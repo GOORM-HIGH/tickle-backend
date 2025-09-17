@@ -68,9 +68,9 @@ public class EventController {
                             content = @Content(schema = @Schema(implementation = TicketApplyResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "포인트 부족, 중복 응모 등 예외 발생")})
     @PostMapping("/ticket/{eventId}")
-    public ResultResponse<String> applyTicketEvent(@PathVariable Long eventId) {
-        eventService.applyTicketEvent(eventId);
-        return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, "당첨 됐게 안됐게");
+    public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
+        TicketApplyResponseDto dto = eventService.applyTicketEvent(eventId);
+        return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, dto);
     }
 
     @Operation(summary = "쿠폰 이벤트 응모", description = "유저가 쿠폰 이벤트에 응모하여 쿠폰을 발급받습니다.",

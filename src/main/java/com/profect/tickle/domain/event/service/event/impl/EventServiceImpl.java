@@ -104,10 +104,12 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public void applyTicketEvent(Long eventId) {
+    public TicketApplyResponseDto applyTicketEvent(Long eventId) {
         Long memberId = SecurityUtil.getSignInMemberId();
 
         producer.appendToStream(new EventMessage(eventId, memberId));
+
+        return TicketApplyResponseDto.from(eventId, memberId);
     }
 
     @Override
