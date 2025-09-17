@@ -681,4 +681,14 @@
             </when>
         </choose>
     </select>
+
+    <!-- 미정산 내역 조회 -->
+    <select id="sumUnsettledAmount" resultType="java.lang.Long">
+        SELECT
+            SUM(settlement_daily_net_amount)
+        FROM settlement_daily
+        WHERE
+            member_id = #{memberId}
+        AND status_id = #{status.id}
+    </select>
 </mapper>
