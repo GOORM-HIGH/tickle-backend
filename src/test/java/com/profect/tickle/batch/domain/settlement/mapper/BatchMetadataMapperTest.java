@@ -82,7 +82,7 @@ public class BatchMetadataMapperTest {
         Instant now = Instant.now();
 
         // When
-        batchMetadataMapper.upsertLastProcessedAt(jobName, now);
+        batchMetadataMapper.upsertLastProcessedAt(jobName, now, 0L);
 
         Instant lastProcessedAt = batchMetadataMapper.findLastProcessedAt(jobName).orElse(Instant.EPOCH);
 

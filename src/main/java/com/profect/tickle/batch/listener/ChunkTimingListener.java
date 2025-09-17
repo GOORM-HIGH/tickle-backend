@@ -3,11 +3,13 @@ package com.profect.tickle.batch.listener;
 import java.time.Duration;
 import java.time.Instant;
 
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetDto;
 import com.profect.tickle.batch.metadata.BatchMetadataMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.scope.context.ChunkContext;
+import org.springframework.batch.core.scope.context.StepSynchronizationManager;
 import org.springframework.batch.item.Chunk;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -57,11 +59,22 @@ public class ChunkTimingListener
     // StepExecutionListener : 스텝 시작 전에 한번만 호출 -> 누적변수 리셋
     @Override
     public void beforeStep(StepExecution stepExecution) {
-        // Step 시작 전에 Job name으로 메타 테이블에서 마지막 배치 시점 호출, 없을 경우 EPOCH
+        // Step 시작 전에 Job name으로 메타 테이블에서 마지막 배치 시점, 아이디 호출 -> 없을 경우 EPOCH, 0
         String jobName = stepExecution.getJobExecution().getJobInstance().getJobName();
         Instant lastTimeSeconds = batchMetadataMapper.findLastProcessedAt(jobName)
                 .orElse(Instant.EPOCH);
+        Long stepLastId = batchMetadataMapper.findLastProcessedId(jobName)
+                .orElse(0L);
+        System.out.println("beforeStep에서의 이전 배치의 마지막 아이디 ::::::::: " + stepLastId);
+
         stepExecution.getExecutionContext().put("lastTimeSeconds", lastTimeSeconds);
+        stepExecution.getExecutionContext().put("lastProcessedId", stepLastId);
+
+        // 튜닝 전 테스트용
+//        String jobNameTest = stepExecution.getJobExecution().getJobInstance().getJobName();
+//        Instant lastTimeSecondsTest = batchMetadataMapper.findLastProcessedAtTest(jobNameTest)
+//                .orElse(Instant.EPOCH);
+//        stepExecution.getExecutionContext().put("lastTimeSeconds", lastTimeSecondsTest);
 
         this.chunkCount = 0;
         this.totalAllNanos = 0L;
@@ -153,10 +166,18 @@ public class ChunkTimingListener
 
         // Job Name, Job Params 호출해서 메테 테이블에 마지막 배치 시점 저장
         String jobName = stepExecution.getJobExecution().getJobInstance().getJobName();
+        Long lastId = stepExecution.getExecutionContext().getLong("lastProcessedId");
         if(jobName.startsWith("settlement")){
             Instant createdAt = Instant.parse(settlementJobParam);
-            batchMetadataMapper.upsertLastProcessedAt(jobName, createdAt);
+            batchMetadataMapper.upsertLastProcessedAt(jobName, createdAt, lastId);
         }
+
+        // 튜닝 전 테스트용
+//        String jobNameTest = stepExecution.getJobExecution().getJobInstance().getJobName();
+//        if(jobNameTest.startsWith("settlement")){
+//            Instant createdAt = Instant.parse(settlementJobParam);
+//            batchMetadataMapper.upsertLastProcessedAtTest(jobNameTest, createdAt);
+//        }
 
         System.out.println("============== STEP 최종 누적 통계 ==============");
         System.out.println(String.format(

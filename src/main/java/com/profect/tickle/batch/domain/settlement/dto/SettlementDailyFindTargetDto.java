@@ -8,6 +8,7 @@ import java.time.Instant;
 @Getter
 public class SettlementDailyFindTargetDto {
 
+    private Long pageMaxId;
     private Long memberId;
     private String performanceTitle;
     private Instant performanceEndDate;
@@ -15,10 +16,10 @@ public class SettlementDailyFindTargetDto {
     private String year;
     private String month;
     private String day;
+    private Instant settlementDailyCreatedAt;
     private Long dailySalesAmount;
     private Long dailyRefundAmount;
     private Long dailyGrossAmount;
     private Long dailyCommission;
     private Long dailyNetAmount;
-    private Instant settlementDailyCreatedAt;
 }
