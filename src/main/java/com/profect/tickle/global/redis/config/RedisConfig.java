@@ -29,6 +29,7 @@ import org.springframework.retry.annotation.EnableRetry;
 
 import java.time.Duration;
 
+@Configuration
 @EnableCaching
 @EnableRetry
 public class RedisConfig {
