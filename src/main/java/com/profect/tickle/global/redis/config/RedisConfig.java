@@ -39,8 +39,8 @@ public class RedisConfig {
     @Value("${spring.redis.port}")
     private int port;
 
-//    @Value("${spring.redis.password}")
-//    private String password;
+    @Value("${spring.redis.password}")
+    private String password;
 
     private static final String REDISSON_HOST_PREFIX = "redis://";
 
@@ -52,7 +52,7 @@ public class RedisConfig {
 
         SingleServerConfig s = config.useSingleServer()
                 .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
-//                .setPassword(password)
+                .setPassword(password)
                 .setConnectionMinimumIdleSize(8)
                 .setConnectionPoolSize(32)
                 .setSubscriptionConnectionMinimumIdleSize(2)
@@ -75,7 +75,7 @@ public class RedisConfig {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(host);
         redisConfig.setPort(port);
-//        redisConfig.setPassword(password);
+        redisConfig.setPassword(password);
 
         // Lettuce Pool 설정 (선택사항)
         LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
