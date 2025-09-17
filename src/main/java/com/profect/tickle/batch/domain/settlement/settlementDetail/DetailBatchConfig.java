@@ -82,7 +82,7 @@ public class DetailBatchConfig {
     @Bean
     public Step settlementDetailStep() {
         return new StepBuilder("settlementDetailStep", jobRepository)
-                .<SettlementDetailFindTargetDto, SettlementDetail>chunk(50_000, txManager)
+                .<SettlementDetailFindTargetDto, SettlementDetail>chunk(5_000, txManager)
                 .reader(settlementDetailReader(null, null, null))
 //                .reader(settlementDetailReader(null, null))
                 .processor(settlementDetailProcessor())
