@@ -64,7 +64,7 @@ jobs:
           echo "application.yml found"
 
   deploy:
-    name: "Deploy to Mac Server"
+    name: "Deploy to EC2 Server"
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     steps:
@@ -142,7 +142,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "app.jar,application.yml"
-          target: "/Users/${{ secrets.SSH_USER }}/apps/tickle/_incoming/"
+          target: "/home/${{ secrets.SSH_USER }}/apps/tickle/_incoming/"
 
       - name: Switch & restart
         uses: appleboy/ssh-action@v1.0.3
@@ -172,7 +172,7 @@ jobs:
             fi
 
             # 재기동
-            nohup java -XX:-MaxFDLimit -Xms4g -Xmx8g -jar "$APP_DIR/app.jar" \
+            nohup java -XX:-MaxFDLimit -Xms2g -Xmx2g -jar "$APP_DIR/app.jar" \
               --spring.profiles.active=prod \
               --spring.config.location="file:$APP_DIR/application.yml" \
             > "$APP_DIR/logs/app.out" 2> "$APP_DIR/logs/app.err" &
