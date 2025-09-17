@@ -16,8 +16,7 @@ public class SettlementCsvSerializer {
     private static final int DEFAULT_BUFFER_SIZE = 1024;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-            .withZone(ZoneId.of("Asia/Seoul"));
+            .ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     /**
      * 건별 정산 CSV 직렬화
