@@ -42,20 +42,20 @@
 
     <select id="findTicketEventList" resultMap="TicketListMap">
         SELECT
-        e.event_id AS id,
-        e.event_name AS name,
-        e.event_per_price AS perPrice,
-        p.performance_img AS img,
-        st.status_id AS statusId,
-        p.performance_start_date AS startDate,
-        p.performance_end_date AS endDate
+            e.event_id               AS id,
+            e.event_name             AS name,
+            e.event_per_price        AS perPrice,
+            p.performance_img        AS img,
+            st.status_id             AS statusId,
+            p.performance_start_date AS startDate,
+            p.performance_end_date   AS endDate
         FROM event e
-        JOIN seat s ON e.event_id = s.event_id
-        JOIN performance p ON s.performance_id = p.performance_id
-        JOIN status st ON e.status_id = st.status_id
-        WHERE p.performance_end_date &gt;= NOW()
+                 JOIN seat        s  ON s.seat_id          = e.seat_id
+                 JOIN performance p  ON p.performance_id   = s.performance_id
+                 JOIN status      st ON st.status_id       = e.status_id
+        WHERE p.performance_end_date >= NOW()
         ORDER BY e.event_created_at
-        LIMIT #{size} OFFSET #{offset}
+            LIMIT #{size} OFFSET #{offset}
     </select>
 
     <select id="countCouponEvents" resultType="long">
@@ -73,9 +73,9 @@
     <select id="countTicketEvents" resultType="int">
         SELECT COUNT(*)
         FROM event e
-        JOIN status st ON e.status_id = s.status_id
-        JOIN seat s ON s.event_id = e.event_id
-        JOIN performance p ON s.performance_id = p.performance_id
+                 JOIN status st ON e.status_id = st.status_id
+                 JOIN seat s    ON s.event_id = e.event_id
+                 JOIN performance p ON s.performance_id = p.performance_id
         WHERE e.event_type = 1
           AND p.performance_start_date &lt;= NOW()
           AND p.performance_end_date &gt;= NOW()

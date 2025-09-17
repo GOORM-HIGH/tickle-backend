@@ -14,7 +14,7 @@ public interface EventService {
 
     TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request);
 
-     void applyTicketEvent(Long eventId);
+    TicketApplyResponseDto applyTicketEvent(Long eventId);
 
     PagingResponse<EventListResponseDto> getEventList(EventType type, int page, int size);
 
