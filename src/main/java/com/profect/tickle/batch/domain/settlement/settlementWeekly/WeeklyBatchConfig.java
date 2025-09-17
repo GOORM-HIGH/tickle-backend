@@ -80,7 +80,7 @@ public class WeeklyBatchConfig {
     @Bean
     public Step settlementWeeklyStep() {
         return new StepBuilder("settlementWeeklyStep", jobRepository)
-                .<SettlementWeeklyFindTargetDto, SettlementWeekly>chunk(10_000, txManager)
+                .<SettlementWeeklyFindTargetDto, SettlementWeekly>chunk(5_000, txManager)
                 .reader(settlementWeeklyReader(null, null))
                 .processor(settlementWeeklyProcessor())
                 .writer(settlementWeeklyWriter())
@@ -119,7 +119,7 @@ public class WeeklyBatchConfig {
                 .sqlSessionFactory(sqlSessionFactory)
                 .queryId("com.profect.tickle.batch.domain.settlement.mapper.SettlementWeeklyMapper.aggregateFromDailyToWeekly")
                 .parameterValues(params)
-                .pageSize(50_000)
+                .pageSize(5_000)
                 .maxItemCount(Integer.MAX_VALUE)
                 .build();
     }
