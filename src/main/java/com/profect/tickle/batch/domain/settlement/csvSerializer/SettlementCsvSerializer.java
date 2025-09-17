@@ -37,7 +37,7 @@ public class SettlementCsvSerializer {
                     .append(item.getStatus().getId()).append(',');
             // 2) performanceTitle (CSV quote 처리)
             appendCsvField(sb, item.getPerformanceTitle());
-            sb.append(FMT.format(item.getPerformanceEndDate())).append(',')
+            sb.append(item.getPerformanceEndDate()).append(',')
                     .append(item.getReservationCode()).append(',')
                     .append(item.getSalesAmount()).append(',')
                     .append(item.getRefundAmount()).append(',')
@@ -45,7 +45,7 @@ public class SettlementCsvSerializer {
                     .append(item.getContractCharge()).append(',')
                     .append(item.getCommission()).append(',')
                     .append(item.getNetAmount()).append(',')
-                    .append(FMT.format(item.getCreatedAt()))
+                    .append(item.getCreatedAt())
                     .append('\n');
         }
         return sb.toString();
@@ -65,7 +65,7 @@ public class SettlementCsvSerializer {
             sb.append(item.getMember().getId()).append(',')
                     .append(item.getStatus().getId()).append(',');
             appendCsvField(sb, item.getPerformanceTitle());
-            sb.append(FMT.format(item.getPerformanceEndDate())).append(',')
+            sb.append(item.getPerformanceEndDate()).append(',')
                     .append(item.getYear()).append(',')
                     .append(item.getMonth()).append(',')
                     .append(item.getDay()).append(',')
@@ -75,7 +75,7 @@ public class SettlementCsvSerializer {
                     .append(item.getContractCharge()).append(',')
                     .append(item.getDailyCommission()).append(',')
                     .append(item.getDailyNetAmount()).append(',')
-                    .append(FMT.format(item.getDailyCreatedAt()))
+                    .append(item.getDailyCreatedAt())
                     .append('\n');
         }
         return sb.toString();
