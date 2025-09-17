@@ -27,6 +27,7 @@ public class EventCoreLockService {
 
     //TODO: 임계영역에 대해서 동시성을 보장하면 원하는 결과가 나올겁니다?
     //TODO: 영한님의 고급 1편을 보세요. 자바 코드에 대한 동시성을 찾아보세요
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public EventDecision applyCore(Long eventId, Long memberId) {
         Event event = eventRepository.findById(eventId)
@@ -47,17 +48,21 @@ public class EventCoreLockService {
                 eventId, delta,
                 StatusIds.Event.IN_PROGRESS,
                 StatusIds.Event.COMPLETED);
-        if (rows.isEmpty())
-            throw new BusinessException(ErrorCode.EVENT_ALREADY_COMPLETED);
+
+        if (rows.isEmpty()) throw new BusinessException(ErrorCode.EVENT_ALREADY_COMPLETED);
 
         var r = rows.get(0);
         boolean completed = r.getStatusId().equals(StatusIds.Event.COMPLETED);
-        Long seatId = null;
 
-        // 4) 좌석 발급 (종료시에만 시도)
+        Long seatId = null;
+        boolean winner = false;
+
         if (completed) {
             seatId = reservationService.assignSeatForWinner(eventId, memberId);
+            System.out.println("seatId = " + seatId);
+            winner = (seatId != null);  // ★ 좌석 배정 성공 시에만 winner
         }
-        return new EventDecision(eventId, memberId, delta, completed, r.getEventAccrued(), seatId);
+
+        return new EventDecision(eventId, memberId, delta, winner, r.getEventAccrued(), seatId);
     }
 }

@@ -7,8 +7,10 @@ import com.profect.tickle.domain.point.entity.Point;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.domain.point.repository.PointRepository;
 import com.profect.tickle.domain.reservation.entity.Reservation;
+import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
+import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
@@ -38,12 +40,6 @@ public class PostActionsService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void reserveSeatAndCreateReservation(Long seatId, Long memberId, int accrued) {
-        final Long RESERVED = statusProvider.provide(StatusIds.Seat.RESERVED).getId();
-        final Long AVAILABLE = statusProvider.provide(StatusIds.Seat.AVAILABLE).getId();
-
-        int updated = seatRepository.tryReserveSeat(seatId, memberId, RESERVED, AVAILABLE);
-        if (updated == 0) return;
-
         Long perfId = seatRepository.findPerformanceIdBySeatId(seatId);
         Reservation r = Reservation.create(
                 memberRepository.getReferenceById(memberId),

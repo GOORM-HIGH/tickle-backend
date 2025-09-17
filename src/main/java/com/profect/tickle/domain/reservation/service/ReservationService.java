@@ -118,23 +118,20 @@ public class ReservationService {
 
     @Transactional
     public Long assignSeatForWinner(Long eventId, Long memberId) {
-        String seatCode = generateSeatCode(); // 기존 메서드 활용
-
-        var rows = seatRepository.assignSeatOnce(
-                eventId,
-                memberId,
-                StatusIds.Seat.RESERVED,
-                StatusIds.Seat.AVAILABLE,
-                seatCode
-        );
-
-        if (rows.isEmpty()) {
-            log.info("Event {}: member {} 좌석 발급 실패 (경쟁에서 탈락)", eventId, memberId);
-            return null; // 다른 트랜잭션이 이미 선점함
+        Long seatId = /* event.getSeat().getId() 혹은 */ seatRepository.findSeatIdByEvent(eventId);
+        if (seatId == null) {
+            log.warn("Event {}: 좌석 미지정", eventId);
+            return null;
         }
 
-        Long seatId = rows.get(0).getSeatId();
-        log.info("Event {}: member {} 좌석 {} 발급 성공", eventId, memberId, seatId);
+        // 2) 당첨자에게 좌석 ‘배정’ (상태는 이미 RESERVED(13))
+        final Long RESERVED = statusProvider.provide(StatusIds.Seat.RESERVED).getId();
+        int updated = seatRepository.assignPreReservedSeatToMember(seatId, memberId);
+        if (updated == 0) {
+            log.error("Event {}: seat {} 배정 실패 (경합 탈락 or 상태 변경)", eventId, seatId);
+            return null;
+        }
+        log.error("Event {}: member {} 좌석 {} 배정 성공", eventId, memberId, seatId);
         return seatId;
     }
 

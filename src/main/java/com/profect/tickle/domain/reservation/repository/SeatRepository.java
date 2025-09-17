@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.reservation.repository;
 
+import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.performance.entity.HallType;
 import com.profect.tickle.domain.reservation.dto.response.reservation.SeatInfoResponseDto;
 import com.profect.tickle.domain.reservation.entity.Seat;
@@ -96,40 +97,58 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-        update Seat s
-           set s.member.id = :memberId,
-               s.status.id = :reservedStatusId
-         where s.id = :seatId
-           and s.status.id = :availableStatusId
-           and (s.member.id is null or s.member.id = :memberId)
-    """)
-    int tryReserveSeat(@Param("seatId") Long seatId,
-                       @Param("memberId") Long memberId,
-                       @Param("reservedStatusId") Long reservedStatusId,
-                       @Param("availableStatusId") Long availableStatusId);
+    update Seat s
+       set s.member = :member,
+           s.status = :reservedStatus
+     where s.id = :seatId
+       and s.status = :reservedStatus
+       and (s.member is null or s.member = :member)
+""")
+    int tryReserveSeatWhenReserved(@Param("seatId") Long seatId,
+                                   @Param("member") Member member,
+                                   @Param("reservedStatus") Status reservedStatus);
 
     @Query("""
         select s.performance.id
           from Seat s
          where s.id = :seatId
     """)
+
     Long findPerformanceIdBySeatId(@Param("seatId") Long seatId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        UPDATE seat
-           SET member_id = :memberId,
-               status_id = :reserved,
-               seat_code = :seatCode
-         WHERE event_id = :eventId
-           AND member_id IS NULL
-           AND status_id = :available
-        RETURNING seat_id AS seatId
-        """, nativeQuery = true)
-    List<SeatRow> assignSeatOnce(@Param("eventId") Long eventId,
-                                 @Param("memberId") Long memberId,
-                                 @Param("reserved") Long reserved,
-                                 @Param("available") Long available,
-                                 @Param("seatCode") String seatCode);
+    UPDATE seat
+       SET member_id = :memberId,
+           status_id = :reserved,
+           seat_code = :seatCode
+     WHERE seat_id = (
+           SELECT seat_id
+             FROM seat
+            WHERE event_id = :eventId
+              AND member_id IS NULL
+              AND status_id = :available
+            ORDER BY seat_id
+            LIMIT 1
+       )
+    RETURNING seat_id AS seatId
+    """, nativeQuery = true)
+    List<SeatRow> assignSeatEventOnce(@Param("eventId") Long eventId,
+                                      @Param("memberId") Long memberId,
+                                      @Param("reserved") Long reserved,
+                                      @Param("available") Long available,
+                                      @Param("seatCode") String seatCode);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    update Seat s
+       set s.member.id = :memberId
+     where s.id = :seatId
+""")
+    int assignPreReservedSeatToMember(@Param("seatId") Long seatId,
+                                      @Param("memberId") Long memberId);
+
+    @Query(value = "select seat_id from seat where event_id = :eventId limit 1", nativeQuery = true)
+    Long findSeatIdByEvent(@Param("eventId") Long eventId);
 
 }
