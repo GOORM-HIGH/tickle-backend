@@ -1,6 +1,8 @@
 package com.profect.tickle.batch.domain.settlement.settlementDetail;
 
 import com.profect.tickle.batch.domain.settlement.csvSerializer.SettlementCsvSerializer;
+import com.profect.tickle.batch.domain.settlement.custom.KeysetPagingItemReader;
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetTestDto;
 import com.profect.tickle.batch.listener.ChunkTimingListener;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
@@ -14,6 +16,7 @@ import com.profect.tickle.global.status.repository.StatusRepository;
 import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.batch.MyBatisPagingItemReader;
 import org.mybatis.spring.batch.builder.MyBatisPagingItemReaderBuilder;
 import org.postgresql.PGConnection;
@@ -26,6 +29,7 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -51,6 +55,7 @@ public class DetailBatchConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager txManager;
     private final SqlSessionFactory sqlSessionFactory;
+    private final SqlSessionTemplate sqlSessionTemplate;
     private final DataSource dataSource;
     private final MemberRepository memberRepository;
     private final StatusRepository statusRepository;
@@ -72,13 +77,14 @@ public class DetailBatchConfig {
     /**
      * 건별 정산 Step
      * Step Name: settlementDetailStep
-     * Chunk Size: 10_000
+     * Chunk Size: 5_000
      */
     @Bean
     public Step settlementDetailStep() {
         return new StepBuilder("settlementDetailStep", jobRepository)
-                .<SettlementDetailFindTargetDto, SettlementDetail>chunk(10_000, txManager)
-                .reader(settlementDetailReader(null, null))
+                .<SettlementDetailFindTargetDto, SettlementDetail>chunk(50_000, txManager)
+                .reader(settlementDetailReader(null, null, null))
+//                .reader(settlementDetailReader(null, null))
                 .processor(settlementDetailProcessor())
                 .writer(settlementDetailCopyWriter()) // COPY 방식
 //                .writer(settlementDetailWriter()) // batchUpdate 방식
@@ -88,31 +94,60 @@ public class DetailBatchConfig {
     }
 
     /**
-     * 건별 정산 MyBatisPagingItemReader
-     * Paging Size: 50_000
+     * 건별 정산 ItemStreamReader : Custom_KeysetPagingItemReader
+     * Paging Size: 5_000
      * @param settlementBatchStartedAt: 건별 정산, 배치 메타테이블에 insert, update할 배치 시간(from. JobLauncher)
      * @param lastTimeSeconds: beforStep 단계에서 배치 메타테이블로부터 가져온 마지막 배치 시간(where절 비교용)
+     * @param lastProcessedId: no offset(keyset paging) key
      * @return SettlementDetailFindTargetDto
      */
     @Bean
     @StepScope
-    public MyBatisPagingItemReader<SettlementDetailFindTargetDto> settlementDetailReader(
+    public ItemStreamReader<SettlementDetailFindTargetDto> settlementDetailReader(
             @Value("#{jobParameters['settlementBatchStartedAt']}") String settlementBatchStartedAt,
-            @Value("#{stepExecutionContext['lastTimeSeconds']}") Instant lastTimeSeconds
+            @Value("#{stepExecutionContext['lastTimeSeconds']}") Instant lastTimeSeconds,
+            @Value("#{stepExecutionContext['lastProcessedId'] ?: 0L}") Long lastProcessedId
     ) {
-        Map<String, Object> params = Map.of(
-                "now", Instant.parse(settlementBatchStartedAt),
-                "lastTimeSeconds", lastTimeSeconds
-        );
-
-        return new MyBatisPagingItemReaderBuilder<SettlementDetailFindTargetDto>()
-                .sqlSessionFactory(sqlSessionFactory)
-                .queryId("com.profect.tickle.batch.domain.settlement.mapper.SettlementDetailMapper.findTargetFromReservations")
-                .parameterValues(params)
-                .pageSize(50_000)
-                .maxItemCount(Integer.MAX_VALUE)
-                .build();
+        KeysetPagingItemReader<SettlementDetailFindTargetDto> reader =
+                new KeysetPagingItemReader<>(
+                        sqlSessionTemplate,
+                        "com.profect.tickle.batch.domain.settlement.mapper.SettlementDetailMapper.findTargetFromReservations",
+                        Instant.parse(settlementBatchStartedAt),
+                        lastTimeSeconds,
+                        lastProcessedId,
+                        5_000, // 청크 사이즈
+                        dto -> dto.getReservationId()
+                );
+        return reader;
     }
+
+//    /**
+//     * 건별 정산 MyBatisPagingItemReader
+//     * Paging Size: 5_000
+//     * @param settlementBatchStartedAt: 건별 정산, 배치 메타테이블에 insert, update할 배치 시간(from. JobLauncher)
+//     * @param lastTimeSeconds: beforStep 단계에서 배치 메타테이블로부터 가져온 마지막 배치 시간(where절 비교용)
+//     * @return SettlementDetailFindTargetDto
+//     */
+//    @Bean
+//    @StepScope
+//    public MyBatisPagingItemReader<SettlementDetailFindTargetTestDto> settlementDetailReader(
+//            @Value("#{jobParameters['settlementBatchStartedAt']}") String settlementBatchStartedAt,
+//            @Value("#{stepExecutionContext['lastTimeSeconds']}") Instant lastTimeSeconds
+//    ) {
+//
+//        Map<String, Object> params = Map.of(
+//                "now", Instant.parse(settlementBatchStartedAt),
+//                "lastTimeSeconds", lastTimeSeconds
+//        );
+//
+//        return new MyBatisPagingItemReaderBuilder<SettlementDetailFindTargetTestDto>()
+//                .sqlSessionFactory(sqlSessionFactory)
+//                .queryId("com.profect.tickle.batch.domain.settlement.mapper.SettlementDetailMapper.findTargetFromReservationsTest")
+//                .parameterValues(params)
+//                .pageSize(5_000)
+//                .maxItemCount(Integer.MAX_VALUE)
+//                .build();
+//    }
 
     /**
      * 건별 정산 ItemProcessor
@@ -177,9 +212,8 @@ public class DetailBatchConfig {
                 CopyManager copyManager = new CopyManager((BaseConnection) pgConn);
 
                 String sb = settlementCsvSerializer.detailCsvSerializer(items);
-
                 // 3) COPY ... FROM STDIN
-                String copySql = ""
+                String copySql =""
                         + "COPY settlement_detail("
                         +   "member_id, status_id, performance_title, performance_end_date,"
                         +   "reservation_code, settlement_detail_sales_amount,"

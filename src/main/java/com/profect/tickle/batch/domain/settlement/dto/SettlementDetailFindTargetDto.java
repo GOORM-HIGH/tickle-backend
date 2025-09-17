@@ -13,40 +13,43 @@ import java.time.Instant;
 @Getter
 public class SettlementDetailFindTargetDto {
 
-    private Long memberId;
+    private Long reservationId;
     private Long reservationStatusId;
-    private String performanceTitle; // 공연 제목
-    private Instant performanceEndDate; // 공연 예매 종료일시
     private String reservationCode; // 예매 코드
     private Long reservationPrice; // 예매 금액
+    private Long memberId;
+    private String performanceTitle; // 공연 제목
+    private Instant performanceEndDate; // 공연 예매 종료일시
     private BigDecimal contractCharge; // 정산 적용 수수료율
     private Instant settlementDetailCreatedAt;
 
     @Builder
-    private SettlementDetailFindTargetDto(Long memberId, Long reservationStatusId, String performanceTitle,
-                                         Instant performanceEndDate, String reservationCode, Long reservationPrice,
-                                         BigDecimal contractCharge, Instant settlementDetailCreatedAt) {
-        this.memberId = memberId;
+    private SettlementDetailFindTargetDto(Long reservationId, Long reservationStatusId, String reservationCode, Long reservationPrice,
+                                          Long memberId, String performanceTitle, Instant performanceEndDate,
+                                          BigDecimal contractCharge, Instant settlementDetailCreatedAt) {
+        this.reservationId = reservationId;
         this.reservationStatusId = reservationStatusId;
-        this.performanceTitle = performanceTitle;
-        this.performanceEndDate = performanceEndDate;
         this.reservationCode = reservationCode;
         this.reservationPrice = reservationPrice;
+        this.memberId = memberId;
+        this.performanceTitle = performanceTitle;
+        this.performanceEndDate = performanceEndDate;
         this.contractCharge = contractCharge;
         this.settlementDetailCreatedAt = settlementDetailCreatedAt;
     }
 
-    public static SettlementDetailFindTargetDto of(Long memberId, Long reservationStatusId,
+    public static SettlementDetailFindTargetDto of(Long reservationId, Long reservationStatusId,
+                                                   String reservationCode, Long reservationPrice, Long memberId,
                                                    String performanceTitle, Instant performanceEndDate,
-                                                   String reservationCode, Long reservationPrice,
                                                    BigDecimal contractCharge, Instant settlementDetailCreatedAt) {
         return SettlementDetailFindTargetDto.builder()
-                .memberId(memberId)
+                .reservationId(reservationId)
                 .reservationStatusId(reservationStatusId)
-                .performanceTitle(performanceTitle)
-                .performanceEndDate(performanceEndDate)
                 .reservationCode(reservationCode)
                 .reservationPrice(reservationPrice)
+                .memberId(memberId)
+                .performanceTitle(performanceTitle)
+                .performanceEndDate(performanceEndDate)
                 .contractCharge(contractCharge)
                 .settlementDetailCreatedAt(settlementDetailCreatedAt)
                 .build();

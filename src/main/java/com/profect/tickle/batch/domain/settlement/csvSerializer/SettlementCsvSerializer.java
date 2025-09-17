@@ -30,8 +30,8 @@ public class SettlementCsvSerializer {
         if(items instanceof Collection<?> coll){
             capacity = coll.size() * 200;
         }
-        StringBuilder sb = new StringBuilder(capacity);
 
+        StringBuilder sb = new StringBuilder(capacity);
         for(SettlementDetail item : items) {
             // 숫자/문자/타임스탬프를 CSV 규격으로 찍어준다 (쉼표, 개행)
             sb.append(item.getMember().getId()).append(',')

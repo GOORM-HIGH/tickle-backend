@@ -1,5 +1,6 @@
 package com.profect.tickle.domain.settlement.entity;
 
+import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetTestDto;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.batch.domain.settlement.dto.SettlementDetailFindTargetDto;
 import com.profect.tickle.global.status.Status;
