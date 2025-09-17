@@ -64,7 +64,8 @@ public interface SettlementResponseMapper {
     /**
      * 일별 테이블에서 미정산 금액 조회
      */
-    Long sumUnsettledAmount(Long memberId, Status status);
+    Long sumUnsettledAmount(@Param("memberId") Long memberId,
+                            @Param("status") Status status);
 
     /**
      * 엑셀 다운로드용 청크 단위 조회
