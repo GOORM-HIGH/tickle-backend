@@ -38,7 +38,7 @@ public class SettlementDetail {
     @Column(name = "performance_end_date", nullable = false)
     private Instant performanceEndDate;
 
-    @Column(name = "reservation_code", length = 15, nullable = false)
+    @Column(name = "reservation_code", length = 30, nullable = false)
     private String reservationCode;
 
     @Column(name = "settlement_detail_sales_amount", nullable = false)
