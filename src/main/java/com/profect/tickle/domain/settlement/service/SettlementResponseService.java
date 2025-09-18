@@ -21,6 +21,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -276,8 +278,12 @@ public class SettlementResponseService {
      */
     private void downloadExcelFile(SXSSFWorkbook workbook, HttpServletResponse response, String fileName) throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "_" +
-                LocalDate.now() + ".xlsx\"");
+        String downloadFileName = fileName + "_" + LocalDate.now() + ".xlsx";
+        String encodedFileName = URLEncoder.encode(downloadFileName, StandardCharsets.UTF_8)
+                .replaceAll("\\+", "%20");
+
+        response.setHeader("Content-Disposition",
+                "attachment; filename*=UTF-8''" + encodedFileName);
 
         try (ServletOutputStream outputStream = response.getOutputStream()) {
             workbook.write(outputStream);
