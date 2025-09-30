@@ -102,7 +102,7 @@ public class MemberController {
     @Operation(summary = "회원정보수정", description = "회원정보를 수정합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원정보수정 성공"),
-            @ApiResponse(responseCode = "400", description = "유요한 수수료율이 아님"),
+            @ApiResponse(responseCode = "400", description = "유효한 수수료율이 아님"),
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
