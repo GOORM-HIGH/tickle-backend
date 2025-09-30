@@ -76,7 +76,8 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 <img width="487" height="47" alt="스크린샷 2025-09-30 오후 3 28 49" src="https://github.com/user-attachments/assets/27c6851b-9059-4049-8828-9e9be31a834e"  width="400"/></br>
 <img width="479" height="36" alt="스크린샷 2025-09-30 오후 3 29 05" src="https://github.com/user-attachments/assets/be6b88b0-843a-4a3c-bba0-887cb199bd97"  width="400"/></br>
 
-
+</br>
+</br>
 ---
 
 # 🚀 기술적 도전 과제 및 개선 사항
@@ -151,7 +152,9 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 -
 -
 
+</br>
 ---
+
 
 
 
@@ -210,6 +213,7 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 - [[Wiki] 커넥션 풀 고갈 이슈: HikariPool-1 - Connection is not available, request timed out after…](https://dev-haen.tistory.com/115)
 - 톰캣 스레드 위키 추가 예정
 
+</br>
 ---
 
 ## 🔔 알림
