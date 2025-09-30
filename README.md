@@ -22,7 +22,7 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 | 서 해윤  | Backend / 팀장 & 풀스택 | - 이벤트 기능 구현 </br> - 포인트 결제 기능 구현 |[GitHub](https://github.com/Haennni) |
 | 나 용성  | Backend / 팀원 & 풀스택 | - 채팅 기능 구현 |[GitHub](https://github.com/BE-Member) |
 | 봉 선호  | Backend / 팀원 & 풀스택 | - 정산 기능 구현 |[GitHub](https://github.com/BE-Member) |
-| 심 석현  | Backend / 팀원 & 풀스택 | - 예매 기능 구현 |[GitHub](https://github.com/BE-Member) |
+| 심 석현  | Backend / 팀원 & 풀스택 | - 예매 기능 구현 |[GitHub](https://github.com/Pangtaek) |
 | 임 광택  | Backend / 팀원 & 풀스택 | - 로그인 및 회원가입 구현 </br> - 알림 기능 구현 |[GitHub](https://github.com/BE-Member) |
 | 홍 주이  | Backend / 팀원 & 풀스택 | - 공연 조회 기능 구현 |[GitHub](https://github.com/BE-Member) |
 
@@ -250,11 +250,6 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 - 20K의 SSE 연결을 요청했을 때, 평균 응답속도 1.8초로 모든 연결에 성공.
 </br>
 
-### **개선 과정별 성능 비교**
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/2f492d72-e5df-45c8-923d-abd179fcf8b8" />
-
-</br> 
-
 ## 2. **20K 브로드캐스트 기능 개선**
 ### **문제**
 20K의 사용자를 SSE 연결을 후, 브로드캐스트 이벤트(제휴업체에서 공연을 생성)를 발생시킴. 약30초의 응답시간이 발생했고, 일부 유저에게만 실시간 알림이 도착함. 병목지점을 분석하니 DB에 알림을 저장하는 과정과 알림을 송신하는 과정에서 병목이 발생.
@@ -291,8 +286,8 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 </br>
 
 ## 🚀 트러블슈팅
--
--
+- [[Wiki] Postgresql Insert 성능 테스트 기록](https://www.notion.so/Postresql-Insert-262c0a8788ad805ba20ce70c404c66d2?source=copy_link)
+- [[Wiki] SSE 성능테스트 기록](https://www.notion.so/SSE-261c0a8788ad80198101d28e00c089ea?source=copy_link)
 
 ---
 
