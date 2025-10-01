@@ -57,8 +57,8 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 |---------|---|------|
 | 공 연 | 메인 페이지 | <img src="https://github.com/user-attachments/assets/f2a31836-22a4-4c21-9434-4d97093a1db8" width="400"/>
 | 공 연 | 장르별 페이지 | <img src="https://github.com/user-attachments/assets/21e66eaf-c9f5-48e1-9404-e1bdf4de7c5f" width="400"/>
-| 공 연 | 공연 상세 조회 페이지 | <img src="https://github.com/user-attachments/assets/e7fda9c5-1ae1-4bfb-922f-89c8471246ec" width="400"/>
-| 공 연 | 공연 검색 페이지 | <img src="https://github.com/user-attachments/assets/5d431082-65e2-42be-a349-2669ba05fd66" width="400"/>
+| 공 연 | 공연 상세 조회 페이지 | <img src="https://github.com/user-attachments/assets/5d431082-65e2-42be-a349-2669ba05fd66" width="400"/>
+| 공 연 | 공연 검색 페이지 | <img src="https://github.com/user-attachments/assets/8e586970-99c6-432d-a19d-ae73822b2098" width="400" />
 | 사용자 | 개인 회원가입 페이지  | <img src="https://github.com/user-attachments/assets/6a50c6b3-22aa-4ac7-8190-79497c8e8215" width="400"/>
 | 사용자 | 사업자 회원가입 페이지  | <img src="https://github.com/user-attachments/assets/ac1b73d9-d29c-4a9c-80c4-bba6946fbef8" width="400"/>
 | 사용자 | 로그인 페이지  | <img src="https://github.com/user-attachments/assets/cd3f200d-a5b2-4fca-bc6a-40d338ef25ae" width="400"/>
@@ -150,7 +150,6 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 ### **성과**
 - 300 vuser 동시 요청 시 약 319 TPS로 안정화.
 - 대규모 데이터(3000K 건)에서도 빠른 조회 가능.
-- 
 </br>
 
 ### **개선 과정별 성능 비교**
@@ -159,9 +158,7 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 </br>
 
 ## 🚀 트러블슈팅
--
--
-
+- [[Wiki] 공연 조회 속도 이슈: 대규모 데이터 처리로 인한 응답속도 저하](https://velog.io/@ju2hong/공연-조회-속도-향상-시키기)
 </br>
 
 ---
