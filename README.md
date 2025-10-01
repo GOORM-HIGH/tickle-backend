@@ -24,7 +24,7 @@ Tickle은 공연·이벤트를 쉽고 빠르게 예매할 수 있는 티켓 예�
 | 봉 선호  | Backend / 팀원 & 풀스택 | - 정산 기능 구현 |[GitHub](https://github.com/Ohnus) |
 | 심 석현  | Backend / 팀원 & 풀스택 | - 예매 기능 구현 |[GitHub](https://github.com/shimbaa) |
 | 임 광택  | Backend / 팀원 & 풀스택 | - 로그인 및 회원가입 구현 </br> - 알림 기능 구현 |[GitHub](https://github.com/Pangtaek) |
-| 홍 주이  | Backend / 팀원 & 풀스택 | - 공연 조회 기능 구현 |[GitHub](https://github.com/ju2hong) |
+| 홍 주이  | Backend / 팀원 & 풀스택 | - 공연 조회 기능 구현 </br> - 검색 기능 구현 |[GitHub](https://github.com/ju2hong) |
 
 </br>
 
