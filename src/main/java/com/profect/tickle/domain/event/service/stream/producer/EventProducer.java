@@ -1,6 +1,6 @@
-package com.profect.tickle.domain.event.stream.producer;
+package com.profect.tickle.domain.event.service.stream.producer;
 
-import com.profect.tickle.domain.event.stream.dto.EventMessage;
+import com.profect.tickle.domain.event.service.stream.dto.EventMessage;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;

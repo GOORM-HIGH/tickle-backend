@@ -34,14 +34,11 @@ import java.time.Duration;
 @EnableRetry
 public class RedisConfig {
 
-    @Value("${spring.data.redis.host}")
+    @Value("${spring.redis.host}")
     private String host;
 
-    @Value("${spring.data.redis.port}")
+    @Value("${spring.redis.port}")
     private int port;
-
-    @Value("${spring.data.redis.password}")
-    private String password;
 
     private static final String REDISSON_HOST_PREFIX = "redis://";
 
@@ -53,7 +50,6 @@ public class RedisConfig {
 
         SingleServerConfig s = config.useSingleServer()
                 .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
-                .setPassword(password)
                 .setConnectionMinimumIdleSize(8)
                 .setConnectionPoolSize(32)
                 .setSubscriptionConnectionMinimumIdleSize(2)
@@ -76,7 +72,6 @@ public class RedisConfig {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(host);
         redisConfig.setPort(port);
-        redisConfig.setPassword(password);
 
         // Lettuce Pool 설정 (선택사항)
         LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()

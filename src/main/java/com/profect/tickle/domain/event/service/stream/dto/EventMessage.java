@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.event.stream.dto;
+package com.profect.tickle.domain.event.service.stream.dto;
 
 import java.io.Serializable;
 

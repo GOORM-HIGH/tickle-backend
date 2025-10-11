@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.event.stream;
+package com.profect.tickle.domain.event.service.stream;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

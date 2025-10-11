@@ -1,9 +1,9 @@
 // com.profect.tickle.domain.event.stream.consumer.TicketEventWorker
-package com.profect.tickle.domain.event.stream.consumer;
+package com.profect.tickle.domain.event.service.stream.consumer;
 
 import com.profect.tickle.domain.event.dto.EventDecision;
-import com.profect.tickle.domain.event.service.event.EventCoreLockService;
-import com.profect.tickle.domain.event.service.event.PostActionsService;
+import com.profect.tickle.domain.event.service.application.EventCoreLockService;
+import com.profect.tickle.domain.event.service.application.PostActionsService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import static com.profect.tickle.domain.event.stream.StreamInitializer.GROUP;
-import static com.profect.tickle.domain.event.stream.StreamInitializer.STREAM_KEY;
+import static com.profect.tickle.domain.event.service.stream.StreamInitializer.GROUP;
+import static com.profect.tickle.domain.event.service.stream.StreamInitializer.STREAM_KEY;
 import static com.profect.tickle.domain.point.entity.PointTarget.EVENT;
 
 @Slf4j

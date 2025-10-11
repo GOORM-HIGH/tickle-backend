@@ -1,4 +1,4 @@
-package com.profect.tickle.domain.event.service.event;
+package com.profect.tickle.domain.event.service.application;
 
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
