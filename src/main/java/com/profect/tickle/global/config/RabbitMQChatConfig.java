@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
  * 4. 서버 장애 시 메시지 복구
  */
 @Configuration
-public class RabbitMQConfig {
+public class RabbitMQChatConfig {
 
     // ===== 큐 정의 =====
     public static final String CHAT_MESSAGE_QUEUE = "chat.message.queue";
@@ -33,41 +33,6 @@ public class RabbitMQConfig {
     public static final String MESSAGE_ROUTING_KEY = "message";
     public static final String NOTIFICATION_ROUTING_KEY = "notification";
     public static final String FILE_ROUTING_KEY = "file";
-
-    /**
-     * 메시지 변환기 설정 (JSON)
-     */
-    @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
-    }
-
-    /**
-     * RabbitTemplate 설정
-     */
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(jsonMessageConverter());
-        template.setMandatory(true); // 메시지 전달 실패 시 예외 발생
-        return template;
-    }
-
-    /**
-     * 리스너 컨테이너 팩토리 설정
-     */
-    @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
-        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(jsonMessageConverter());
-        factory.setConcurrentConsumers(10); // 동시 컨슈머 수
-        factory.setMaxConcurrentConsumers(50); // 최대 동시 컨슈머 수
-        factory.setPrefetchCount(10); // 미리 가져올 메시지 수
-        factory.setAutoStartup(false);
-
-        return factory;
-    }
 
     /**
      * 채팅 익스체인지 생성 (Topic Exchange)
