@@ -1,14 +1,16 @@
 package com.profect.tickle.domain.event.controller;
 
-import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
+import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.entity.EventType;
-import com.profect.tickle.domain.event.service.event.CouponService;
-import com.profect.tickle.domain.event.service.event.EventService;
+import com.profect.tickle.domain.event.service.application.CouponService;
+import com.profect.tickle.domain.event.service.application.EventService;
+import com.profect.tickle.domain.event.service.rabbitmq.dto.ApplyResponseDto;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
+import com.profect.tickle.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -68,9 +70,11 @@ public class EventController {
                             content = @Content(schema = @Schema(implementation = TicketApplyResponseDto.class))),
                     @ApiResponse(responseCode = "400", description = "포인트 부족, 중복 응모 등 예외 발생")})
     @PostMapping("/ticket/{eventId}")
-    public ResultResponse<TicketApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
-        TicketApplyResponseDto dto = eventService.applyTicketEvent(eventId);
-        return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, dto);
+    public ResultResponse<ApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
+        // 포인트 ≥ 단위 금액 검증 후 MQ 전송
+        ApplyResponseDto response = eventService.applyTicketEvent(eventId);
+
+        return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, response);
     }
 
     @Operation(summary = "쿠폰 이벤트 응모", description = "유저가 쿠폰 이벤트에 응모하여 쿠폰을 발급받습니다.",

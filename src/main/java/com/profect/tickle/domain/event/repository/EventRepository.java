@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface EventRepository extends JpaRepository<Event, Long> {
 
 
+    List<Event> findByAccrued(Integer accrued);
+
     interface AccrueRow {
         Integer getEventAccrued();
         Long getStatusId();

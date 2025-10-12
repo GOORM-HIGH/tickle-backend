@@ -4,6 +4,7 @@ import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
 import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
 import com.profect.tickle.domain.event.dto.response.*;
 import com.profect.tickle.domain.event.entity.EventType;
+import com.profect.tickle.domain.event.service.rabbitmq.dto.ApplyResponseDto;
 import com.profect.tickle.global.paging.PagingResponse;
 
 import java.time.LocalDate;
@@ -14,7 +15,7 @@ public interface EventService {
 
     TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request);
 
-    TicketApplyResponseDto applyTicketEvent(Long eventId);
+    ApplyResponseDto applyTicketEvent(Long eventId);
 
     PagingResponse<EventListResponseDto> getEventList(EventType type, int page, int size);
 

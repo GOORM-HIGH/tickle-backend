@@ -12,9 +12,9 @@ import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
 import com.profect.tickle.domain.event.service.application.EventService;
-import com.profect.tickle.domain.event.service.message.publisher.EventPublisher;
-import com.profect.tickle.domain.event.service.stream.dto.EventMessage;
-import com.profect.tickle.domain.event.service.stream.producer.EventProducer;
+import com.profect.tickle.domain.event.service.rabbitmq.dto.ApplyResponseDto;
+import com.profect.tickle.domain.event.service.rabbitmq.producer.TicketEventProducer;
+import com.profect.tickle.domain.member.repository.MemberRepository;
 import com.profect.tickle.domain.performance.entity.Performance;
 import com.profect.tickle.domain.performance.repository.PerformanceRepository;
 import com.profect.tickle.domain.point.entity.PointTarget;
@@ -58,7 +58,8 @@ public class EventServiceImpl implements EventService {
     private final CouponReceivedMapper couponReceivedMapper;
     private final PerformanceRepository performanceRepository;
     private final StatusProvider statusProvider;
-    private final EventProducer producer;
+    private final TicketEventProducer eventProducer;
+    private final MemberRepository memberRepository;
 
 
     @Override
@@ -102,13 +103,25 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public TicketApplyResponseDto applyTicketEvent(Long eventId) {
+    public ApplyResponseDto applyTicketEvent(Long eventId) {
         Long memberId = SecurityUtil.getSignInMemberId();
 
-        producer.appendToStream(new EventMessage(eventId, memberId));
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
 
-        return TicketApplyResponseDto.from(eventId, memberId);
+        int perPrice = event.getPerPrice();
+        int currentPoint = memberRepository.findPointById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (currentPoint < perPrice) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+
+        eventProducer.sendApplyRequest(eventId, memberId);
+
+        return ApplyResponseDto.queued();
     }
+
 
     @Override
     @Transactional(readOnly = true)
