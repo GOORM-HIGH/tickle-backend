@@ -1,4 +1,4 @@
-package com.profect.tickle.global.rabbitMQ;
+package com.profect.tickle.global.rabbitMQ.config;
 
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -19,6 +19,7 @@ public class RabbitMQConfig {
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
+        template.setReplyTimeout(5000); //5초
         template.setMessageConverter(jsonMessageConverter());
         return template;
     }
@@ -28,8 +29,9 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
-        factory.setConcurrentConsumers(5);
-        factory.setMaxConcurrentConsumers(10);
+        factory.setConcurrentConsumers(10); // 기본 1 → 늘리기
+        factory.setMaxConcurrentConsumers(30);
+        factory.setPrefetchCount(10);
         return factory;
     }
 }
