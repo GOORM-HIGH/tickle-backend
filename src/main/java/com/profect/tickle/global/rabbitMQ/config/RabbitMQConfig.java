@@ -29,8 +29,8 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
-        factory.setConcurrentConsumers(10); // 기본 1 → 늘리기
-        factory.setMaxConcurrentConsumers(30);
+        factory.setConcurrentConsumers(20); // 기본 10 → 20 이상
+        factory.setMaxConcurrentConsumers(50); // 최대
         factory.setPrefetchCount(10);
         return factory;
     }

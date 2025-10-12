@@ -1,11 +1,6 @@
 package com.profect.tickle.global.rabbitMQ.config;
 
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,6 +15,31 @@ public class RabbitMQEventConfig {
     public static final String EVENT_QUEUE = "event.ticket.queue";
     public static final String EVENT_ROUTING_KEY = "event.ticket";
 
+    public static final String POST_EVENT_EXCHANGE = "post.actions.exchange";
+    public static final String POST_EVENT_QUEUE = "post.actions.queue";
+    public static final String POST_EVENT_ROUTING_KEY = "post.actions";
+
+
+    @Bean
+    public TopicExchange postActionsExchange() {
+        return new TopicExchange("post.actions.exchange", true, false);
+    }
+
+    @Bean
+    public Queue postActionsQueue() {
+        return QueueBuilder.durable("post.actions.queue")
+                .withArgument("x-message-ttl", 300000) // 메시지 TTL (5분)
+                .build();
+    }
+
+    @Bean
+    public Binding postActionsBinding() {
+        return BindingBuilder
+                .bind(postActionsQueue())
+                .to(postActionsExchange())
+                .with("post.actions");
+    }
+
     @Bean
     public TopicExchange eventExchange() {
         return new TopicExchange(EVENT_EXCHANGE, true, false);
@@ -29,7 +49,6 @@ public class RabbitMQEventConfig {
     public Queue eventQueue() {
         return QueueBuilder.durable(EVENT_QUEUE)
                 .withArgument("x-message-ttl", 300000)
-                .withArgument("x-max-length", 10000)
                 .build();
     }
 
