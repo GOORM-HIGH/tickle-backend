@@ -1,7 +1,8 @@
 package com.profect.tickle.domain.event.service.rabbitmq.consumer;
 
 import com.profect.tickle.domain.event.service.application.PostActionsService;
-import com.profect.tickle.domain.event.service.rabbitmq.dto.PostActionsMessage;
+import com.profect.tickle.domain.event.service.rabbitmq.dto.PostPointHistoryMessage;
+import com.profect.tickle.domain.event.service.rabbitmq.dto.PostReservationMessage;
 import com.profect.tickle.domain.point.entity.PointTarget;
 import com.profect.tickle.global.rabbitMQ.config.RabbitMQEventConfig;
 import lombok.RequiredArgsConstructor;
@@ -16,19 +17,13 @@ public class PostActionsConsumer {
 
     private final PostActionsService postActionsService;
 
-    @RabbitListener(queues = RabbitMQEventConfig.POST_EVENT_QUEUE)
-    public void handlePostActions(PostActionsMessage msg) {
-        try {
-            postActionsService.recordPointHistory(msg.getMemberId(), msg.getPerPrice(), PointTarget.EVENT);
+    @RabbitListener(queues = RabbitMQEventConfig.POST_POINT_QUEUE)
+    public void handlePointHistory(PostPointHistoryMessage msg) {
+        postActionsService.recordPointHistory(msg.memberId(), msg.perPrice(), PointTarget.EVENT);
+    }
 
-            if (msg.isWinner()) {
-                postActionsService.reserveSeatAndCreateReservation(
-                        msg.getSeatId(), msg.getMemberId(), msg.getAccrued());
-            }
-
-            log.info("✅ 후속 작업 완료: memberId={}, winner={}", msg.getMemberId(), msg.isWinner());
-        } catch (Exception e) {
-            log.error("❌ 후속 작업 실패: {}", msg, e);
-        }
+    @RabbitListener(queues = RabbitMQEventConfig.POST_RESERVATION_QUEUE)
+    public void handleReservation(PostReservationMessage msg) {
+        postActionsService.reserveSeatAndCreateReservation(msg.seatId(), msg.memberId(), msg.accrued());
     }
 }
