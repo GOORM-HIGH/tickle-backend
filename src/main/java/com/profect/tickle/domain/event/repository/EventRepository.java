@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.event.repository;
 
 import com.profect.tickle.domain.event.entity.Event;
+import com.profect.tickle.global.status.Status;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -22,6 +23,12 @@ public interface EventRepository extends JpaRepository<Event, Long> {
         Integer getEventAccrued();
         Long getStatusId();
     }
+
+    @Modifying
+    @Query("UPDATE Event e SET e.accrued = :accrued, e.status = :status WHERE e.id = :eventId")
+    void updateAccruedAndStatus(@Param("eventId") Long eventId,
+                                @Param("accrued") int accrued,
+                                @Param("status") Status status);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """

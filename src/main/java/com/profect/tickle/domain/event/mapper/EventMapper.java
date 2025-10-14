@@ -1,6 +1,7 @@
 package com.profect.tickle.domain.event.mapper;
 
 import com.profect.tickle.domain.event.dto.response.*;
+import com.profect.tickle.domain.event.entity.Event;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -22,4 +23,6 @@ public interface EventMapper {
     // 스케쥴러 update mapper 추가
     int markEventsAsOngoing();  // 변경된 행 수 리턴
     int markEventsAsFinished();
+
+    List<Event> findEventsToMarkAsOngoing();
 }

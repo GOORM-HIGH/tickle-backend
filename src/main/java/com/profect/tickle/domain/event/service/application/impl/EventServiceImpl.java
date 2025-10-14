@@ -11,6 +11,7 @@ import com.profect.tickle.domain.event.mapper.CouponReceivedMapper;
 import com.profect.tickle.domain.event.mapper.EventMapper;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
+import com.profect.tickle.domain.event.service.application.EventPreconditionService;
 import com.profect.tickle.domain.event.service.application.EventService;
 import com.profect.tickle.domain.event.service.rabbitmq.dto.ApplyResponseDto;
 import com.profect.tickle.domain.event.service.rabbitmq.producer.TicketEventProducer;
@@ -60,6 +61,7 @@ public class EventServiceImpl implements EventService {
     private final StatusProvider statusProvider;
     private final TicketEventProducer eventProducer;
     private final MemberRepository memberRepository;
+    private final EventPreconditionService preconditionService;
 
 
     @Override
@@ -106,18 +108,9 @@ public class EventServiceImpl implements EventService {
     public ApplyResponseDto applyTicketEvent(Long eventId) {
         Long memberId = SecurityUtil.getSignInMemberId();
 
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
+        preconditionService.validatePreApplyConditions(memberId, eventId);
 
-        int perPrice = event.getPerPrice();
-        int currentPoint = memberRepository.findPointById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
-        if (currentPoint < perPrice) {
-            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
-        }
-
-        eventProducer.sendApplyRequest(eventId, memberId);
+        eventProducer.sendApplyRequest(memberId, eventId);
 
         return ApplyResponseDto.queued();
     }

@@ -27,7 +27,7 @@ import static com.profect.tickle.domain.event.service.stream.StreamInitializer.S
 import static com.profect.tickle.domain.point.entity.PointTarget.EVENT;
 
 @Slf4j
-@Component
+//@Component
 @RequiredArgsConstructor
 public class TicketEventWorker {
 

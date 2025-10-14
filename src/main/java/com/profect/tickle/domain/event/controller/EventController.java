@@ -71,7 +71,6 @@ public class EventController {
                     @ApiResponse(responseCode = "400", description = "포인트 부족, 중복 응모 등 예외 발생")})
     @PostMapping("/ticket/{eventId}")
     public ResultResponse<ApplyResponseDto> applyTicketEvent(@PathVariable Long eventId) {
-        // 포인트 ≥ 단위 금액 검증 후 MQ 전송
         ApplyResponseDto response = eventService.applyTicketEvent(eventId);
 
         return ResultResponse.of(ResultCode.EVENT_APPLY_SUCCESS, response);
