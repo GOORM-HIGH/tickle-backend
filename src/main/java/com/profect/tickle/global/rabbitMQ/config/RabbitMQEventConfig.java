@@ -4,6 +4,9 @@ import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 티켓 이벤트용 RabbitMQ 설정
  * - Queue, Exchange, Binding 명시적으로 설정
@@ -14,6 +17,9 @@ public class RabbitMQEventConfig {
     // ───────────────────────────────
     // [1] 티켓 응모 이벤트
     // ───────────────────────────────
+    public static final int EVENT_SHARD_COUNT = 8; // 필요에 따라 16, 32로 확장 가능
+    public static final String EVENT_ROUTING_KEY_PREFIX = "event.shard.";
+    public static final String EVENT_QUEUE_PREFIX = "event.shard.queue.";
     public static final String EVENT_EXCHANGE = "event.exchange";
     public static final String EVENT_QUEUE = "event.ticket.queue";
     public static final String EVENT_ROUTING_KEY = "event.ticket";
@@ -28,6 +34,8 @@ public class RabbitMQEventConfig {
     public static final String POST_RESERVATION_EXCHANGE = "post.reservation.exchange";
     public static final String POST_RESERVATION_QUEUE = "post.reservation.queue";
     public static final String POST_RESERVATION_ROUTING_KEY = "post.reservation";
+
+
 
 
     // ───────────────────────────────
@@ -92,5 +100,28 @@ public class RabbitMQEventConfig {
         return BindingBuilder.bind(postReservationQueue())
                 .to(postReservationExchange())
                 .with(POST_RESERVATION_ROUTING_KEY);
+    }
+
+    @Bean
+    public Declarables eventShardQueues() {
+        List<Declarable> declarables = new ArrayList<>();
+
+        TopicExchange exchange = new TopicExchange(EVENT_EXCHANGE, true, false);
+        declarables.add(exchange);
+
+        for (int i = 0; i < EVENT_SHARD_COUNT; i++) {
+            String queueName = EVENT_QUEUE_PREFIX + i;
+            String routingKey = EVENT_ROUTING_KEY_PREFIX + i;
+
+            Queue queue = QueueBuilder.durable(queueName)
+                    .withArgument("x-message-ttl", 300000)
+                    .build();
+            Binding binding = BindingBuilder.bind(queue).to(exchange).with(routingKey);
+
+            declarables.add(queue);
+            declarables.add(binding);
+        }
+
+        return new Declarables(declarables);
     }
 }

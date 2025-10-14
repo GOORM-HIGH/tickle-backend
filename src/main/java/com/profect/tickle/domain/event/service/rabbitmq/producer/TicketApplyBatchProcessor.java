@@ -1,3 +1,4 @@
+/*
 package com.profect.tickle.domain.event.service.rabbitmq.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-//@Component
+@Component
 @RequiredArgsConstructor
 public class TicketApplyBatchProcessor {
 
@@ -45,7 +46,7 @@ public class TicketApplyBatchProcessor {
 
         if (requests.isEmpty()) return;
 
-        log.info("📦 배치 응모 처리 시작 - size: {}", requests.size());
+        log.info("배치 응모 처리 시작 - size: {}", requests.size());
 
         for (ApplyRequestDto request : requests) {
             try {
@@ -64,3 +65,4 @@ public class TicketApplyBatchProcessor {
         }
     }
 }
+*/

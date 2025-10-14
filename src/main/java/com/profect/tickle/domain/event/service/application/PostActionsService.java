@@ -10,6 +10,8 @@ import com.profect.tickle.domain.reservation.entity.Reservation;
 import com.profect.tickle.domain.reservation.entity.Seat;
 import com.profect.tickle.domain.reservation.repository.ReservationRepository;
 import com.profect.tickle.domain.reservation.repository.SeatRepository;
+import com.profect.tickle.global.exception.BusinessException;
+import com.profect.tickle.global.exception.ErrorCode;
 import com.profect.tickle.global.status.Status;
 import com.profect.tickle.global.status.StatusIds;
 import com.profect.tickle.global.status.service.StatusProvider;
@@ -31,14 +33,18 @@ public class PostActionsService {
     private final PerformanceRepository performanceRepository;
     private final StatusProvider statusProvider;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+
+    @Transactional
     public void recordPointHistory(Long memberId, int amount, PointTarget target) {
+        var deducted = memberRepository.tryDeductPointReturning(memberId, amount);
+        if (deducted.isEmpty()) throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+
         Member member = memberRepository.getReferenceById(memberId);
         Point p = Point.deduct(member, amount, target);
         pointRepository.save(p);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void reserveSeatAndCreateReservation(Long seatId, Long memberId, int accrued) {
         Long perfId = seatRepository.findPerformanceIdBySeatId(seatId);
         Reservation r = Reservation.create(

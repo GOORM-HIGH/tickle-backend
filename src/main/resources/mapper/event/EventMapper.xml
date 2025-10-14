@@ -176,4 +176,15 @@
           AND e.status_id IN (4, 5)
           AND p.performance_end_date &lt;= NOW()
     </update>
+
+    <select id="findEventsToMarkAsOngoing" resultType="com.profect.tickle.domain.event.entity.Event">
+        SELECT e.*
+        FROM event e
+        JOIN seat s ON s.event_id = e.event_id
+        JOIN performance p ON s.performance_id = p.performance_id
+        WHERE e.status_id = 4
+          AND p.performance_start_date &lt;= NOW()
+          AND p.performance_end_date &gt; NOW()
+        GROUP BY e.event_id
+    </select>
 </mapper>

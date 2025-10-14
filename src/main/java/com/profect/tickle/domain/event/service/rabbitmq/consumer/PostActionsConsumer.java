@@ -17,12 +17,12 @@ public class PostActionsConsumer {
 
     private final PostActionsService postActionsService;
 
-    @RabbitListener(queues = RabbitMQEventConfig.POST_POINT_QUEUE)
+    @RabbitListener(queues = RabbitMQEventConfig.POST_POINT_QUEUE, concurrency = "8")
     public void handlePointHistory(PostPointHistoryMessage msg) {
         postActionsService.recordPointHistory(msg.memberId(), msg.perPrice(), PointTarget.EVENT);
     }
 
-    @RabbitListener(queues = RabbitMQEventConfig.POST_RESERVATION_QUEUE)
+    @RabbitListener(queues = RabbitMQEventConfig.POST_RESERVATION_QUEUE, concurrency = "8")
     public void handleReservation(PostReservationMessage msg) {
         postActionsService.reserveSeatAndCreateReservation(msg.seatId(), msg.memberId(), msg.accrued());
     }
