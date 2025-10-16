@@ -10,7 +10,6 @@ import com.profect.tickle.domain.event.service.rabbitmq.dto.ApplyResponseDto;
 import com.profect.tickle.global.paging.PagingResponse;
 import com.profect.tickle.global.response.ResultCode;
 import com.profect.tickle.global.response.ResultResponse;
-import com.profect.tickle.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

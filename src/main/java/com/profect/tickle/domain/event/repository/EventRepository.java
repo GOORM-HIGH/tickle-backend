@@ -16,8 +16,15 @@ import java.util.Optional;
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-
-    List<Event> findByAccrued(Integer accrued);
+    @Query("""
+        SELECT e FROM Event e
+        JOIN e.seat s
+        JOIN s.performance p
+        WHERE e.status.id = :scheduledStatus
+          AND p.startDate <= CURRENT_TIMESTAMP
+          AND p.endDate > CURRENT_TIMESTAMP
+    """)
+    List<Event> findEventsToStart(@Param("scheduledStatus") Long scheduledStatus);
 
     interface AccrueRow {
         Integer getEventAccrued();
@@ -78,16 +85,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Long findSeatIdByEventId(@Param("eventId") Long eventId);*/
 
 
-    // Postgres면 증가 후 값을 곧바로 받는 버전 권장 (더 깔끔)
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = """
-        update event
-           set event_accrued = event_accrued + :delta
-         where event_id = :eventId and status_id = :inProgress
-        returning event_accrued
-    """, nativeQuery = true)
-    List<Integer> incrementAccruedReturning(@Param("eventId") Long eventId,
-                                            @Param("delta") int delta,
-                                            @Param("inProgress") Long inProgress);
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Event e SET e.status = :status WHERE e.id = :eventId")
+    int updateEventStatus(@Param("eventId") Long eventId, @Param("status") Status status);
 
 }
