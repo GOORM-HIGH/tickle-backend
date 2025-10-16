@@ -3,8 +3,6 @@ package com.profect.tickle.domain.event.service.application;
 import com.profect.tickle.domain.event.dto.EventDecision;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.repository.EventRepository;
-import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.domain.reservation.repository.SeatRepository;
 import com.profect.tickle.domain.reservation.service.ReservationService;
 import com.profect.tickle.global.exception.BusinessException;
 import com.profect.tickle.global.exception.ErrorCode;
@@ -15,12 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-//@Service
+@Service
 @RequiredArgsConstructor
 public class EventCoreLockService {
 
     private final EventRepository eventRepository;
     private final ReservationService reservationService;
+    private final StatusProvider statusProvider;
 
     //TODO: 임계영역에 대해서 동시성을 보장하면 원하는 결과가 나올겁니다?
     //TODO: 영한님의 고급 1편을 보세요. 자바 코드에 대한 동시성을 찾아보세요
@@ -70,5 +69,10 @@ public class EventCoreLockService {
         long total = (System.nanoTime() - startTotal) / 1_000_000;
 
         return new EventDecision(eventId, memberId, delta, winner, r.getEventAccrued(), seatId);
+    }
+
+    @Transactional
+    public void completeEvent(Long eventId) {
+        eventRepository.updateEventStatus(eventId, statusProvider.provide(StatusIds.Event.COMPLETED));
     }
 }

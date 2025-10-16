@@ -7,7 +7,6 @@ import com.profect.tickle.global.status.service.StatusProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +29,7 @@ public class EventAccumulatorFlushService {
         for (String key : keys) {
             try {
                 Long eventId = Long.parseLong(key.replace("event:", ""));
-                Object accruedObj = redisTemplate.opsForHash().get(key, "accrued");
+                Object accruedObj = redisTemplate.opsForHash().get(key, "target");
                 Object statusIdObj = redisTemplate.opsForHash().get(key, "statusId"); // status → statusId 로 변경
 
                 if (accruedObj == null) continue;
@@ -40,7 +39,6 @@ public class EventAccumulatorFlushService {
                         ? Long.parseLong(statusIdObj.toString())
                         : StatusIds.Event.IN_PROGRESS;
 
-                // ✅ JPA가 원하는 Status 객체로 변환
                 Status status = statusProvider.provide(statusId);
 
                 eventRepository.updateAccruedAndStatus(eventId, accrued, status);

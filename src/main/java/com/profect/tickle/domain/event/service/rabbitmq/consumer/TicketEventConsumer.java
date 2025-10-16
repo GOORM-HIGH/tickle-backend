@@ -1,22 +1,45 @@
 package com.profect.tickle.domain.event.service.rabbitmq.consumer;
 
+import com.profect.tickle.domain.event.service.application.EventCoreLockService;
 import com.profect.tickle.domain.event.service.rabbitmq.dto.ApplyRequestDto;
+import com.profect.tickle.domain.event.service.rabbitmq.dto.PostPointHistoryMessage;
 import com.profect.tickle.domain.event.service.rabbitmq.dto.PostReservationMessage;
 import com.profect.tickle.domain.event.service.rabbitmq.producer.PostActionsProducer;
 import com.profect.tickle.global.status.StatusIds;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class TicketEventConsumer {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final PostActionsProducer postProducer;
+    private final EventCoreLockService eventCoreLockService;
+    private final String luaScript;
+
+    public TicketEventConsumer(RedisTemplate<String, Object> redisTemplate,
+                               PostActionsProducer postProducer,
+                               EventCoreLockService eventCoreLockService) throws IOException {
+        this.redisTemplate = redisTemplate;
+        this.postProducer = postProducer;
+        this.eventCoreLockService = eventCoreLockService;
+
+        try (InputStream is = new ClassPathResource("scripts/event_decrement.lua").getInputStream()) {
+            this.luaScript = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        log.info("Loaded Lua script for event decrement logic.");
+    }
+
 
     @RabbitListener(
             queues = {
@@ -33,25 +56,30 @@ public class TicketEventConsumer {
         String key = "event:" + eventId;
 
         try {
-            Long newAccrued = redisTemplate.opsForHash().increment(key, "accrued", 1);
+            // 1. Redis Lua Script 실행
+            DefaultRedisScript<Long> script = new DefaultRedisScript<>(luaScript, Long.class);
+            Long newAccrued = redisTemplate.execute(
+                    script,
+                    Collections.singletonList(key),
+                    request.getPerPrice(),              // ARGV[1] : perPrice
+                    StatusIds.Event.COMPLETED           // ARGV[2] : COMPLETED
+            );
 
-            Object targetObj = redisTemplate.opsForHash().get(key, "target");
-            if (targetObj == null) {
-                log.error("⚠️ target 값이 Redis에 없음 (eventId={})", eventId);
+            if (newAccrued == -99999) {
+                log.error("이미 종료된 이벤트입니다. eventId={}, memberId={}", eventId, memberId);
                 return;
             }
+            // 3. 후처리 (비동기 메시지 발행)
+            postProducer.sendPointHistory(new PostPointHistoryMessage(memberId, request.getPerPrice()));
 
-            long target = Long.parseLong(targetObj.toString());
-            if (newAccrued >= target) {
-                redisTemplate.opsForHash().put(key, "statusId", StatusIds.Event.COMPLETED);
-
-                // 좌석 예약 메시지 발송
-                postProducer.sendReservation(new PostReservationMessage(memberId, null, newAccrued.intValue()));
-                log.info("🎯 이벤트 종료! eventId={}, 누적={}/{}", eventId, newAccrued, target);
+            if (newAccrued <= 0) {
+                // Redis 내부에서는 이미 status=COMPLETED 로 변경됨
+                eventCoreLockService.completeEvent(eventId);
+                postProducer.sendReservation(new PostReservationMessage(memberId, null, 0));
+                log.info("이벤트 종료 처리 완료! eventId={}, 남은 목표금액={}", eventId, newAccrued);
             }
-
         } catch (Exception e) {
-            log.error("❌ Redis 누적 처리 실패 eventId={}, memberId={}", eventId, memberId, e);
+            log.error("Redis Lua 처리 실패 eventId={}, memberId={}", eventId, memberId, e);
         }
     }
 }

@@ -44,12 +44,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
 
-    // utils
-    private final PointTarget eventTarget = PointTarget.EVENT;
     private final Clock clock;
     private final ZoneId zone = ZoneId.systemDefault();
 
-    // mapper & repositories
     private final PessimisticEventApplyExecutor pessimisticEventApplyExecutor;
     private final SeatRepository seatRepository;
     private final CouponRepository couponRepository;
@@ -60,7 +57,6 @@ public class EventServiceImpl implements EventService {
     private final PerformanceRepository performanceRepository;
     private final StatusProvider statusProvider;
     private final TicketEventProducer eventProducer;
-    private final MemberRepository memberRepository;
     private final EventPreconditionService preconditionService;
 
 

@@ -10,7 +10,7 @@ public class EventAccumulatorFlushScheduler {
 
     private final EventAccumulatorFlushService flushService;
 
-    @Scheduled(fixedDelay = 1_000)
+    @Scheduled(fixedDelay = 30_000)
     public void scheduleFlush() {
         flushService.flushToDB();
     }

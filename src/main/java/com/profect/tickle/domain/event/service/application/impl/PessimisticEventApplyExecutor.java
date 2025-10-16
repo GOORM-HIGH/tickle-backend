@@ -74,10 +74,6 @@ public class PessimisticEventApplyExecutor {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
     }
 
-    private Seat getSeatOrThrow(Long eventSeatId) {
-        return seatRepository.findById(eventSeatId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.SEAT_NOT_FOUND));
-    }
 
     private Member getMemberOrThrow() {
         Long memberId = SecurityUtil.getSignInMemberId();

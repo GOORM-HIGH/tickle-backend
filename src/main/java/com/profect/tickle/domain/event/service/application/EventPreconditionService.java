@@ -19,9 +19,6 @@ public class EventPreconditionService {
     private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
 
-    //TODO: 임계영역에 대해서 동시성을 보장하면 원하는 결과가 나올겁니다?
-    //TODO: 영한님의 고급 1편을 보세요. 자바 코드에 대한 동시성을 찾아보세요
-
     @Transactional(readOnly = true)
     public void validatePreApplyConditions(Long memberId, Long eventId) {
         Event event = eventRepository.findById(eventId)
