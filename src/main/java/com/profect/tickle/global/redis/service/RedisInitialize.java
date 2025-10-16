@@ -14,10 +14,7 @@ public class RedisInitialize {
 
     public void initializeRedisEvent(Event event) {
         String key = "event:" + event.getId();
-
-        redisTemplate.opsForHash().put(key, "accrued", 0);
-        redisTemplate.opsForHash().put(key, "target", event.getAccrued());
-        redisTemplate.opsForHash().put(key, "status", "IN_PROGRESS");
+        redisTemplate.opsForHash().put(key, "target", event.getGoalPrice());
         redisTemplate.opsForHash().put(key, "statusId", StatusIds.Event.IN_PROGRESS.toString());
     }
 }
