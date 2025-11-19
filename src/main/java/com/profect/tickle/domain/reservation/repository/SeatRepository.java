@@ -102,7 +102,6 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
           from Seat s
          where s.id = :seatId
     """)
-
     Long findPerformanceIdBySeatId(@Param("seatId") Long seatId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -133,11 +132,12 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     update Seat s
        set s.member.id = :memberId
      where s.id = :seatId
-""")
+    """)
     int assignPreReservedSeatToMember(@Param("seatId") Long seatId,
                                       @Param("memberId") Long memberId);
 
-    @Query(value = "select seat_id from seat where event_id = :eventId limit 1", nativeQuery = true)
+    @Query(value = "select seat_id from seat where event_id = :eventId limit 1",
+                    nativeQuery = true)
     Long findSeatIdByEvent(@Param("eventId") Long eventId);
 
 }

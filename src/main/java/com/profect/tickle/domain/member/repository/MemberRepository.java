@@ -34,4 +34,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     """)
     int tryDeductPoint(@Param("memberId") Long memberId,
                        @Param("amount") int amount);
+
+    @Query("SELECT m.pointBalance FROM Member m WHERE m.id = :memberId")
+    Optional<Integer> findPointById(@Param("memberId") Long memberId);
 }

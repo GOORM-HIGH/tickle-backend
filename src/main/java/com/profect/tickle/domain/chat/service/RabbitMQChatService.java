@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.chat.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.profect.tickle.global.config.RabbitMQConfig;
+import com.profect.tickle.global.config.RabbitMQChatConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -29,8 +29,8 @@ public class RabbitMQChatService {
             
             // 채팅 큐로 메시지 전송
             rabbitTemplate.convertAndSend(
-                RabbitMQConfig.CHAT_EXCHANGE,
-                RabbitMQConfig.MESSAGE_ROUTING_KEY,
+                RabbitMQChatConfig.CHAT_EXCHANGE,
+                RabbitMQChatConfig.MESSAGE_ROUTING_KEY,
                 messageMap
             );
             
@@ -53,8 +53,8 @@ public class RabbitMQChatService {
             
             // 알림 큐로 메시지 전송
             rabbitTemplate.convertAndSend(
-                RabbitMQConfig.CHAT_EXCHANGE,
-                RabbitMQConfig.NOTIFICATION_ROUTING_KEY,
+                RabbitMQChatConfig.CHAT_EXCHANGE,
+                RabbitMQChatConfig.NOTIFICATION_ROUTING_KEY,
                 notificationMap
             );
             
@@ -77,8 +77,8 @@ public class RabbitMQChatService {
             
             // 파일 큐로 메시지 전송
             rabbitTemplate.convertAndSend(
-                RabbitMQConfig.CHAT_EXCHANGE,
-                RabbitMQConfig.FILE_ROUTING_KEY,
+                RabbitMQChatConfig.CHAT_EXCHANGE,
+                RabbitMQChatConfig.FILE_ROUTING_KEY,
                 fileMap
             );
             
