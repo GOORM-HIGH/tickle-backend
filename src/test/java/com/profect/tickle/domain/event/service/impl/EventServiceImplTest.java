@@ -10,7 +10,7 @@ import com.profect.tickle.domain.event.entity.Coupon;
 import com.profect.tickle.domain.event.entity.Event;
 import com.profect.tickle.domain.event.repository.CouponRepository;
 import com.profect.tickle.domain.event.repository.EventRepository;
-import com.profect.tickle.domain.event.service.EventService;
+import com.profect.tickle.domain.event.service.application.EventService;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.CouponReceivedRepository;
 import com.profect.tickle.domain.member.repository.MemberRepository;

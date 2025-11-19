@@ -1,0 +1,6 @@
+package com.profect.tickle.domain.event.service.rabbitmq.dto;
+
+public record PostPointHistoryMessage(
+        Long memberId,
+        int perPrice
+) {}

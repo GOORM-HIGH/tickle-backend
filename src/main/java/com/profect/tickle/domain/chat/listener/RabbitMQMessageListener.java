@@ -1,13 +1,11 @@
 package com.profect.tickle.domain.chat.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.profect.tickle.domain.chat.dto.request.ChatMessageSendRequestDto;
-import com.profect.tickle.domain.chat.entity.ChatMessageType;
 import com.profect.tickle.domain.chat.entity.ChatRoom;
 import com.profect.tickle.domain.chat.repository.ChatRoomRepository;
 import com.profect.tickle.domain.member.entity.Member;
 import com.profect.tickle.domain.member.repository.MemberRepository;
-import com.profect.tickle.global.config.RabbitMQConfig;
+import com.profect.tickle.global.config.RabbitMQChatConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -29,7 +27,7 @@ public class RabbitMQMessageListener {
     /**
      * 채팅 메시지 큐 리스너
      */
-    @RabbitListener(queues = RabbitMQConfig.CHAT_MESSAGE_QUEUE)
+    @RabbitListener(queues = RabbitMQChatConfig.CHAT_MESSAGE_QUEUE)
     public void handleChatMessage(Map<String, Object> messageMap) {
         try {
             log.debug("RabbitMQ에서 채팅 메시지 수신: {}", messageMap);
@@ -63,7 +61,7 @@ public class RabbitMQMessageListener {
     /**
      * 채팅 알림 큐 리스너
      */
-    @RabbitListener(queues = RabbitMQConfig.CHAT_NOTIFICATION_QUEUE)
+    @RabbitListener(queues = RabbitMQChatConfig.CHAT_NOTIFICATION_QUEUE)
     public void handleChatNotification(Map<String, Object> notificationMap) {
         try {
             log.debug("RabbitMQ에서 채팅 알림 수신: {}", notificationMap);
@@ -87,7 +85,7 @@ public class RabbitMQMessageListener {
     /**
      * 채팅 파일 큐 리스너
      */
-    @RabbitListener(queues = RabbitMQConfig.CHAT_FILE_QUEUE)
+    @RabbitListener(queues = RabbitMQChatConfig.CHAT_FILE_QUEUE)
     public void handleChatFile(Map<String, Object> fileMap) {
         try {
             log.debug("RabbitMQ에서 채팅 파일 수신: {}", fileMap);

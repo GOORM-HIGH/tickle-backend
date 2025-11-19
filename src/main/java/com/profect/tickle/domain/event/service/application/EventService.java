@@ -1,0 +1,33 @@
+package com.profect.tickle.domain.event.service.application;
+
+import com.profect.tickle.domain.event.dto.request.CouponCreateRequestDto;
+import com.profect.tickle.domain.event.dto.request.TicketEventCreateRequestDto;
+import com.profect.tickle.domain.event.dto.response.*;
+import com.profect.tickle.domain.event.entity.EventType;
+import com.profect.tickle.domain.event.service.rabbitmq.dto.ApplyResponseDto;
+import com.profect.tickle.global.paging.PagingResponse;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public interface EventService {
+    CouponResponseDto createCouponEvent(CouponCreateRequestDto request);
+
+    TicketEventResponseDto createTicketEvent(TicketEventCreateRequestDto request);
+
+    ApplyResponseDto applyTicketEvent(Long eventId);
+
+    PagingResponse<EventListResponseDto> getEventList(EventType type, int page, int size);
+
+    TicketEventDetailResponseDto getTicketEventDetail(Long eventId);
+
+    void issueCoupon(Long eventId);
+
+    PagingResponse<TicketListResponseDto> searchTicketEvents(String keyword, int page, int size);
+
+    PagingResponse<TicketEventResponseDto> findRandomOngoingEvents();
+
+    PagingResponse<CouponResponseDto> getMyCoupons(int page, int size);
+
+    List<ExpiringSoonCouponResponseDto> getCouponListExpiringUntil(LocalDate untilDate);
+}

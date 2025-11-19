@@ -119,7 +119,8 @@ public enum ErrorCode {
 
     // 계약 관련
     CONTRACT_NOT_FOUND(HttpStatus.NOT_FOUND, "계약을 찾지 못했습니다."),
-    CONTRACT_CHARGE_INVALID(HttpStatus.BAD_REQUEST, "유요한 수수료율이 아닙니다.");
+    CONTRACT_CHARGE_INVALID(HttpStatus.BAD_REQUEST, "유요한 수수료율이 아닙니다."),
+    EVENT_APPLY_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "이벤트 응모에 실패하였습니다.");
     private final HttpStatus status;
     private final String message;
 }

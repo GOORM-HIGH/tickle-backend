@@ -24,6 +24,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericToStringSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.retry.annotation.EnableRetry;
 
@@ -34,14 +35,11 @@ import java.time.Duration;
 @EnableRetry
 public class RedisConfig {
 
-    @Value("${spring.data.redis.host}")
+    @Value("${spring.redis.host}")
     private String host;
 
-    @Value("${spring.data.redis.port}")
+    @Value("${spring.redis.port}")
     private int port;
-
-    @Value("${spring.data.redis.password}")
-    private String password;
 
     private static final String REDISSON_HOST_PREFIX = "redis://";
 
@@ -53,7 +51,6 @@ public class RedisConfig {
 
         SingleServerConfig s = config.useSingleServer()
                 .setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
-                .setPassword(password)
                 .setConnectionMinimumIdleSize(8)
                 .setConnectionPoolSize(32)
                 .setSubscriptionConnectionMinimumIdleSize(2)
@@ -76,7 +73,6 @@ public class RedisConfig {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(host);
         redisConfig.setPort(port);
-        redisConfig.setPassword(password);
 
         // Lettuce Pool 설정 (선택사항)
         LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
@@ -101,19 +97,12 @@ public class RedisConfig {
     public RedisTemplate<String, Object> redisTemplate() {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
 
-        // Redis를 연결합니다.
         redisTemplate.setConnectionFactory(redisConnectionFactory());
 
-        // Key-Value 형태로 직렬화를 수행합니다.
         redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new StringRedisSerializer());
-
-        // Hash Key-Value 형태로 직렬화를 수행합니다.
         redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
-
-        // 기본적으로 직렬화를 수행합니다.
-        redisTemplate.setDefaultSerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericToStringSerializer<>(Object.class));
+        redisTemplate.setHashValueSerializer(new GenericToStringSerializer<>(Object.class));
 
         redisTemplate.afterPropertiesSet();
         return redisTemplate;
@@ -174,17 +163,17 @@ public class RedisConfig {
 
     @Bean("streamRedisTemplate")
     public RedisTemplate<String, Object> streamRedisTemplate() {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory());
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
 
-        // Stream용으로는 JSON 직렬화 사용
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.setConnectionFactory(redisConnectionFactory());
 
-        template.afterPropertiesSet();
-        return template;
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericToStringSerializer<>(Object.class));
+        redisTemplate.setHashValueSerializer(new GenericToStringSerializer<>(Object.class));
+
+        redisTemplate.afterPropertiesSet();
+        return redisTemplate;
     }
 
     @Bean
