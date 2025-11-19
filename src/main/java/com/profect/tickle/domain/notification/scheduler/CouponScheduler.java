@@ -1,13 +1,11 @@
 package com.profect.tickle.domain.notification.scheduler;
 
 import com.profect.tickle.domain.event.dto.response.ExpiringSoonCouponResponseDto;
-import com.profect.tickle.domain.event.service.event.CouponService;
-import com.profect.tickle.domain.event.service.event.EventService;
+import com.profect.tickle.domain.event.service.application.EventService;
 import com.profect.tickle.domain.notification.event.coupon.event.CouponAlmostExpiredEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -57,7 +55,7 @@ public class CouponScheduler {
     }
 
     // 매일 자정에 실행 (00:00)
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    //@Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void runDaily() {
         publishExpiringSoonCouponList(1L);
     }

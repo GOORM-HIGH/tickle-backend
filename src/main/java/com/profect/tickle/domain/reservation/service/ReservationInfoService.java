@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.reservation.service;
 
 import com.profect.tickle.domain.event.dto.response.CouponResponseDto;
-import com.profect.tickle.domain.event.service.event.CouponService;
+import com.profect.tickle.domain.event.service.application.CouponService;
 import com.profect.tickle.domain.point.service.PointService;
 import com.profect.tickle.domain.reservation.dto.response.preemption.PreemptedSeatInfo;
 import com.profect.tickle.domain.reservation.dto.response.reservation.ReservationInfoResponseDto;

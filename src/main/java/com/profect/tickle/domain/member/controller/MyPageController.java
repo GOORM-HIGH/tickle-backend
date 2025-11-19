@@ -1,7 +1,7 @@
 package com.profect.tickle.domain.member.controller;
 
 import com.profect.tickle.domain.event.dto.response.CouponResponseDto;
-import com.profect.tickle.domain.event.service.event.EventService;
+import com.profect.tickle.domain.event.service.application.EventService;
 import com.profect.tickle.domain.member.dto.response.MemberResponseDto;
 import com.profect.tickle.domain.member.service.MemberService;
 import com.profect.tickle.global.paging.PagingResponse;
